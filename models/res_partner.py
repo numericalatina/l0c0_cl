@@ -115,6 +115,8 @@ class ResPartner(models.Model):
     @api.onchange('city_id')
     def _asign_city(self):
         if self.city_id:
+            self.country_id = self.city_id.state_id.country_id.id
+            self.state_id = self.city_id.state_id.id
             self.city = self.city_id.name
 
     @api.constrains('vat', 'commercial_partner_id')
