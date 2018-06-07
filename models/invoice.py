@@ -1488,7 +1488,7 @@ version="1.0">
         ids = []
         envio_boleta = False
         for inv in self.with_context(lang='es_CL'):
-            if inv.sii_result in ['','NoEnviado','Rechazado']:
+            if inv.sii_result in ['','NoEnviado','Rechazado'] or inv.company_id.dte_service_provider == 'SIICERT':
                 if inv.sii_result in ['Rechazado']:
                     inv._timbrar()
                     if inv.sii_xml_request:
@@ -1585,7 +1585,7 @@ version="1.0">
         #    Receptor['CdgIntRecep']
         Receptor['RUTRecep'] = self.format_vat(self.commercial_partner_id.vat)
         Receptor['RznSocRecep'] = self._acortar_str(self.commercial_partner_id.name, 100)
-        if not self._es_boleta():
+        if not self._es_boleta() and not self._nc_boleta():
             if not self.commercial_partner_id.activity_description:
                 raise UserError(_('Seleccione giro del partner'))
             Receptor['GiroRecep'] = self._acortar_str(self.commercial_partner_id.activity_description.name, 40)
@@ -1594,12 +1594,12 @@ version="1.0">
         if (self.commercial_partner_id.email or self.commercial_partner_id.dte_email or self.partner_id.email or self.partner_id.dte_email) and not self._es_boleta():
             Receptor['CorreoRecep'] = self.commercial_partner_id.dte_email or self.partner_id.dte_email or self.commercial_partner_id.email or self.partner_id.email
         street_recep = (self.partner_id.street or self.commercial_partner_id.street or False)
-        if not street_recep:
+        if not street_recep and not self._es_boleta() and not self._nc_boleta():
             raise UserError('Debe Ingresar dirección del cliente')
         street2_recep = (self.partner_id.street2 or self.commercial_partner_id.street2 or False)
         Receptor['DirRecep'] = self._acortar_str(street_recep + (' ' + street2_recep if street2_recep else ''), 70)
         Receptor['CmnaRecep'] = self.partner_id.city_id.name or self.commercial_partner_id.city_id.name
-        if not Receptor['CmnaRecep']:
+        if not Receptor['CmnaRecep'] and not self._es_boleta() and not self._nc_boleta():
             raise UserError('Debe Ingresar Comuna del cliente')
         Receptor['CiudadRecep'] = self.partner_id.city or self.commercial_partner_id.city
         return Receptor
