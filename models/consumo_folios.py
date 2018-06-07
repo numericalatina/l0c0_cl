@@ -610,12 +610,12 @@ version="1.0">
             TasaIVA = self.env['account.move.line'].search([('move_id', '=', rec.id), ('tax_line_id.amount', '>', 0)], limit=1).tax_line_id.amount
             MntTotal = Neto + MntExe + TaxMnt
         if MntExe > 0 :
-            det['MntExe'] = MntExe
+            det['MntExe'] = self.currency_id.round(MntExe)
         if TaxMnt > 0:
-            det['MntIVA'] = TaxMnt
+            det['MntIVA'] = self.currency_id.round(TaxMnt)
             det['TasaIVA'] = TasaIVA
-        det['MntNeto'] = Neto
-        det['MntTotal'] = MntTotal
+        det['MntNeto'] = self.currency_id.round(Neto)
+        det['MntTotal'] = self.currency_id.round(MntTotal)
         return det
 
     def _last(self, folio, items):# se asumen que vienen ordenados de menor a mayor
