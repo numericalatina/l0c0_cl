@@ -209,7 +209,7 @@
                             <p style="text-align:center;color:red; font-size:8px;">
                               Timbre Electrónico SII
                               <br/>
-                              Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento: www.sii.cl
+                              Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not (o._es_boleta() or o._nc_boleta())">www.sii.cl</t><t t-if="o._es_boleta() or o._nc_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
                             </p>
                         </div>
                       </div>
@@ -468,7 +468,7 @@
                       <p style="text-align:center;color:red; font-size:8px;">
                         Timbre Electrónico SII
                         <br/>
-                        Resolución 393/2016 Verifique documento: www.sii.cl
+                        Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not (o._es_boleta() or o._nc_boleta())">www.sii.cl</t><t t-if="o._es_boleta() or o._nc_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
                       </p>
                   </div>
                 </div>
@@ -575,7 +575,7 @@
                     <p style="text-align:center;color:red; font-size:8px;">
                       Timbre Electrónico SII
                       <br/>
-                      Resolución 393/2016 Verifique documento: www.sii.cl
+                      Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not (o._es_boleta() or o._nc_boleta())">www.sii.cl</t><t t-if="o._es_boleta() or o._nc_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
                     </p>
                 </div>
               </div>

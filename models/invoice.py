@@ -1511,11 +1511,13 @@ version="1.0">
                                     'n_atencion': n_atencion,
                                     'send_email': False if self[0].company_id.dte_service_provider=='SIICERT' or self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
                                     })
+    @api.multi
     def _es_boleta(self):
         if self.sii_document_class_id.sii_code in [35, 38, 39, 41, 70, 71]:
             return True
         return False
 
+    @api.multi
     def _nc_boleta(self):
         if not self.referencias or self.type != "out_refund":
             return False
