@@ -2222,6 +2222,18 @@ version="1.0">
         """ Print Cedible
         """
         return self.env.ref('l10n_cl_fe.action_print_cedible').report_action(self)
+    
+    @api.multi
+    def _get_printed_report_name(self):
+        self.ensure_one()
+        if self.sii_document_class_id:
+            string_state = ""
+            if self.state == 'draft':
+                string_state = "en borrador "
+            report_string = "%s %s %s" % (self.sii_document_class_id.name, string_state, self.sii_document_number or '')
+        else:
+            report_string = super(AccountInvoice, self)._get_printed_report_name()
+        return report_string
 
     @api.multi
     def getTotalDiscount(self):
