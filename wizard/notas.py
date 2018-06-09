@@ -92,7 +92,7 @@ class AccountInvoiceRefund(models.TransientModel):
                                             'product_id' : prod.id,
                                             'account_id': account.id,
                                             'name' : prod.name,
-                                            'quantity' : 0,
+                                            'quantity' : 1,
                                             'price_unit' : 0
                                         }
                                     ]
