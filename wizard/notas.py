@@ -80,7 +80,7 @@ class AccountInvoiceRefund(models.TransientModel):
                     elif type == 'out_refund':
                         refund_type = 'out_invoice'
                     elif type == 'in_invoice':
-                        refund.type = 'in_refund'
+                        refund_type = 'in_refund'
                     elif type == 'in_refund':
                         refund_type = 'in_invoice'
                     account = inv.invoice_line_ids.get_invoice_line_account(inv.type, prod, inv.fiscal_position_id, inv.company_id)
@@ -92,7 +92,7 @@ class AccountInvoiceRefund(models.TransientModel):
                                             'product_id' : prod.id,
                                             'account_id': account.id,
                                             'name' : prod.name,
-                                            'quantity' : 0,
+                                            'quantity' : 1,
                                             'price_unit' : 0
                                         }
                                     ]
