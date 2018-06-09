@@ -443,7 +443,15 @@ class AccountInvoice(models.Model):
             #@TODO Posibilidad de GDR a exentos
             exento = False
             if line.get('tax_ids'):
-                exento = self.env['account.tax'].search([('id', 'in', line.get('tax_ids')[0][2]), ('amount', '=', 0)])
+                tax_ids = []
+                # el ORM puede pasar (4, id, _) O (6, _, ids), asi que evaluar cada caso
+                # ver el metodo write de models.py de odoo, para mayor informacion de cada caso
+                if line.get('tax_ids')[0][0] == 4:
+                    tax_ids = [line.get('tax_ids')[0][1]]
+                elif line.get('tax_ids')[0][0] == 6:
+                    tax_ids = line.get('tax_ids')[0][2]
+                if tax_ids:
+                    exento = self.env['account.tax'].search([('id', 'in', tax_ids), ('amount', '=', 0)])
             if not line.get('tax_line_id') and not exento:
                 line['price'] *= gdr
             if line.get('amount_currency', False) and not line.get('tax_line_id'):
