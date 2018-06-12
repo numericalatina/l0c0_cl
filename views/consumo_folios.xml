@@ -42,6 +42,7 @@
                   <field name="sec_envio" />
                   <field name="date" />
                   <field name="company_id" />
+                  <field name="currency_id" invisible="1" force_save="1" />
                   <field name="total_boletas" />
                   <field name="total_iva" />
                   <field name="total_exento" />
