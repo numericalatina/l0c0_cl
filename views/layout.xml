@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-xs-5" style="width:420px !important; text-align:center;">
+                    <div class="col-xs-7" style="text-align:center;">
                         <img t-if="logo" t-att-src="'data:image/png;base64,%s' % to_text(logo)" style="max-height: 45px;"/>
                         <h4 style="text-align:lef;text-transform:uppercase;font-weight:900;font-size:18px;color:black;">
                             <span t-field="company.name"/>
@@ -162,7 +162,8 @@
                   </t>
                   <!-- Is there a discount on at least one line? -->
                    <t t-set="display_discount" t-value="any([l.discount for l in o.invoice_line_ids])"/>
-
+                   <t t-set="price_included" t-value="o.is_price_included()" />
+                   <div t-if="price_included">Valores IVA incluído</div>
                    <table class="table table-condensed">
                        <thead >
                            <tr style="max-height:8px; line-height:12px; font-size:12px !important; padding:0px;">
@@ -171,7 +172,7 @@
                               <th>Descripción</th>
                               <th class="text-teft">Precio Unitario</th>
                               <th t-if="display_discount" class="text-left" groups="sale.group_discount_per_so_line">Desc.(%)</th>
-                              <th class="text-leftt">Precio</th>
+                              <th class="text-left">Precio</th>
                            </tr>
                        </thead>
                        <tbody class="invoice_tbody">
@@ -189,7 +190,9 @@
                                    <span t-field="l.discount"/>
                                </td>
                                <td class="text-left" style="max-height:8px;line-height:10px !important;">
-                                    <span t-field="l.price_subtotal"
+                                    <span t-if="not price_included" t-field="l.price_subtotal"
+                                         t-field-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                    <span t-if="price_included" t-field="l.price_tax_included"
                                          t-field-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
                                </td>
                            </tr>
