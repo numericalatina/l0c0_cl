@@ -1774,6 +1774,13 @@ version="1.0">
         ted  += '<TmstFirma>{}</TmstFirma>'.format(timestamp)
         return ted
 
+    @api.multi
+    def is_price_included(self):
+        tax = self.invoice_line_ids[0].invoice_line_tax_ids[0]
+        if tax.price_include or ( not tax.sii_detailed and (self._es_boleta() or self._nc_boleta()) ):
+            return True
+        return False
+
     def _invoice_lines(self):
         line_number = 1
         invoice_lines = []
@@ -2232,7 +2239,7 @@ version="1.0">
         """ Print Cedible
         """
         return self.env.ref('l10n_cl_fe.action_print_cedible').report_action(self)
-    
+
     @api.multi
     def _get_printed_report_name(self):
         self.ensure_one()
