@@ -751,7 +751,7 @@ version="1.0">
             for order in orders_array:
                 recs.append(order)
         if recs:
-            recs = sorted(recs, key=lambda t: t.sii_document_number)
+            recs = sorted(recs, key=lambda t: int(t.sii_document_number))
             ant = {}
             for order in recs:
                 canceled = (hasattr(order,'canceled') and order.canceled)

@@ -1589,12 +1589,14 @@ version="1.0">
 
     def _receptor(self):
         Receptor = collections.OrderedDict()
-        if not self.commercial_partner_id.vat and not self._es_boleta():
+        if not self.commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
             raise UserError("Debe Ingresar RUT Receptor")
         #if self._es_boleta():
         #    Receptor['CdgIntRecep']
         Receptor['RUTRecep'] = self.format_vat(self.commercial_partner_id.vat)
-        Receptor['RznSocRecep'] = self._acortar_str(self.commercial_partner_id.name, 100)
+        Receptor['RznSocRecep'] = self._acortar_str( self.commercial_partner_id.name, 100)
+        if not self.partner_id or Receptor['RUTRecep'] == '66666666-6':
+            return Receptor
         if not self._es_boleta() and not self._nc_boleta():
             if not self.commercial_partner_id.activity_description:
                 raise UserError(_('Seleccione giro del partner'))
@@ -1734,7 +1736,7 @@ version="1.0">
         result['TED']['DD']['TD'] = self.sii_document_class_id.sii_code
         result['TED']['DD']['F']  = folio
         result['TED']['DD']['FE'] = self.date_invoice
-        if not self.commercial_partner_id.vat:
+        if not self.commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
             raise UserError(_("Fill Partner VAT"))
         result['TED']['DD']['RR'] = self.format_vat(self.commercial_partner_id.vat)
         result['TED']['DD']['RSR'] = self._acortar_str(self.commercial_partner_id.name,40)

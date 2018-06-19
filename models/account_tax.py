@@ -107,8 +107,6 @@ class SiiTax(models.Model):
                 'refund_account_id': tax.refund_account_id.id,
                 'analytic': tax.analytic,
             })
-
-
         return {
             'taxes': sorted(taxes, key=lambda k: k['sequence']),
             'total_excluded': currency.round(total_excluded) if bool(self.env.context.get("round", True)) else total_excluded,
