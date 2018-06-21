@@ -166,18 +166,28 @@ class ConsumoFolios(models.Model):
         )
     total_neto = fields.Monetary(
         string="Total Neto",
+        store=True,
+        readonly=True,
         compute='get_totales',)
     total_iva = fields.Monetary(
         string="Total Iva",
+        store=True,
+        readonly=True,
         compute='get_totales',)
     total_exento = fields.Monetary(
         string="Total Exento",
+        store=True,
+        readonly=True,
         compute='get_totales',)
     total = fields.Monetary(
         string="Monto Total",
+        store=True,
+        readonly=True,
         compute='get_totales',)
     total_boletas = fields.Integer(
         string="Total Boletas",
+        store=True,
+        readonly=True,
         compute='get_totales',)
     company_id = fields.Many2one(
         'res.company',
@@ -210,8 +220,10 @@ class ConsumoFolios(models.Model):
        readonly=True,
        states={'draft': [('readonly', False)]},)
     anulaciones = fields.One2many('account.move.consumo_folios.anulaciones',
-       'cf_id',
-       string="Detalle Impuestos")
+        'cf_id',
+        string="Detalle Impuestos",
+        readonly=True,
+        states={'draft': [('readonly', False)]},)
     currency_id = fields.Many2one(
             'res.currency',
             string='Moneda',
@@ -303,14 +315,12 @@ class ConsumoFolios(models.Model):
                 'folio_inicio': item['Inicial'],
                 'folio_final': item['Final'],
                 'cantidad': int(item['Final']) - int(item['Inicial']) +1,
-                'tpo_doc': self.env['sii.document_class'].search([('sii_code','=', tpo_doc)]).id,
+                'tpo_doc': self.env['sii.document_class'].search([('sii_code', '=', tpo_doc)]).id,
             }
             detalles.append([0,0,rango])
-        rangos = {}
         for r, value in resumenes.items():
-            if str(r)+'_folios' in value:
+            if '%s_folios' %str(r) in value:
                 Rangos = value[ str(r)+'_folios' ]
-                folios = []
                 if 'itemUtilizados' in Rangos:
                     for rango in Rangos['itemUtilizados']:
                         pushItem('RangoUtilizados', rango, r)
@@ -552,6 +562,14 @@ version="1.0">
     @api.multi
     def validar_consumo_folios(self):
         self._validar()
+        consumos = self.search([
+            ('fecha_inicio', '=', self.fecha_inicio),
+            ('state', 'not in', ['draft', 'Rechazado', 'Anulado']),
+            ('company_id', '=', self.company_id.id),
+            ('id', '!=', self.id),
+            ])
+        for r in consumos:
+            r.state = "Anulado"
         return self.write({'state': 'NoEnviado'})
 
     def _acortar_str(self, texto, size=1):
@@ -723,7 +741,6 @@ version="1.0">
     def _get_resumenes(self, marc=False):
         resumenes = collections.OrderedDict()
         TpoDocs = []
-        orders = []
         recs = []
         for rec in self.with_context(lang='es_CL').move_ids:
             document_class_id = rec.document_class_id if 'document_class_id' in rec else rec.sii_document_class_id
@@ -733,7 +750,7 @@ version="1.0">
             if rec.sii_document_number:
                 recs.append(rec)
             #rec.sended = marc
-        if 'pos.order' in self.env: #@TODO mejor forma de verificar si está isntalado módulo POS
+        if 'pos.order' in self.env: # @TODO mejor forma de verificar si está instalado módulo POS
             current = self.fecha_inicio + ' 00:00:00'
             tz = pytz.timezone('America/Santiago')
             tz_current = tz.localize(datetime.strptime(current, DTF)).astimezone(pytz.utc)
@@ -754,25 +771,25 @@ version="1.0">
             recs = sorted(recs, key=lambda t: int(t.sii_document_number))
             ant = {}
             for order in recs:
-                canceled = (hasattr(order,'canceled') and order.canceled)
+                canceled = (hasattr(order, 'canceled') and order.canceled)
                 resumen = self.getResumen(order)
                 TpoDoc = str(resumen['TpoDoc'])
-                if not TpoDoc in ant:
+                if TpoDoc not in ant:
                     ant[TpoDoc] = [0, canceled]
                 if int(order.sii_document_number) == ant[TpoDoc][0]:
                     raise UserError("¡El Folio %s está duplicado!" % order.sii_document_number)
-                if not TpoDoc in TpoDocs:
+                if TpoDoc not in TpoDocs:
                     TpoDocs.append(TpoDoc)
-                if not TpoDoc in resumenes:
+                if TpoDoc not in resumenes:
                     resumenes[TpoDoc] = collections.OrderedDict()
                 continuado = ((ant[TpoDoc][0]+1) == int(order.sii_document_number) and (ant[TpoDoc][1]) == canceled)
                 resumenes[TpoDoc] = self._setResumen(resumen, resumenes[TpoDoc], continuado)
                 ant[TpoDoc] = [int(order.sii_document_number), canceled]
         for an in self.anulaciones:
             TpoDoc = str(an.tpo_doc.sii_code)
-            if not TpoDoc in TpoDocs:
+            if TpoDoc not in TpoDocs:
                 TpoDocs.append(TpoDoc)
-            if not TpoDoc in resumenes:
+            if TpoDoc not in resumenes:
                 resumenes[TpoDoc] = collections.OrderedDict()
             i = an.rango_inicio
             while i <= an.rango_final:
@@ -781,11 +798,10 @@ version="1.0">
                 for r, value in resumenes.items():
                     Rangos = value.get(str(r)+'_folios', collections.OrderedDict())
                     if 'itemAnulados' in Rangos:
-                        _logger.info(Rangos['itemAnulados'])
                         for rango in Rangos['itemAnulados']:
                             if rango['Inicial'] <= i and i <= rango['Final']:
                                 seted = True
-                            if not(seted) and  (i-1) == rango['Final']:
+                            if not(seted) and (i-1) == rango['Final']:
                                     continuado = True
                 if not seted:
                     resumen = {
