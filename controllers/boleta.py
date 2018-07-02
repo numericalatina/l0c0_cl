@@ -31,7 +31,6 @@ class Boleta(http.Controller):
         orders = Model.search(domain, limit=1)
         return orders
 
-
     @http.route(['/boleta/<int:folio>'], type='http', auth="public", website=True)
     def view_document(self, folio=None, **post):
         if 'otra_boleta' in post:
@@ -44,14 +43,14 @@ class Boleta(http.Controller):
         }
         return request.render('l10n_cl_fe.boleta_layout', values)
 
+    def _get_report(self, document):
+        return request.env.ref('account.account_invoices').sudo().render_qweb_pdf([document.id])[0]
+
     @http.route(['/download/boleta'], type='http', auth="public", website=True)
     def download_boleta(self, **post):
         document = request.env[post['model']].sudo().browse(int(post['model_id']))
         file_name = document._get_printed_report_name()
-        if document._name == 'account.invoice':
-            pdf = request.env.ref('account.account_invoices').sudo().render_qweb_pdf([document.id])[0]
-        else:
-            pdf = request.env.ref('l10n_cl_fe.action_report_pos_boleta_ticket').sudo().render_qweb_pdf([document.id])[0]
+        pdf = self._get_report(document)
         pdfhttpheaders = [
             ('Content-Type', 'application/pdf'), ('Content-Length', len(pdf)),
             ('Content-Disposition', 'attachment; filename=%s.pdf;' % file_name)
