@@ -1616,11 +1616,11 @@ version="1.0">
         Receptor['CiudadRecep'] = self.partner_id.city or self.commercial_partner_id.city
         return Receptor
 
-    def _totales_otra_moneda(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal=0):
+    def _totales_otra_moneda(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal=0, MntBase=0):
         Totales = collections.OrderedDict()
         Totales['TpoMoneda'] = self._acortar_str(currency_id.abreviatura, 15)
         Totales['TpoCambio'] = currency_id.rate
-        if MntNeto:
+        if MntNeto > 0:
             if currency_id:
                 MntNeto = currency_id.compute(MntNeto, self.company_id.currency_id)
             Totales['MntNetoOtrMnda'] = MntNeto
@@ -1628,17 +1628,21 @@ version="1.0">
             if currency_id:
                 MntExe = currency_id.compute(MntExe, self.company_id.currency_id)
             Totales['MntExeOtrMnda'] = MntExe
+        if MntBase and MntBase > 0:
+            Totales['MntFaeCarneOtrMnda'] = MntBase
         if TasaIVA:
             if currency_id:
                 IVA = currency_id.compute(IVA, self.company_id.currency_id)
             Totales['IVAOtrMnda'] = IVA
         if ImptoReten:
-                Totales['ImptRetOtrMnda'] = collections.OrderedDict()
-                Totales['ImptRetOtrMnda']['TipoImpOtrMnda'] = ImptoReten['TpoImp']
-                Totales['ImptRetOtrMnda']['TasaImpOtrMnda'] = ImptoReten['TasaImp']
+            for item in ImptoReten:
+                ret = {'ImptRetOtrMnda': collections.OrderedDict()}
+                ret['ImptRetOtrMnda']['TipoImpOtrMnda'] = item['ImptRet']['TpoImp']
+                ret['ImptRetOtrMnda']['TasaImpOtrMnda'] = item['ImptRet']['TasaImp']
                 if currency_id:
-                    ImptoReten['MontoImp'] = currency_id.compute(ImptoReten['MontoImp'], self.company_id.currency_id)
-                Totales['ImptRetOtrMnda']['ValorImpOtrMnda'] = ImptoReten['MontoImp']
+                    ret['ImptRetOtrMnda']['MontoImp'] = currency_id.compute(item['ImptRet']['MontoImp'], self.company_id.currency_id)
+                ret['ImptRetOtrMnda']['ValorImpOtrMnda'] = item['ImptRet']['MontoImp']
+            Totales['item_ret_otr'] = ret
         if currency_id:
             MntTotal = currency_id.compute(MntTotal, self.company_id.currency_id)
         Totales['MntTotOtrMnda'] = MntTotal
@@ -1648,17 +1652,19 @@ version="1.0">
         #Totales['VlrPagar']
         return Totales
 
-    def _totales_normal(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal=0):
+    def _totales_normal(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal=0, MntBase=0):
         Totales = collections.OrderedDict()
-        if MntNeto:
+        if MntNeto > 0:
             Totales['MntNeto'] = MntNeto
         if MntExe:
             Totales['MntExe'] = MntExe
-        if TasaIVA:
+        if MntBase > 0:
+            Totales['MntBase'] = MntBase
+        if TasaIVA:            
             Totales['TasaIVA'] = TasaIVA
             Totales['IVA'] = IVA
         if ImptoReten:
-            Totales['ImptoReten'] = ImptoReten
+            Totales['item_ret'] = ImptoReten
         Totales['MntTotal'] = MntTotal
         #Totales['MontoNF']
         #Totales['TotalPeriodo']
@@ -1670,11 +1676,13 @@ version="1.0">
         return self.sii_document_class_id.sii_code in [34, 41] or (self.referencias and self.referencias[0].sii_referencia_TpoDocRef.sii_code in [ 34, 41])
 
     def _totales(self, MntExe=0, no_product=False, taxInclude=False):
-        MntNeto = False
+        MntNeto = 0
         IVA = False
         ImptoReten = False
         TasaIVA = False
         MntIVA = 0
+        MntBase = 0
+        OtrosImp = []
         if self._es_exento():
             MntExe = self.currency_id.round(self.amount_total)
             if  no_product:
@@ -1685,34 +1693,40 @@ version="1.0">
             if not self._es_boleta() or not taxInclude:
                 IVA = False
                 for t in self.tax_line_ids:
-                    if t.tax_id.sii_code in [14, 15]:
+                    if t.tax_id.sii_code in [ 14, 15 ]:
                         IVA = t
-                if IVA and IVA.base > 0 :
-                    MntNeto = self.currency_id.round(IVA.base)
+                    elif t.tax_id.sii_code in [ 15, 17, 18, 19 ]:
+                        OtrosImp.append(t) 
+                    if t.tax_id.sii_code in [ 14, 15 ]:
+                        MntNeto += self.currency_id.round(t.base)
+                    if t.tax_id.sii_code in [ 17 ]:
+                        MntBase += IVA.base # @TODO Buscar forma de calcular la base para faenamiento
         if self.amount_tax == 0 and MntExe > 0 and not self._es_exento():
             raise UserError("Debe ir almenos un producto afecto")
         if MntExe > 0:
-            MntExe = self.currency_id.round( MntExe)
+            MntExe = self.currency_id.round( MntExe )
         if not self._es_boleta() or not taxInclude:
             if IVA:
                 if not self._es_boleta():
-                    TasaIVA = round(IVA.tax_id.amount, 2)
+                    TasaIVA = round(IVA.tax_id.amount, 2)    
                 MntIVA = self.currency_id.round(IVA.amount)
             if no_product:
                 MntNeto = 0
                 if not self._es_boleta():
                     TasaIVA = 0
                 MntIVA = 0
-        if IVA and IVA.tax_id.sii_code in [15]:
-            ImptoReten = collections.OrderedDict()
-            ImptoReten['TpoImp'] = IVA.tax_id.sii_code
-            ImptoReten['TasaImp'] = round(IVA.tax_id.amount,2)
-            ImptoReten['MontoImp'] = self.currency_id.round(IVA.amount)
-
+        if OtrosImp:
+            ImptoReten = []
+            for item in OtrosImp:
+                itemRet = {'ImptoReten': collections.OrderedDict()}
+                itemRet['ImptoReten']['TpoImp'] =  item.tax_id.sii_code
+                itemRet['ImptoReten']['TasaImp'] = round(IVA.tax_id.retencion, 2)
+                itemRet['ImptoReten']['MontoImp'] = self.currency_id.round(IVA.amount_retencion if IVA.tax_id.sii_type == 'R' else IVA.amount)
+                ImptoReten.append(itemRet)
         MntTotal = self.currency_id.round(self.amount_total)
         if no_product:
             MntTotal = 0
-        return MntExe, MntNeto, MntIVA, TasaIVA, ImptoReten, MntTotal
+        return MntExe, MntNeto, MntIVA, TasaIVA, ImptoReten, MntTotal, MntBase
 
     def _encabezado(self, MntExe=0, no_product=False, taxInclude=False):
         Encabezado = collections.OrderedDict()
@@ -1722,10 +1736,10 @@ version="1.0">
         currency_id = False
         if self.currency_id and self.company_id and self.currency_id != self.company_id.currency_id:
             currency_id = self.currency_id.with_context(date=self.date_invoice)
-        MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal = self._totales(MntExe, no_product, taxInclude)
-        Encabezado['Totales'] = self._totales_normal( currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal)
+        MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase = self._totales(MntExe, no_product, taxInclude)
+        Encabezado['Totales'] = self._totales_normal( currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
         if currency_id:
-            Encabezado['OtraMoneda'] = self._totales_otra_moneda( currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal)
+            Encabezado['OtraMoneda'] = self._totales_otra_moneda( currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
         return Encabezado
 
     @api.multi
@@ -1891,7 +1905,6 @@ version="1.0">
         lin_ref = 1
         ref_lines = []
         if self.company_id.dte_service_provider == 'SIICERT' and isinstance(n_atencion, string_types) and n_atencion != '' and not self._es_boleta():
-            ref_line = {}
             ref_line = collections.OrderedDict()
             ref_line['NroLinRef'] = lin_ref
             ref_line['TpoDocRef'] = "SET"
@@ -1902,7 +1915,6 @@ version="1.0">
             ref_lines.extend([{'Referencia':ref_line}])
         if self.referencias :
             for ref in self.referencias:
-                ref_line = {}
                 ref_line = collections.OrderedDict()
                 ref_line['NroLinRef'] = lin_ref
                 if not self._es_boleta():
@@ -1934,7 +1946,9 @@ version="1.0">
             .replace('<reflines>','').replace('</reflines>','')\
             .replace('<TEDd>','').replace('</TEDd>','')\
             .replace('</'+ tpo_dte + '_ID>','\n'+ted+'\n</'+ tpo_dte + '_ID>')\
-            .replace('<drlines>','').replace('</drlines>','')
+            .replace('<drlines>','').replace('</drlines>','')\
+            .replace('<item_ret_otr>','').replace('</item_ret_otr>','')\
+            .replace('<item_ret_otr>','').replace('</item_ret_otr>','')
         return xml
 
     def _tpo_dte(self):

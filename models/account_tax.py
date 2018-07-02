@@ -119,7 +119,7 @@ class SiiTax(models.Model):
             neto = base_amount / (1 + self.amount / 100)
             tax = base_amount - neto
             return tax
-        return super(SiiTax,self)._compute_amount(base_amount, price_unit, quantity, product, partner)
+        return super(SiiTax, self)._compute_amount(base_amount, price_unit, quantity, product, partner)
 
     def _compute_amount_ret(self, base_amount, price_unit, quantity=1.0, product=None, partner=None):
         if self.amount_type == 'percent' and self.price_include:
