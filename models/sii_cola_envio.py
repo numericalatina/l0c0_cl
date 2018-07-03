@@ -69,14 +69,14 @@ class ColaEnvio(models.Model):
         send_mail.send()
 
     def _procesar_tipo_trabajo(self):
-        docs = self.env[self.model].browse(ast.literal_eval(self.doc_ids))
+        docs = self.env[self.model].sudo(self.user_id.id).browse(ast.literal_eval(self.doc_ids))
         if self.tipo_trabajo == 'pasivo':
             if docs[0].sii_xml_request and docs[0].sii_xml_request.state in [ 'Aceptado', 'Enviado', 'Rechazado', 'Anulado']:
                 self.unlink()
                 return
             if self.date_time and datetime.now() >= datetime.strptime(self.date_time, DTF):
                 try:
-                    envio_id = docs.sudo(self.user_id.id).do_dte_send(self.n_atencion)
+                    envio_id = docs.do_dte_send(self.n_atencion)
                     if envio_id.sii_send_ident:
                         self.tipo_trabajo = 'consulta'
                 except Exception as e:
@@ -98,7 +98,7 @@ class ColaEnvio(models.Model):
                 _logger.warning(str(e))
         elif self.tipo_trabajo == 'envio' and (not docs[0].sii_xml_request or not docs[0].sii_xml_request.sii_send_ident or docs[0].sii_xml_request.state not in [ 'Aceptado', 'Enviado']):
             try:
-                envio_id = docs.sudo(self.user_id.id).do_dte_send(self.n_atencion)
+                envio_id = docs.do_dte_send(self.n_atencion)
                 if envio_id.sii_send_ident:
                     self.tipo_trabajo = 'consulta'
                 docs.get_sii_result()

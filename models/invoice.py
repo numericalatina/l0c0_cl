@@ -62,11 +62,6 @@ try:
 except ImportError:
     _logger.warning('Cannot import hashlib library')
 
-try:
-    import cchardet
-except ImportError:
-    _logger.warning('Cannot import cchardet library')
-
 # timbre patrón. Permite parsear y formar el
 # ordered-dict patrón corespondiente al documento
 timbre  = """<TED version="1.0"><DD><RE>99999999-9</RE><TD>11</TD><F>1</F>\
@@ -175,6 +170,7 @@ class Referencias(models.Model):
             string="Fecha Documento",
             required=True,
         )
+
 
 class AccountInvoice(models.Model):
     _inherit = "account.invoice"
@@ -1084,9 +1080,9 @@ a VAT."""))
                     inv._timbrar()
                     tiempo_pasivo = (datetime.now() + timedelta(hours=int(self.env['ir.config_parameter'].sudo().get_param('account.auto_send_dte', default=12))))
                     self.env['sii.cola_envio'].create({
-                                                'doc_ids':[inv.id],
-                                                'model':'account.invoice',
-                                                'user_id':self.env.user.id,
+                                                'doc_ids': [inv.id],
+                                                'model': 'account.invoice',
+                                                'user_id': self.env.uid,
                                                 'tipo_trabajo': 'pasivo',
                                                 'date_time': tiempo_pasivo,
                                                 'send_email': False if inv.company_id.dte_service_provider=='SIICERT' or self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
@@ -1279,7 +1275,7 @@ version="1.0">
         return fulldoc
 
     def sign_full_xml(self, message, uri, type='doc'):
-        user_id = self.user_id or self.env.user
+        user_id = self.env.user
         signature_d = user_id.get_digital_signature(self.company_id)
         if not signature_d:
             raise UserError(_('''There is no Signer Person with an \
@@ -1660,7 +1656,7 @@ version="1.0">
             Totales['MntExe'] = MntExe
         if MntBase > 0:
             Totales['MntBase'] = MntBase
-        if TasaIVA:            
+        if TasaIVA:
             Totales['TasaIVA'] = TasaIVA
             Totales['IVA'] = IVA
         if ImptoReten:
@@ -1696,7 +1692,7 @@ version="1.0">
                     if t.tax_id.sii_code in [ 14, 15 ]:
                         IVA = t
                     elif t.tax_id.sii_code in [ 15, 17, 18, 19 ]:
-                        OtrosImp.append(t) 
+                        OtrosImp.append(t)
                     if t.tax_id.sii_code in [ 14, 15 ]:
                         MntNeto += self.currency_id.round(t.base)
                     if t.tax_id.sii_code in [ 17 ]:
@@ -1708,7 +1704,7 @@ version="1.0">
         if not self._es_boleta() or not taxInclude:
             if IVA:
                 if not self._es_boleta():
-                    TasaIVA = round(IVA.tax_id.amount, 2)    
+                    TasaIVA = round(IVA.tax_id.amount, 2)
                 MntIVA = self.currency_id.round(IVA.amount)
             if no_product:
                 MntNeto = 0
