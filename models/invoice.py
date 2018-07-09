@@ -1085,7 +1085,7 @@ a VAT."""))
                                                 'user_id': self.env.uid,
                                                 'tipo_trabajo': 'pasivo',
                                                 'date_time': tiempo_pasivo,
-                                                'send_email': False if inv.company_id.dte_service_provider=='SIICERT' or self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
+                                                'send_email': False if inv.company_id.dte_service_provider=='SIICERT' or not self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
                                                 })
             if inv.purchase_to_done:
                 for ptd in inv.purchase_to_done:
@@ -1513,7 +1513,7 @@ version="1.0">
                                     'user_id':self.env.user.id,
                                     'tipo_trabajo': 'envio',
                                     'n_atencion': n_atencion,
-                                    'send_email': False if self[0].company_id.dte_service_provider=='SIICERT' or self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
+                                    'send_email': False if self[0].company_id.dte_service_provider=='SIICERT' or not self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
                                     })
     @api.multi
     def _es_boleta(self):
@@ -1633,7 +1633,7 @@ version="1.0">
         if ImptoReten:
             for item in ImptoReten:
                 ret = {'ImptRetOtrMnda': collections.OrderedDict()}
-                ret['ImptRetOtrMnda']['TipoImpOtrMnda'] = item['ImptRet']['TpoImp']
+                ret['ImptRetOtrMnda']['TipoImpOtrMnda'] = item['ImptRet']['TipoImp']
                 ret['ImptRetOtrMnda']['TasaImpOtrMnda'] = item['ImptRet']['TasaImp']
                 if currency_id:
                     ret['ImptRetOtrMnda']['MontoImp'] = currency_id.compute(item['ImptRet']['MontoImp'], self.company_id.currency_id)
@@ -1715,8 +1715,8 @@ version="1.0">
             ImptoReten = []
             for item in OtrosImp:
                 itemRet = {'ImptoReten': collections.OrderedDict()}
-                itemRet['ImptoReten']['TpoImp'] =  item.tax_id.sii_code
-                itemRet['ImptoReten']['TasaImp'] = round(IVA.tax_id.retencion, 2)
+                itemRet['ImptoReten']['TipoImp'] =  item.tax_id.sii_code
+                itemRet['ImptoReten']['TasaImp'] = self.currency_id.round( item.tax_id.amount)
                 itemRet['ImptoReten']['MontoImp'] = self.currency_id.round(IVA.amount_retencion if IVA.tax_id.sii_type == 'R' else IVA.amount)
                 ImptoReten.append(itemRet)
         MntTotal = self.currency_id.round(self.amount_total)
@@ -1943,7 +1943,7 @@ version="1.0">
             .replace('<TEDd>','').replace('</TEDd>','')\
             .replace('</'+ tpo_dte + '_ID>','\n'+ted+'\n</'+ tpo_dte + '_ID>')\
             .replace('<drlines>','').replace('</drlines>','')\
-            .replace('<item_ret_otr>','').replace('</item_ret_otr>','')\
+            .replace('<item_ret>','').replace('</item_ret>','')\
             .replace('<item_ret_otr>','').replace('</item_ret_otr>','')
         return xml
 
@@ -2251,6 +2251,36 @@ version="1.0">
         """ Print Cedible
         """
         return self.env.ref('l10n_cl_fe.action_print_cedible').report_action(self)
+
+    def send_exchange(self):
+        att = self._create_attachment()
+        body = 'XML de Intercambio DTE: %s' % (self.document_number)
+        subject = 'XML de Intercambio DTE: %s' % (self.document_number)
+        self.message_post(
+            body=body,
+            subject=subject,
+            partner_ids=[self.commercial_partner_id.id],
+            attachment_ids=att.ids,
+            message_type='comment',
+            subtype='mt_comment',
+        )
+        if self.commercial_partner_id.dte_email == self.commercial_partner_id.email:
+            return
+        values = {
+            'email_from': self.company_id.dte_email,
+            'email_to': self.commercial_partner_id.dte_email,
+            'auto_delete': False,
+            'model': 'account.invoice',
+            'body': body,
+            'subject': subject,
+            'attachment_ids': att.ids,
+        }
+        send_mail = self.env['mail.mail'].create(values)
+        send_mail.send()
+
+    @api.multi
+    def manual_send_exchange(self):
+        self.send_exchange()
 
     @api.multi
     def _get_printed_report_name(self):

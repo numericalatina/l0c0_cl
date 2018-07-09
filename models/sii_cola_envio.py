@@ -43,30 +43,7 @@ class ColaEnvio(models.Model):
         )
 
     def enviar_email(self, doc):
-        att = doc._create_attachment()
-        body = 'XML de Intercambio DTE: %s' % (doc.document_number)
-        subject = 'XML de Intercambio DTE: %s' % (doc.document_number)
-        doc.message_post(
-            body=body,
-            subject=subject,
-            partner_ids=[doc.partner_id.id],
-            attachment_ids=att.ids,
-            message_type='comment',
-            subtype='mt_comment',
-        )
-        if doc.partner_id.dte_email == doc.partner_id.email:
-            return
-        values = {
-            'email_from': doc.company_id.dte_email,
-            'email_to': doc.partner_id.dte_email,
-            'auto_delete': False,
-            'model' : self.model,
-            'body': body,
-            'subject': subject,
-            'attachment_ids': att.ids,
-        }
-        send_mail = self.env['mail.mail'].create(values)
-        send_mail.send()
+        doc.send_exchange()
 
     def _procesar_tipo_trabajo(self):
         docs = self.env[self.model].sudo(self.user_id.id).browse(ast.literal_eval(self.doc_ids))
