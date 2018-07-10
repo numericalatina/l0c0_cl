@@ -212,7 +212,7 @@
                             <p style="text-align:center;color:red; font-size:8px;">
                               Timbre Electrónico SII
                               <br/>
-                              Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not (o._es_boleta() or o._nc_boleta())">www.sii.cl</t><t t-if="o._es_boleta() or o._nc_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
+                              Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not o._es_boleta()">www.sii.cl</t><t t-if="o._es_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
                             </p>
                         </div>
                       </div>
@@ -226,7 +226,7 @@
                                   </td>
                                 </tr>
                               </t>
-                              <tr style="max-height:11px; font-size:12px !important;" name="subtotal">
+                              <tr style="max-height:11px; font-size:12px !important;" name="subtotal" t-if="not price_included">
                                   <td><strong>Subtotal</strong></td>
                                   <td class="text-right">
                                       <span t-field="o.amount_untaxed" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
@@ -238,12 +238,14 @@
                                    <span t-esc="o.getTotalDiscount()" t-esc-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
                                </td>
                               </tr>
-                              <tr t-foreach="o.tax_line_ids" t-as="t" style="max-height:11px; font-size:12px !important;">
+                              <t t-foreach="o.tax_line_ids" t-as="t" >
+                                <tr t-if="not o._es_boleta() or t.sii_detailed" style="max-height:11px; font-size:12px !important;">
                                  <td><span t-field="t.tax_id.description"/></td>
                                  <td class="text-right">
                                      <span t-esc="t.amount if t.amount > 0 else t.base" t-esc-options='{"widget": "monetary", "display_currency": "o.currency_id"}'/>
                                  </td>
-                              </tr>
+                                </tr>
+                              </t>
                               <tr class="border-black" style="max-height:12px; font-size:12px !important;">
                                   <td><strong>Total</strong></td>
                                   <td class="text-right">
@@ -471,7 +473,7 @@
                       <p style="text-align:center;color:red; font-size:8px;">
                         Timbre Electrónico SII
                         <br/>
-                        Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not (o._es_boleta() or o._nc_boleta())">www.sii.cl</t><t t-if="o._es_boleta() or o._nc_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
+                        Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not o._es_boleta()">www.sii.cl</t><t t-if="o._es_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
                       </p>
                   </div>
                 </div>
@@ -578,7 +580,7 @@
                     <p style="text-align:center;color:red; font-size:8px;">
                       Timbre Electrónico SII
                       <br/>
-                      Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not (o._es_boleta() or o._nc_boleta())">www.sii.cl</t><t t-if="o._es_boleta() or o._nc_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
+                      Resolución <t t-esc='o.company_id.dte_resolution_number'/> de <t t-esc='o.company_id.dte_resolution_date[:4]'/> Verifique documento en: <t t-if="not o._es_boleta()">www.sii.cl</t><t t-if="o._es_boleta()" t-esc="o.company_id.website+'/boleta/'+o.sii_document_number"/>
                     </p>
                 </div>
               </div>

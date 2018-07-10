@@ -2041,10 +2041,10 @@ version="1.0">
             )
         env = 'env'
         if es_boleta:
-            envio_dte  = self.create_template_env_boleta(dtes)
+            envio_dte = self.create_template_env_boleta(dtes)
             env = 'env_boleta'
         else:
-            envio_dte  = self.create_template_env(dtes)
+            envio_dte = self.create_template_env(dtes)
         envio_dte = self.env['account.invoice'].sudo(self.env.uid).with_context({'company_id': company_id.id}).sign_full_xml(
                 envio_dte.replace('<?xml version="1.0" encoding="ISO-8859-1"?>\n', ''),
                 'SetDoc',
@@ -2062,16 +2062,13 @@ version="1.0">
         if not self[0].sii_xml_request or self[0].sii_result in ['Rechazado'] or (self[0].company_id.dte_service_provider == 'SIICERT' and self[0].sii_xml_request.state in ['', 'NoEnviado']):
             tipo_envio = {
                 'boleta': [],
-                'nc_boleta': [],
-                'factura': [],
+                'normal': [],
             }
             for r in self:
                 if r._es_boleta():
                     tipo_envio['boleta'].append(r.id)
-                elif r._nc_boleta():
-                    tipo_envio['nc_boleta'].append(r.id)
                 else:
-                    tipo_envio['factura'].append(r.id)
+                    tipo_envio['normal'].append(r.id)
                 if r.sii_xml_request:
                     r.sii_xml_request.unlink()
             for k, t in tipo_envio.items():
@@ -2079,7 +2076,7 @@ version="1.0">
                     continue
                 recs = self.browse(t)
                 envio = recs._crear_envio(n_atencion, RUTRecep="60803000-K")
-                if k in ['boleta', 'nc_boleta']:
+                if k in ['boleta']:
                     envio.update({
                         'state': 'Aceptado',
                         'sii_send_ident': envio['name'],
@@ -2087,7 +2084,7 @@ version="1.0">
                 envio_id = self.env['sii.xml.envio'].create(envio)
                 for r in recs:
                     r.sii_xml_request = envio_id.id
-                    if r._es_boleta() or r._nc_boleta():
+                    if r._es_boleta():
                         r.sii_result = 'Proceso'
                 if k in ['factura']:
                     resp = envio_id.send_xml()
