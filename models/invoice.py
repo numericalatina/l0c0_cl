@@ -1375,7 +1375,7 @@ version="1.0">
 
     @api.multi
     def action_invoice_sent(self):
-        if self.sii_document_class_id and not self.sii_document_class_id.dte and self.state not in ['draft'] and not self.sii_xml_dte:
+        if not self.sii_xml_dte or self.sii_document_class_id or not self.sii_document_class_id.dte or self.state in ['draft']:
             return super(AccountInvoice, self).action_invoice_sent()
         """ Open a window to compose an email, with the edi invoice template
             message loaded by default
