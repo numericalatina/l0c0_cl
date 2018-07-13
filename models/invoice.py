@@ -199,14 +199,6 @@ class AccountInvoice(models.Model):
                 data = barcodefile.getvalue()
                 r.sii_barcode_img = base64.b64encode(data)
 
-    turn_issuer = fields.Many2one(
-        'partner.activities',
-        'Giro Emisor',
-        readonly=True,
-        store=True,
-        required=False,
-        states={'draft': [('readonly', False)]},
-        )
     vat_discriminated = fields.Boolean(
             'Discriminate VAT?',
             compute="get_vat_discriminated",
@@ -698,7 +690,6 @@ class AccountInvoice(models.Model):
         values.update({
                 'type': type,
                 'journal_document_class_id': document_type.id,
-                'turn_issuer': invoice.turn_issuer.id,
                 'referencias':[[0,0, {
                         'origen': int(invoice.sii_document_number or invoice.reference),
                         'sii_referencia_TpoDocRef': invoice.sii_document_class_id.id,
@@ -730,6 +721,7 @@ class AccountInvoice(models.Model):
 
     def get_document_class_default(self, document_classes):
         document_class_id = None
+        # @TODO compute from company or journal
         #if self.turn_issuer.vat_affected not in ['SI', 'ND']:
         #    exempt_ids = [
         #        self.env.ref('l10n_cl_fe.dc_y_f_dtn').id,
@@ -743,14 +735,6 @@ class AccountInvoice(models.Model):
         #else:
         document_class_id = document_classes.ids[0]
         return document_class_id
-
-    @api.onchange('journal_id', 'company_id')
-    def _set_available_issuer_turns(self):
-        for rec in self:
-            if rec.company_id:
-                available_turn_ids = rec.company_id.company_activities_ids
-                for turn in available_turn_ids:
-                    rec.turn_issuer= turn.id
 
     @api.multi
     def name_get(self):
@@ -793,24 +777,24 @@ class AccountInvoice(models.Model):
         )
         return tax_n
 
-    def _crearTaxEquivalente(self):
+    def _crearTaxEquivalente(self, tax):
         tax_n = self.env['account.tax'].create({
             'sii_code': tax.sii_code,
             'sii_type': tax.sii_type,
             'retencion': tax.retencion,
-            'type_tax_use':tax.type_tax_use,
+            'type_tax_use': tax.type_tax_use,
             'no_rec': tax.no_rec,
             'name': tax.name,
             'description': tax.description,
             'tax_group_id': tax.tax_group_id.id,
             'company_id': self.company_id.id,
-            'price_include':tax.price_include,
+            'price_include': tax.price_include,
             'amount': tax.amount,
             'amount_type': tax.amount_type,
-            'account_id':tax.account_id.id,
+            'account_id': tax.account_id.id,
             'refund_account_id': tax.refund_account_id.id,
         })
-        return tax
+        return tax_n
 
     @api.onchange('partner_id')
     def update_journal(self):
