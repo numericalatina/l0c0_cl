@@ -998,7 +998,6 @@ a VAT."""))
             nd=False,):
 
         document_letter_obj = self.env['sii.document_letter']
-        user = self.env.user
         partner = self.partner_id
 
         if not partner_id or not company or not operation_type:
@@ -1699,9 +1698,9 @@ version="1.0">
             ImptoReten = []
             for item in OtrosImp:
                 itemRet = {'ImptoReten': collections.OrderedDict()}
-                itemRet['ImptoReten']['TipoImp'] =  item.tax_id.sii_code
+                itemRet['ImptoReten']['TipoImp'] = item.tax_id.sii_code
                 itemRet['ImptoReten']['TasaImp'] = self.currency_id.round( item.tax_id.amount)
-                itemRet['ImptoReten']['MontoImp'] = self.currency_id.round(IVA.amount_retencion if IVA.tax_id.sii_type == 'R' else IVA.amount)
+                itemRet['ImptoReten']['MontoImp'] = self.currency_id.round(item.amount_retencion if item.tax_id.sii_type == 'R' else item.amount)
                 ImptoReten.append(itemRet)
         MntTotal = self.currency_id.round(self.amount_total)
         if no_product:
