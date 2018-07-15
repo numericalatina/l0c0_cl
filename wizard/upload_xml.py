@@ -14,6 +14,7 @@ _logger = logging.getLogger(__name__)
 BC = '''-----BEGIN CERTIFICATE-----\n'''
 EC = '''\n-----END CERTIFICATE-----\n'''
 
+
 class UploadXMLWizard(models.TransientModel):
     _name = 'sii.dte.upload_xml.wizard'
     _description = 'SII XML from Provider'
@@ -121,7 +122,7 @@ class UploadXMLWizard(models.TransientModel):
         }
 
     def format_rut(self, RUTEmisor=None):
-        rut = RUTEmisor.replace('-','')
+        rut = RUTEmisor.replace('-', '')
         if int(rut[:-1]) < 10000000:
             rut = '0' + str(int(rut))
         rut = 'CL' + rut
@@ -242,17 +243,17 @@ class UploadXMLWizard(models.TransientModel):
     def _validar_dtes(self):
         envio = self._read_xml('parse')
         if 'Documento' in envio['SetDTE']['DTE']:
-            res = {'RecepcionDTE' : self._validar_dte(envio['SetDTE']['DTE']['Documento'])}
+            res = {'RecepcionDTE': self._validar_dte(envio['SetDTE']['DTE']['Documento'])}
         else:
             res = []
             for doc in envio['SetDTE']['DTE']:
-                res.extend([ {'RecepcionDTE' : self._validar_dte(doc['Documento'])} ])
+                res.extend([ {'RecepcionDTE': self._validar_dte(doc['Documento'])} ])
         return res
 
     def _caratula_respuesta(self, RutResponde, RutRecibe, IdRespuesta="1", NroDetalles=0):
         caratula = collections.OrderedDict()
         caratula['RutResponde'] = RutResponde
-        caratula['RutRecibe'] =  RutRecibe
+        caratula['RutRecibe'] = RutRecibe
         caratula['IdRespuesta'] = IdRespuesta
         caratula['NroDetalles'] = NroDetalles
         caratula['NmbContacto'] = self.env.user.partner_id.name
@@ -286,7 +287,7 @@ class UploadXMLWizard(models.TransientModel):
         return resp
 
     def _RecepcionEnvio(self, Caratula, resultado):
-        resp='''<?xml version="1.0" encoding="ISO-8859-1"?>
+        resp = '''<?xml version="1.0" encoding="ISO-8859-1"?>
 <RespuestaDTE version="1.0" xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte RespuestaEnvioDTE_v10.xsd" >
     <Resultado ID="Odoo_resp">
         <Caratula version="1.0">
@@ -294,7 +295,7 @@ class UploadXMLWizard(models.TransientModel):
         </Caratula>
             {1}
     </Resultado>
-</RespuestaDTE>'''.format(Caratula,resultado)
+</RespuestaDTE>'''.format(Caratula, resultado)
         return resp
 
     def _create_attachment(self, xml, name, id=False, model='account.invoice'):
@@ -451,7 +452,7 @@ class UploadXMLWizard(models.TransientModel):
         query = [
             ('amount', '=', amount),
             ('sii_code', '=', sii_code),
-            ('type_tax_use', '=', 'purchase'),
+            ('type_tax_use', '=', ('purchase' if self.type == 'compras' else 'sale')),
             ('activo_fijo', '=', False),
         ]
         if IndExe:
