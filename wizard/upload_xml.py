@@ -334,15 +334,6 @@ class UploadXMLWizard(models.TransientModel):
             limit=1)
         id_seq = self.env.ref('l10n_cl_fe.response_sequence').id
         IdRespuesta = self.env['ir.sequence'].browse(id_seq).next_by_id()
-        signature_d = self.env['res.users'].browse(SUPERUSER_ID).get_digital_signature(company_id)
-        if not signature_d:
-            raise UserError(_('''There is no Signer Person with an \
-        authorized signature for you in the system. Please make sure that \
-        'user_signature_key' module has been installed and enable a digital \
-        signature, for you or make the signer to authorize you to use his \
-        signature.'''))
-        certp = signature_d['cert'].replace(
-            BC, '').replace(EC, '').replace('\n', '')
         recep = self._receipt(IdRespuesta)
         NroDetalles = len(envio['SetDTE']['DTE'])
         resp_dtes = dicttoxml.dicttoxml(recep, root=False, attr_type=False).decode().replace('<item>','\n').replace('</item>','\n')
@@ -364,7 +355,7 @@ class UploadXMLWizard(models.TransientModel):
             caratula_recepcion_envio,
             root=False,
             attr_type=False,
-        ).decode().replace('<item>','\n').replace('</item>','\n')
+        ).decode().replace('<item>', '\n').replace('</item>','\n')
         resp = self._RecepcionEnvio(caratula, RecepcionEnvio )
         respuesta = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'+self.env['account.invoice'].with_context({'user_id': SUPERUSER_ID, 'company_id': company_id.id}).sign_full_xml(
             resp.replace('<?xml version="1.0" encoding="ISO-8859-1"?>\n', ''),
@@ -382,8 +373,8 @@ class UploadXMLWizard(models.TransientModel):
                     'email_from': self.dte_id.company_id.dte_email,
                     'email_to': self.sudo().dte_id.mail_id.email_from ,
                     'auto_delete': False,
-                    'model' : "mail.message.dte",
-                    'body':'XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa'] ),
+                    'model': "mail.message.dte",
+                    'body': 'XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa'] ),
                     'subject': 'XML de Respuesta Envío' ,
                     'attachment_ids': att.ids,
                 }
@@ -392,7 +383,7 @@ class UploadXMLWizard(models.TransientModel):
             self.dte_id.message_post(
                 body='XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa'] ),
                 subject='XML de Respuesta Envío' ,
-                attachment_ids= att.ids,
+                attachment_ids = att.ids,
                 message_type='comment',
                 subtype='mt_comment',
             )
@@ -556,7 +547,7 @@ class UploadXMLWizard(models.TransientModel):
                 [
                     ('product_tmpl_id', '=', product_supplier.product_tmpl_id.id),
                 ],
-                    limit=1)
+                limit=1)
             if not product_id:
                 if not product_supplier and not self.pre_process:
                     product_id = self._create_prod(line, price_included)
@@ -572,16 +563,15 @@ class UploadXMLWizard(models.TransientModel):
         if not product_supplier and document_id.partner_id and self.type == 'compras':
             price = float(line.find("PrcItem").text if line.find("PrcItem") is not None else line.find("MontoItem").text)
             if price_included:
-                price = imp.compute_all(price, self.env.user.company_id.currency_id, 1)['total_excluded']
+                price = product_id.supplier_taxes_id.compute_all(price, self.env.user.company_id.currency_id, 1)['total_excluded']
             supplier_info = {
                 'name': document_id.partner_id.id,
-                'product_name' : NmbItem,
+                'product_name': NmbItem,
                 'product_code': default_code,
                 'product_tmpl_id': product_id.product_tmpl_id.id,
                 'price': price,
             }
             self.env['product.supplierinfo'].create(supplier_info)
-
         return product_id.id
 
     def _prepare_line(self, line, document_id, account_id, type, price_included=False):
@@ -696,9 +686,9 @@ class UploadXMLWizard(models.TransientModel):
             }
         partner_id = self.env['res.partner'].search(
             [
-                ('active','=', True),
+                ('active', '=', True),
                 ('parent_id', '=', False),
-                ('vat','=', self.format_rut(RUT))
+                ('vat', '=', self.format_rut(RUT))
             ]
         )
         if not partner_id:
@@ -713,9 +703,9 @@ class UploadXMLWizard(models.TransientModel):
             if self.type == "ventas":
                 invoice["type"] = "out_refund"
         if partner_id:
-            account_id = partner_id.property_account_payable_id.id or journal.default_debit_account_id.id
+            account_id = partner_id.property_account_payable_id.id or journal_document_class_id.journal_id.default_debit_account_id.id
             if invoice['type'] in ('out_invoice', 'in_refund'):
-                account_id = partner_id.property_account_receivable_id.id or journal.default_credit_account_id.id
+                account_id = partner_id.property_account_receivable_id.id or journal_document_class_id.journal_id.default_credit_account_id.id
             invoice.update(
             {
                 'account_id': account_id,
@@ -726,21 +716,20 @@ class UploadXMLWizard(models.TransientModel):
             name = self.filename.decode('ISO-8859-1').encode('UTF-8')
         except:
             name = self.filename.encode('UTF-8')
-        image = False
         ted_string = etree.tostring(documento.find("TED"), method="c14n", pretty_print=False)
         FchEmis = IdDoc.find("FchEmis").text
         xml_envio = self.env['sii.xml.envio'].create(
             {
-                'name': 'ENVIO_%s'%name.decode(),
+                'name': 'ENVIO_%s' %name.decode(),
                 'xml_envio': string.decode(),
                 'state': 'Aceptado',
             }
         )
         invoice.update( {
-            'origin' : 'XML Envío: ' + name.decode(),
-            'date_invoice' : FchEmis,
-            'partner_id' : partner_id,
-            'company_id' : company_id.id,
+            'origin': 'XML Envío: ' + name.decode(),
+            'date_invoice': FchEmis,
+            'partner_id': partner_id,
+            'company_id': company_id.id,
             'journal_id': journal_document_class_id.journal_id.id,
             'sii_xml_request': xml_envio.id,
             'sii_barcode': ted_string.decode(),
@@ -749,7 +738,7 @@ class UploadXMLWizard(models.TransientModel):
         if DscRcgGlobal:
             drs = [(5,)]
             for dr in DscRcgGlobal:
-                drs.append((0,0,self.process_dr(dr)))
+                drs.append((0, 0, self.process_dr(dr)))
             invoice.update({
                     'global_descuentos_recargos': drs,
                 })
@@ -768,10 +757,10 @@ class UploadXMLWizard(models.TransientModel):
         else:
             invoice.update({
                 'number': Folio,
-                'date' : FchEmis,
+                'date': FchEmis,
                 'new_partner': RUT + ' ' + Emisor.find("RznSoc").text,
                 'sii_document_class_id': journal_document_class_id.sii_document_class_id.id,
-                'amount' : dte['Encabezado']['Totales']['MntTotal'],
+                'amount': dte['Encabezado']['Totales']['MntTotal'],
             })
         return invoice
 
@@ -782,7 +771,7 @@ class UploadXMLWizard(models.TransientModel):
         journal_sii = self.env['account.journal.sii_document_class'].search(
             [
                 ('sii_document_class_id.sii_code', '=', sii_code),
-                ('journal_id.type','=', type),
+                ('journal_id.type', '=', type),
                 ('journal_id.company_id', '=', company_id.id)
             ],
             limit=1,
@@ -823,8 +812,8 @@ class UploadXMLWizard(models.TransientModel):
                 if price_included:
                     price = imp.compute_all(price, self.env.user.company_id.currency_id, 1)['total_excluded']
                     price_subtotal = imp.compute_all(price_subtotal, self.env.user.company_id.currency_id, 1)['total_excluded']
-                lines.append([0,0,{
-                    'invoice_line_tax_ids': ((6,0, imp.ids)) ,
+                lines.append([0, 0, {
+                    'invoice_line_tax_ids': ((6, 0, imp.ids)) ,
                     'product_id': product_id,
                     'name': 'MontoImpuesto %s' % str(i['TipoImp']),
                     'price_unit': price,
@@ -866,7 +855,7 @@ class UploadXMLWizard(models.TransientModel):
 
     def _inv_exist(self, documento):
         encabezado = documento.find("Encabezado")
-        Emisor= encabezado.find("Emisor")
+        Emisor = encabezado.find("Emisor")
         IdDoc = encabezado.find("IdDoc")
         type = ['in_invoice', 'in_refund']
         if self.type == 'ventas':
@@ -900,7 +889,7 @@ class UploadXMLWizard(models.TransientModel):
 
     def _dte_exist(self, documento):
         encabezado = documento.find("Encabezado")
-        Emisor= encabezado.find("Emisor")
+        Emisor = encabezado.find("Emisor")
         IdDoc = encabezado.find("IdDoc")
         return self.env['mail.message.dte.document'].search(
             [
@@ -943,7 +932,7 @@ class UploadXMLWizard(models.TransientModel):
                 documento = dte.find("Documento")
                 company_id = self.env['res.company'].search(
                         [
-                            ('vat','=', self.format_rut(documento.find("Encabezado/Receptor/RUTRecep").text)),
+                            ('vat', '=', self.format_rut(documento.find("Encabezado/Receptor/RUTRecep").text)),
                         ],
                         limit=1,
                     )
@@ -978,7 +967,7 @@ class UploadXMLWizard(models.TransientModel):
                     path_rut = "Encabezado/Emisor/RUTEmisor"
                 company_id = self.env['res.company'].search(
                         [
-                            ('vat','=', self.format_rut(documento.find(path_rut).text)),
+                            ('vat', '=', self.format_rut(documento.find(path_rut).text)),
                         ],
                         limit=1,
                     )
