@@ -2236,7 +2236,7 @@ version="1.0">
         att = self._create_attachment()
         body = 'XML de Intercambio DTE: %s' % (self.document_number)
         subject = 'XML de Intercambio DTE: %s' % (self.document_number)
-        self.message_post(
+        self.sudo().message_post(
             body=body,
             subject=subject,
             partner_ids=[self.commercial_partner_id.id],
@@ -2255,7 +2255,7 @@ version="1.0">
             'subject': subject,
             'attachment_ids': att.ids,
         }
-        send_mail = self.env['mail.mail'].create(values)
+        send_mail = self.env['mail.mail'].sudo().create(values)
         send_mail.send()
 
     @api.multi

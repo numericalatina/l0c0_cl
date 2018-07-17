@@ -6,15 +6,16 @@ import logging
 _logger = logging.getLogger(__name__)
 
 status_dte = [
-    ('no_revisado','No Revisado'),
-    ('0','Conforme'),
-    ('1','Error de Schema'),
-    ('2','Error de Firma'),
-    ('3','RUT Receptor No Corresponde'),
-    ('90','Archivo Repetido'),
-    ('91','Archivo Ilegible'),
-    ('99','Envio Rechazado - Otros')
+    ('no_revisado', 'No Revisado'),
+    ('0', 'Conforme'),
+    ('1', 'Error de Schema'),
+    ('2', 'Error de Firma'),
+    ('3', 'RUT Receptor No Corresponde'),
+    ('90', 'Archivo Repetido'),
+    ('91', 'Archivo Ilegible'),
+    ('99', 'Envio Rechazado - Otros')
 ]
+
 
 class ProcessMails(models.Model):
     _inherit = "mail.message"
