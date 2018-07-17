@@ -10,7 +10,6 @@ from lxml import etree
 from lxml.etree import Element, SubElement
 from lxml import objectify
 from lxml.etree import XMLSyntaxError
-from odoo import SUPERUSER_ID
 
 import xml.dom.minidom
 import pytz
@@ -619,7 +618,7 @@ version="1.0">
         params['dvCompany'] = company_id.vat[-1]
         file_name = file_name + '.xml'
         params['archivo'] = (file_name,envio_dte,"text/xml")
-        multi  = urllib3.filepost.encode_multipart_formdata(params)
+        multi = urllib3.filepost.encode_multipart_formdata(params)
         headers.update({'Content-Length': '{}'.format(len(multi[0]))})
         response = pool.request_encode_body('POST', url+post, params, headers)
         retorno = {'sii_xml_response': response.data, 'sii_result': 'NoEnviado','sii_send_ident':''}
@@ -788,9 +787,9 @@ version="1.0">
                     MntIVA += int(round(Mnt))
                 if not rec.no_rec_code and not rec.iva_uso_comun:
                     det['MntIVA'] = MntIVA
-                if ActivoFijo != [0,0]:
-                    det['MntActivoFijo'] = Activofijo[0]
-                    det['MntIVAActivoFijo'] = Activofijo[1]
+                if ActivoFijo != [0, 0]:
+                    det['MntActivoFijo'] = ActivoFijo[0]
+                    det['MntIVAActivoFijo'] = ActivoFijo[1]
                 if rec.no_rec_code:
                     det['IVANoRec'] = collections.OrderedDict()
                     det['IVANoRec']['CodIVANoRec'] = rec.no_rec_code
@@ -806,7 +805,7 @@ version="1.0">
                 else:
                     otro['OtrosImp'] = collections.OrderedDict()
                     otro['OtrosImp']['CodImp'] = t['imp'].sii_code
-                    otro['OtrosImp']['TasaImp'] = round(t['imp'].amount,2)
+                    otro['OtrosImp']['TasaImp'] = round(t['imp'].amount, 2)
                     otro['OtrosImp']['MntImp'] = int(round(t['Mnt']))
                 imps.append(otro)
             det['itemOtrosImp'] = imps
@@ -852,7 +851,7 @@ version="1.0">
             mnt['amount'] *= -1
             mnt['base'] *= -1
         if tax_line_id.sii_code in [14, 15, 17, 18, 19, 30, 31, 32, 33, 34, 36, 37, 38, 39, 41, 47, 48]: # diferentes tipos de IVA retenidos o no
-            ivas.setdefault(tax_line_id.id, [ tax_line_id, 0])
+            ivas.setdefault(tax_line_id.id, [tax_line_id, 0])
             ivas[tax_line_id.id][1] += mnt['amount']
             TaxMnt += mnt['amount']
             Neto += mnt['base']
@@ -987,8 +986,8 @@ version="1.0">
                 if cod == o['OtrosImp']['CodImp']:
                     tot = {}
                     tot['TotOtrosImp'] = collections.OrderedDict()
-                    tot['TotOtrosImp']['CodImp']  = cod
-                    tot['TotOtrosImp']['TotMntImp']  = r['OtrosImp']['MntImp']
+                    tot['TotOtrosImp']['CodImp'] = cod
+                    tot['TotOtrosImp']['TotMntImp'] = r['OtrosImp']['MntImp']
                     #tot['FctImpAdic']
                     tot['TotOtrosImp']['TotCredImp'] += o['OtrosImp']['MntImp']
                     itemOtrosImp.append(tot)
@@ -1002,12 +1001,12 @@ version="1.0">
             resumenP['TotImpSinCredito'] = no_rec
         return resumenP
 
-    def _setResumenPeriodo(self,resumen,resumenP):
+    def _setResumenPeriodo(self, resumen, resumenP):
         resumenP['TpoDoc'] = resumen['TpoDoc']
         if 'TpoImp' in resumen:
             resumenP['TpoImp'] = resumen['TpoImp'] or 1
         if not 'TotDoc' in resumenP:
-            resumenP['TotDoc'] =  1
+            resumenP['TotDoc'] = 1
             if 'TotDoc' in resumen:
                 resumenP['TotDoc'] = resumen['TotDoc']
         else:

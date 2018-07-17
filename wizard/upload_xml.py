@@ -1041,7 +1041,7 @@ class UploadXMLWizard(models.TransientModel):
             raise UserError("Ya existe un Pedido de compra con Referencia: %s para el Proveedor: %s.\n" \
                             "No se puede crear nuevamente, por favor verifique." %
                             (data['partner_ref'], partner_id.name))
-        lines =[(5,)]
+        lines = [(5,)]
         vals_line = {}
         detalles = dte['Detalle']
         #cuando es un solo producto, no viene una lista sino un diccionario
