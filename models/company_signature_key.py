@@ -51,6 +51,7 @@ class userSignature(models.Model):
         for s in self:
             if not s.cert:
                 s.status = 'unverified'
+                continue
             expired = datetime.strptime(s.not_after, '%Y-%m-%d') < datetime.now()
             s.status = 'expired' if expired else 'valid'
 
