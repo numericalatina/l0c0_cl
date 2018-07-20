@@ -65,8 +65,8 @@ class userSignature(models.Model):
         issuer = cert.get_issuer()
         subject = cert.get_subject()
 
-        self.not_before = datetime.datetime.strptime(cert.get_notBefore().decode("utf-8"), '%Y%m%d%H%M%SZ')
-        self.not_after = datetime.datetime.strptime(cert.get_notAfter().decode("utf-8"), '%Y%m%d%H%M%SZ')
+        self.not_before = datetime.strptime(cert.get_notBefore().decode("utf-8"), '%Y%m%d%H%M%SZ')
+        self.not_after = datetime.strptime(cert.get_notAfter().decode("utf-8"), '%Y%m%d%H%M%SZ')
 
         # self.final_date =
         self.subject_c = subject.C
