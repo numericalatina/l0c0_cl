@@ -41,6 +41,7 @@ class ProcessMails(models.Model):
                 val.mail_id = mail.id
         return mail
 
+
 class ProccessMail(models.Model):
     _name = 'mail.message.dte'
     _inherit = ['mail.thread']
@@ -98,6 +99,7 @@ class ProccessMail(models.Model):
             result['domain'] = domain
         return result
 
+
 class ProcessMailsDocument(models.Model):
     _name = 'mail.message.dte.document'
     _inherit = ['mail.thread']
@@ -150,9 +152,9 @@ class ProcessMailsDocument(models.Model):
         string="Compañía",
         readonly=True,
     )
-    state= fields.Selection(
+    state = fields.Selection(
         [
-            ('draft','Recibido'),
+            ('draft', 'Recibido'),
             ('accepted', 'Aceptado'),
             ('rejected', 'Rechazado'),
         ],
@@ -170,7 +172,7 @@ class ProcessMailsDocument(models.Model):
     purchase_to_done = fields.Many2many(
         'purchase.order',
         string="Ordenes de Compra a validar",
-        domain=[('state', 'not in',['accepted', 'rejected'] )],
+        domain=[('state', 'not in', ['accepted', 'rejected'] )],
     )
 
     _order = 'create_date DESC'
@@ -208,7 +210,7 @@ class ProcessMailsDocument(models.Model):
             r.state = 'accepted'
         xml_id = 'account.action_invoice_tree2'
         result = self.env.ref('%s' % (xml_id)).read()[0]
-        if  created:
+        if created:
             domain = eval(result['domain'])
             domain.append(('id', 'in', created))
             result['domain'] = domain

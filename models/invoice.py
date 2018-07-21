@@ -1339,8 +1339,15 @@ version="1.0">
                     self.sii_xml_dte = etree.tostring(envio.findall("{http://www.sii.cl/SiiDte}DTE")[0])
             xml_intercambio = self.crear_intercambio()
         url_path = '/download/xml/invoice/%s' % (self.id)
-        filename = ('%s.xml' % self.document_number).replace(' ','_')
-        att = self.env['ir.attachment'].search([('name','=', filename), ('res_id','=', self.id), ('res_model','=','account.invoice')], limit=1)
+        filename = ('%s.xml' % self.document_number).replace(' ', '_')
+        att = self.env['ir.attachment'].search(
+                [
+                    ('name', '=', filename),
+                    ('res_id', '=', self.id),
+                    ('res_model', '=', 'account.invoice')
+                ],
+                limit=1,
+            )
         if att:
             return att
         data = base64.b64encode(xml_intercambio)
@@ -1358,28 +1365,32 @@ version="1.0">
 
     @api.multi
     def action_invoice_sent(self):
-        if not self.sii_xml_dte or self.sii_document_class_id or not self.sii_document_class_id.dte or self.state in ['draft']:
+        self.ensure_one()
+        template = self.env.ref('account.email_template_edi_invoice', False)
+        atts = []
+        if template.attachment_ids:
+            for a in template.attachment_ids:
+                if a.res_model != 'acount.invoice':
+                    atts.append(a.id)
+        if not self.sii_xml_dte:
+            template.attachment_ids = [(6, 0, atts)]
             return super(AccountInvoice, self).action_invoice_sent()
         """ Open a window to compose an email, with the edi invoice template
             message loaded by default
         """
-        self.ensure_one()
-        template = self.env.ref('account.email_template_edi_invoice', False)
         compose_form = self.env.ref('mail.email_compose_message_wizard_form', False)
         att = self._create_attachment()
-        atts = []
-        if template.attachment_ids:
-            for a in template.attachment_ids:
-                atts.append(a.id)
-        atts.append((6, 0, [att.id]))
-        template.attachment_ids = atts
+        atts.append(att.id)
+        template.attachment_ids = [(6, 0, atts)]
         ctx = dict(
             default_model='account.invoice',
             default_res_id=self.id,
             default_use_template=bool(template),
-            default_template_id=template.id,
+            default_template_id=template and template.id or False,
             default_composition_mode='comment',
             mark_invoice_as_sent=True,
+            custom_layout="account.mail_template_data_notification_email_account_invoice",
+            force_email=True,
         )
         return {
             'name': _('Compose Email'),
@@ -1406,7 +1417,7 @@ version="1.0">
     def get_xml_exchange_file(self):
         url_path = '/download/xml/invoice_exchange/%s' % (self.id)
         return {
-            'type' : 'ir.actions.act_url',
+            'type': 'ir.actions.act_url',
             'url': url_path,
             'target': 'self',
         }
@@ -1498,6 +1509,7 @@ version="1.0">
                                     'n_atencion': n_atencion,
                                     'send_email': False if self[0].company_id.dte_service_provider=='SIICERT' or not self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
                                     })
+
     @api.multi
     def _es_boleta(self):
         if self.sii_document_class_id.sii_code in [35, 38, 39, 41, 70, 71]:
@@ -1520,7 +1532,7 @@ version="1.0">
         return giros_emisor
 
     def _id_doc(self, taxInclude=False, MntExe=0):
-        IdDoc= collections.OrderedDict()
+        IdDoc = collections.OrderedDict()
         IdDoc['TipoDTE'] = self.sii_document_class_id.sii_code
         IdDoc['Folio'] = self.get_folio()
         IdDoc['FchEmis'] = self.date_invoice
@@ -1664,7 +1676,7 @@ version="1.0">
         OtrosImp = []
         if self._es_exento():
             MntExe = self.currency_id.round(self.amount_total)
-            if  no_product:
+            if no_product:
                 MntExe = 0
             if self.amount_tax > 0:
                 raise UserError("NO pueden ir productos afectos en documentos exentos")
@@ -1727,7 +1739,7 @@ version="1.0">
         folio = self.get_folio()
         result['TED']['DD']['RE'] = self.format_vat(self.company_id.vat)
         result['TED']['DD']['TD'] = self.sii_document_class_id.sii_code
-        result['TED']['DD']['F']  = folio
+        result['TED']['DD']['F'] = folio
         result['TED']['DD']['FE'] = self.date_invoice
         if not self.commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
             raise UserError(_("Fill Partner VAT"))
