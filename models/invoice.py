@@ -329,7 +329,7 @@ class AccountInvoice(models.Model):
             [
                 ('draft', 'Borrador'),
                 ('NoEnviado', 'No Enviado'),
-                ('EnCola','En cola de envío'),
+                ('EnCola', 'En cola de envío'),
                 ('Enviado', 'Enviado'),
                 ('Aceptado', 'Aceptado'),
                 ('Rechazado', 'Rechazado'),
@@ -2066,6 +2066,7 @@ version="1.0">
                     tipo_envio['normal'].append(r.id)
                 if r.sii_xml_request:
                     r.sii_xml_request.unlink()
+                    r.sii_message = ''
             for k, t in tipo_envio.items():
                 if not t:
                     continue
@@ -2142,18 +2143,19 @@ version="1.0">
         for r in self:
             if not r.sii_xml_request and not r.sii_xml_request.sii_send_ident:
                 raise UserError('No se ha enviado aún el documento, aún está en cola de envío interna en odoo')
-            if r.sii_xml_request.state not in [ 'Aceptado', 'Rechazado']:
+            if r.sii_xml_request.state not in ['Aceptado', 'Rechazado']:
                 r.sii_xml_request.get_send_status(r.env.user)
-        try:
-            self._get_dte_status()
-        except Exception as e:
-            _logger.warning("Error al obtener DTE Status: %s" %str(e))
+        if r.sii_xml_request.state in ['Aceptado', 'Rechazado']:
+            try:
+                self._get_dte_status()
+            except Exception as e:
+                _logger.warning("Error al obtener DTE Status: %s" %str(e))
         self.get_sii_result()
 
     def set_dte_claim(self, rut_emisor=False, company_id=False, sii_document_number=False, sii_document_class_id=False, claim=False):
         rut_emisor = rut_emisor or self.format_vat(self.company_id.partner_id.vat)
         company_id = company_id or self.company_id
-        sii_document_number =  sii_document_number or self.sii_document_number or self.reference
+        sii_document_number = sii_document_number or self.sii_document_number or self.reference
         sii_document_class_id = sii_document_class_id or self.sii_document_class_id
         claim = claim or self.claim
         token = self.sii_xml_request.get_token(self.env.user, self.company_id)
