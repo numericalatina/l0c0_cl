@@ -2250,7 +2250,7 @@ version="1.0">
             'model': 'account.invoice',
             'body': body,
             'subject': subject,
-            'attachment_ids': att.ids,
+            'attachment_ids': [[6, 0, att.ids]],
         }
         send_mail = self.env['mail.mail'].sudo().create(values)
         send_mail.send()

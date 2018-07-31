@@ -304,9 +304,9 @@ class UploadXMLWizard(models.TransientModel):
         url_path = '/download/xml/resp/%s' % (id)
         att = self.env['ir.attachment'].search(
             [
-                ('name','=', filename),
-                ('res_id','=', id),
-                ('res_model','=',model)
+                ('name', '=', filename),
+                ('res_id', '=', id),
+                ('res_model', '=', model)
             ],
             limit=1)
         if att:
@@ -375,15 +375,15 @@ class UploadXMLWizard(models.TransientModel):
                     'auto_delete': False,
                     'model': "mail.message.dte",
                     'body': 'XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa'] ),
-                    'subject': 'XML de Respuesta Envío' ,
-                    'attachment_ids': att.ids,
+                    'subject': 'XML de Respuesta Envío',
+                    'attachment_ids': [[6, 0, att.ids]],
                 }
                 send_mail = self.env['mail.mail'].sudo().create(values)
                 send_mail.send()
             self.dte_id.message_post(
-                body='XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa'] ),
-                subject='XML de Respuesta Envío' ,
-                attachment_ids = att.ids,
+                body='XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa']),
+                subject='XML de Respuesta Envío',
+                attachment_ids=att.ids,
                 message_type='comment',
                 subtype='mt_comment',
             )
@@ -415,7 +415,7 @@ class UploadXMLWizard(models.TransientModel):
             'responsability_id': self.env.ref('l10n_cl_fe.res_IVARI').id,
             'document_number': data[rut_path],
             'street': data['Dir%s'%dest],
-            'city':data['Ciudad%s'%dest] if 'Ciudad%s'%dest in data else '',
+            'city': data['Ciudad%s'%dest] if 'Ciudad%s'%dest in data else '',
             'company_type':'company',
         }
         if 'CorreoEmisor' in data or 'CorreRecep' in data:
@@ -1022,7 +1022,7 @@ class UploadXMLWizard(models.TransientModel):
             partner_id.supplier = True
         company_id = self.env['res.company'].search(
             [
-                ('vat','=', self.format_rut(dte['Encabezado']['Receptor']['RUTRecep'])),
+                ('vat', '=', self.format_rut(dte['Encabezado']['Receptor']['RUTRecep'])),
             ],
         )
         data = {

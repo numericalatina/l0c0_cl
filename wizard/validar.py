@@ -63,14 +63,14 @@ class ValidarDTEWizard(models.TransientModel):
 
     def _create_attachment(self, xml, name, id=False, model='account.invoice'):
         data = base64.b64encode(xml.encode('ISO-8859-1'))
-        filename = (name + '.xml').replace(' ','')
-        url_path = '/web/binary/download_document?model='+ model +'\
+        filename = (name + '.xml').replace(' ', '')
+        url_path = '/web/binary/download_document?model=' + model + '\
     &field=sii_xml_request&id=%s&filename=%s' % (id, filename)
         att = self.env['ir.attachment'].search(
             [
-                ('name','=', filename),
-                ('res_id','=', id),
-                ('res_model','=',model)
+                ('name', '=', filename),
+                ('res_id', '=', id),
+                ('res_model', '=',model)
             ],
             limit=1,
         )
@@ -91,7 +91,7 @@ class ValidarDTEWizard(models.TransientModel):
     def _caratula_respuesta(self, RutResponde, RutRecibe, IdRespuesta="1", NroDetalles=0):
         caratula = collections.OrderedDict()
         caratula['RutResponde'] = RutResponde
-        caratula['RutRecibe'] =  RutRecibe
+        caratula['RutRecibe'] = RutRecibe
         caratula['IdRespuesta'] = IdRespuesta
         caratula['NroDetalles'] = NroDetalles
         caratula['NmbContacto'] = self.env.user.partner_id.name
@@ -186,10 +186,10 @@ class ValidarDTEWizard(models.TransientModel):
                         'email_from': doc.company_id.dte_email,
                         'email_to': doc.dte_id.sudo().mail_id.email_from ,
                         'auto_delete': False,
-                        'model' : "mail.message.dte.document",
-                        'body':'XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa'] ),
-                        'subject': 'XML de Respuesta Envío' ,
-                        'attachment_ids': att.ids,
+                        'model': "mail.message.dte.document",
+                        'body': 'XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (resp['EstadoRecepEnv'], resp['RecepEnvGlosa'] ),
+                        'subject': 'XML de Respuesta Envío',
+                        'attachment_ids': [[6, 0, att.ids]],
                     }
                     send_mail = self.env['mail.mail'].create(values)
                     send_mail.send()
@@ -197,7 +197,7 @@ class ValidarDTEWizard(models.TransientModel):
                 body='XML de Rechazo Comercial, Estado: %s, Glosa: %s' % (dte['ResultadoDTE']['EstadoDTE'], dte['ResultadoDTE']['EstadoDTEGlosa']),
                 subject='XML de Validación Comercial',
                 partner_ids=partners,
-                attachment_ids=[ att.id ],
+                attachment_ids=[att.id],
                 message_type='comment',
                 subtype='mt_comment',
             )
@@ -262,7 +262,7 @@ class ValidarDTEWizard(models.TransientModel):
                 body='XML de Validación Comercial, Estado: %s, Glosa: %s' % (dte['ResultadoDTE']['EstadoDTE'], dte['ResultadoDTE']['EstadoDTEGlosa']),
                 subject='XML de Validación Comercial',
                 partner_ids=[inv.partner_id.id],
-                attachment_ids=[ att.id ],
+                attachment_ids=[att.id],
                 message_type='comment',
                 subtype='mt_comment',
             )
@@ -377,7 +377,7 @@ class ValidarDTEWizard(models.TransientModel):
             inv.message_post(
                 body='XML de Recepción de Mercaderías\n %s' % (message),
                 subject='XML de Recepción de Documento',
-                partner_ids=[ inv.partner_id.id ],
+                partner_ids=[inv.partner_id.id],
                 attachment_ids=[ att.id ],
                 message_type='comment',
                 subtype='mt_comment',
