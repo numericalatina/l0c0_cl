@@ -115,8 +115,9 @@
 	</template>
 
 	<template id="boleta_report_layout" name="Consulta Boleta Electrónica">
+		<t t-set="boleta_style" t-value="'margin: auto;width: 100%;background-color: white;padding: 20px;font-size: 10px;'" />
 		<div
-			style="margin: auto;width: 100%;background-color: white;padding: 20px;font-size: 10px;">
+			t-att-style="boleta_style">
 			<t t-foreach="docs" t-as="o">
 				<t t-if="o._name == 'account.invoice'">
 					<t t-call="l10n_cl_fe.report_invoice_document_with_payments" />
