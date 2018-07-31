@@ -7,6 +7,7 @@ from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTF
 import logging
 _logger = logging.getLogger(__name__)
 
+
 class ColaEnvio(models.Model):
     _name = "sii.cola_envio"
 
@@ -85,7 +86,7 @@ class ColaEnvio(models.Model):
 
     @api.model
     def _cron_procesar_cola(self):
-        ids = self.search([('active','=',True)])
+        ids = self.search([('active', '=', True)])
         if ids:
             for c in ids:
                 c._procesar_tipo_trabajo()

@@ -107,6 +107,7 @@ TYPE2JOURNAL = {
     'in_refund': 'purchase',
 }
 
+
 class AccountInvoiceLine(models.Model):
     _inherit = 'account.invoice.line'
 
@@ -138,21 +139,22 @@ class AccountInvoiceLine(models.Model):
     # este campo es innecesario a partir de V11
     price_tax_included = fields.Monetary(string='Amount', readonly=True, compute='_compute_price')
 
+
 class Referencias(models.Model):
     _name = 'account.invoice.referencias'
 
     origen = fields.Char(
             string="Origin",
             )
-    sii_referencia_TpoDocRef =  fields.Many2one(
+    sii_referencia_TpoDocRef = fields.Many2one(
             'sii.document_class',
             string="SII Reference Document Type",
         )
     sii_referencia_CodRef = fields.Selection(
             [
-                ('1','Anula Documento de Referencia'),
-                ('2','Corrige texto Documento Referencia'),
-                ('3','Corrige montos')
+                ('1', 'Anula Documento de Referencia'),
+                ('2', 'Corrige texto Documento Referencia'),
+                ('3', 'Corrige montos')
             ],
             string="SII Reference Code",
         )
@@ -1317,27 +1319,8 @@ version="1.0">
         envio = self._crear_envio(RUTRecep=rut)
         return envio['xml_envio'].encode('ISO-8859-1')
 
-    ''' Código para realizar migración de la versión 9.0.5.2.0, a la 9.0.5.3.0, se eliminará en 9.0.6.0.0'''
-    def _read_xml(self, mode="text"):
-        if self.sii_xml_request.xml_envio:
-            xml = self.sii_xml_request.xml_envio.decode('ISO-8859-1').replace('<?xml version="1.0" encoding="ISO-8859-1"?>','')
-        if mode == "etree":
-            return etree.fromstring(xml)
-        if mode == "parse":
-            return xmltodict.parse(xml)
-        return xml
-
     def _create_attachment(self,):
-        try:
-            xml_intercambio = self.crear_intercambio()
-        except:
-            #Código compatibilidad
-            if self.sii_xml_request and not self.sii_xml_dte:
-                xml = self._read_xml("etree")
-                envio = xml.find("{http://www.sii.cl/SiiDte}SetDTE")
-                if envio:
-                    self.sii_xml_dte = etree.tostring(envio.findall("{http://www.sii.cl/SiiDte}DTE")[0])
-            xml_intercambio = self.crear_intercambio()
+        xml_intercambio = self.crear_intercambio()
         url_path = '/download/xml/invoice/%s' % (self.id)
         filename = ('%s.xml' % self.document_number).replace(' ', '_')
         att = self.env['ir.attachment'].search(
@@ -1995,17 +1978,17 @@ version="1.0">
             if not inv.sii_document_class_id.sii_code in clases:
                 clases[inv.sii_document_class_id.sii_code] = []
             clases[inv.sii_document_class_id.sii_code].extend([{
-                                                'id':inv.id,
+                                                'id': inv.id,
                                                 'envio': inv.sii_xml_dte,
                                                 'sii_batch_number': inv.sii_batch_number,
-                                                'sii_document_number':inv.sii_document_number
+                                                'sii_document_number': inv.sii_document_number
                                             }])
             if not company_id:
                 company_id = inv.company_id
             elif company_id.id != inv.company_id.id:
                 raise UserError("Está combinando compañías, no está permitido hacer eso en un envío")
         file_name = ""
-        dtes={}
+        dtes = {}
         SubTotDTE = ''
         resol_data = self.get_resolution_data(company_id)
         signature_d = self.env.user.get_digital_signature(company_id)
@@ -2020,7 +2003,7 @@ version="1.0">
                 file_name += 'F' + str(int(documento['sii_document_number'])) + 'T' + str(id_class_doc)
             SubTotDTE += '<SubTotDTE>\n<TpoDTE>' + str(id_class_doc) + '</TpoDTE>\n<NroDTE>'+str(NroDte)+'</NroDTE>\n</SubTotDTE>\n'
         file_name += ".xml"
-        documentos =""
+        documentos = ""
         for key in sorted(dtes.keys(), key=lambda r: int(r[0])):
             documentos += '\n'+dtes[key]
         # firma del sobre
