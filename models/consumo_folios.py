@@ -96,6 +96,7 @@ connection_status = {
     'Otro': 'Error Interno.',
 }
 
+
 class ConsumoFolios(models.Model):
     _name = "account.move.consumo_folios"
 
@@ -942,6 +943,7 @@ version="1.0">
             if self.state != 'Proceso':
                 return status
 
+
 class DetalleCOnsumoFolios(models.Model):
     _name = "account.move.consumo_folios.detalles"
 
@@ -953,6 +955,7 @@ class DetalleCOnsumoFolios(models.Model):
     folio_inicio = fields.Integer(string="Folio Inicio")
     folio_final = fields.Integer(string="Folio Final")
     cantidad = fields.Integer(string="Cantidad Emitidos")
+
 
 class DetalleImpuestos(models.Model):
     _name = "account.move.consumo_folios.impuestos"
@@ -972,6 +975,7 @@ class DetalleImpuestos(models.Model):
         default=lambda self: self.env.user.company_id.currency_id,
         required=True,
         track_visibility='always')
+
 
 class Anulaciones(models.Model):
     _name = 'account.move.consumo_folios.anulaciones'
