@@ -2241,7 +2241,7 @@ version="1.0">
             message_type='comment',
             subtype='mt_comment',
         )
-        if self.commercial_partner_id.dte_email == self.commercial_partner_id.email:
+        if not self.commercial_partner_id.dte_email or self.commercial_partner_id.dte_email == self.commercial_partner_id.email:
             return
         values = {
             'email_from': self.company_id.dte_email,
