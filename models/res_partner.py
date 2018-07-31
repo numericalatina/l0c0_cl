@@ -113,7 +113,7 @@ class ResPartner(models.Model):
             self.vat = ''
 
     @api.onchange('city_id')
-    def _asign_city(self):
+    def _onchange_city_id(self):
         if self.city_id:
             self.country_id = self.city_id.state_id.country_id.id
             self.state_id = self.city_id.state_id.id
