@@ -9,7 +9,6 @@ from odoo.tools.translate import _
 import logging
 _logger = logging.getLogger(__name__)
 
-import xml.dom.minidom
 import pytz
 from six import string_types
 import struct
@@ -593,7 +592,7 @@ class AccountInvoice(models.Model):
     def porcentaje_dr(self):
         if not self.global_descuentos_recargos:
             return 1
-        taxes = super(AccountInvoice,self).get_taxes_values()
+        taxes = super(AccountInvoice, self).get_taxes_values()
         afecto = 0.00
         exento = 0.00
         porcentaje = 0.00
@@ -610,9 +609,9 @@ class AccountInvoice(models.Model):
         if monto == 0:
             return 1
         porcentaje = (100.0 * monto) / afecto
-        return  1 + (porcentaje /100.0)
+        return 1 + (porcentaje /100.0)
 
-    def _get_grouped_taxes(self, line, taxes,tax_grouped={}):
+    def _get_grouped_taxes(self, line, taxes, tax_grouped={}):
         for tax in taxes:
             val = self._prepare_tax_line_vals(line, tax)
             # If the taxes generate moves on the same financial account as the invoice line,
@@ -1711,7 +1710,7 @@ version="1.0">
         if self.currency_id and self.company_id and self.currency_id != self.company_id.currency_id:
             currency_id = self.currency_id.with_context(date=self.date_invoice)
         MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase = self._totales(MntExe, no_product, taxInclude)
-        Encabezado['Totales'] = self._totales_normal( currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
+        Encabezado['Totales'] = self._totales_normal(currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
         if currency_id:
             Encabezado['OtraMoneda'] = self._totales_otra_moneda( currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
         return Encabezado
