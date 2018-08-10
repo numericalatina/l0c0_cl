@@ -1967,7 +1967,7 @@ version="1.0">
             if not inv.sii_batch_number or inv.sii_batch_number == 0:
                 batch += 1
                 inv.sii_batch_number = batch #si viene una guía/nota regferenciando una factura, que por numeración viene a continuación de la guia/nota, será recahazada laguía porque debe estar declarada la factura primero
-            if inv.sii_batch_number !=0 and inv._es_boleta():
+            if inv.sii_batch_number != 0 and inv._es_boleta():
                 if not es_boleta and clases:
                     raise UserError('No se puede hacer envío masivo con contenido mixto, para este envío solamente boleta electrónica, boleta exenta electrónica o NC de Boleta ( o eliminar los casos descitos del set)')
                 es_boleta = True
@@ -1999,11 +1999,11 @@ version="1.0">
                     raise UserError("No se puede repetir el mismo número de orden")
                 dtes.update({str(documento['sii_batch_number']): documento['envio']})
                 NroDte += 1
-                file_name += 'F' + str(int(documento['sii_document_number'])) + 'T' + str(id_class_doc)
+                file_name += 'F' + str(documento['sii_document_number']) + 'T' + str(id_class_doc)
             SubTotDTE += '<SubTotDTE>\n<TpoDTE>' + str(id_class_doc) + '</TpoDTE>\n<NroDTE>'+str(NroDte)+'</NroDTE>\n</SubTotDTE>\n'
         file_name += ".xml"
         documentos = ""
-        for key in sorted(dtes.keys(), key=lambda r: int(r[0])):
+        for key in sorted(dtes.keys(), key=lambda r: int(r)):
             documentos += '\n'+dtes[key]
         # firma del sobre
         dtes = self.create_template_envio(
