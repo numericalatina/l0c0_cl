@@ -518,11 +518,11 @@ class AccountInvoice(models.Model):
                 if tax.tax_id.price_include:
                     included = True
                 amount_tax += tax.amount
-                amount_retencion  += tax.amount_retencion
+                amount_retencion += tax.amount_retencion
             inv.amount_retencion = amount_retencion
             if included:
                 neto += inv.tax_line_ids._getNeto(inv.currency_id)
-                amount_retencion  += amount_retencion
+                amount_retencion += amount_retencion
             else:
                 neto += sum(line.price_subtotal for line in inv.invoice_line_ids)
             inv.amount_untaxed = neto
@@ -1740,7 +1740,7 @@ version="1.0">
         result['TED']['DD']['CAF'] = resultcaf['AUTORIZACION']['CAF']
         dte = result['TED']['DD']
         timestamp = self.time_stamp()
-        if date( int(timestamp[:4]), int(timestamp[5:7]), int(timestamp[8:10])) < date(int(self.date[:4]), int(self.date[5:7]), int(self.date[8:10])):
+        if date(int(timestamp[:4]), int(timestamp[5:7]), int(timestamp[8:10])) < date(int(self.date_invoice[:4]), int(self.date_invoice[5:7]), int(self.date_invoice[8:10])):
             raise UserError("La fecha de timbraje no puede ser menor a la fecha de emisión del documento")
         dte['TSTED'] = timestamp
         dicttoxml.set_debug(False)

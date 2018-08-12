@@ -416,7 +416,7 @@ class UploadXMLWizard(models.TransientModel):
             'document_number': data[rut_path],
             'street': data['Dir%s'%dest],
             'city': data['Ciudad%s'%dest] if 'Ciudad%s'%dest in data else '',
-            'company_type':'company',
+            'company_type': 'company',
         }
         if 'CorreoEmisor' in data or 'CorreRecep' in data:
             data.update(
