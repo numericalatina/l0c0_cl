@@ -1760,13 +1760,15 @@ version="1.0">
             '''<TED version="1.0">{}<FRMT algoritmo="SHA1withRSA">{}\
 </FRMT></TED>''').format(ddxml.decode(), frmt)
         self.sii_barcode = ted
-        ted  += '<TmstFirma>{}</TmstFirma>'.format(timestamp)
+        ted += '<TmstFirma>{}</TmstFirma>'.format(timestamp)
         return ted
 
     @api.multi
     def is_price_included(self):
+        if not self.invoice_line_ids or not self.invoice_line_ids[0].invoice_line_tax_ids:
+            return False
         tax = self.invoice_line_ids[0].invoice_line_tax_ids[0]
-        if tax.price_include or ( not tax.sii_detailed and (self._es_boleta() or self._nc_boleta()) ):
+        if tax.price_include or (not tax.sii_detailed and (self._es_boleta() or self._nc_boleta()) ):
             return True
         return False
 
