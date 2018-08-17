@@ -618,7 +618,18 @@ class UploadXMLWizard(models.TransientModel):
                 'price_unit': price,
                 'price_subtotal': price_subtotal,
                 })
-
+            if not product_id:
+                IndExe = line.find("IndExe")
+                amount = 0
+                sii_code = 0
+                sii_type = False
+                if not IndExe:
+                    amount = 19
+                    sii_code = 14
+                    sii_type = False
+                imp = self._buscar_impuesto(amount=amount, sii_code=sii_code, sii_type=sii_type, IndExe=IndExe)
+                if imp:
+                    data['invoice_line_tax_ids'] = [(6, 0, imp.ids)]
         return [0,0, data]
 
     def _create_tpo_doc(self, TpoDocRef, RazonRef=''):
@@ -994,68 +1005,87 @@ class UploadXMLWizard(models.TransientModel):
             wiz_accept.confirm()
         return created
 
-    def prepare_purchase_line(self, line, date_planned):
-        product = self.env['product.product'].search([('name','=',line['NmbItem'])], limit=1)
+    def prepare_purchase_line(self, line, document_id, date_planned, price_included=False):
+        product = self._buscar_producto(document_id, line, price_included)
         if not product:
-            product = self._create_prod(line)
+            return False
+        if isinstance(product, int):
+            product = self.env['product.product'].browse(product)
+        if line.find("MntExe") is not None:
+            price_subtotal = float(line.find("MntExe").text)
+        else :
+            price_subtotal = float(line.find("MontoItem").text)
+        discount = 0
+        if line.find("DescuentoPct") is not None:
+            discount = float(line.find("DescuentoPct").text)
+        price = float(line.find("PrcItem").text) if line.find("PrcItem") is not None else price_subtotal
+        DescItem = line.find("DescItem")
         values = {
-            'name': line['DescItem'] if 'DescItem' in line else line['NmbItem'],
+            'name': DescItem.text if DescItem is not None else line.find("NmbItem").text,
             'product_id': product.id,
             'product_uom': product.uom_id.id,
             'taxes_id': [(6, 0, product.supplier_taxes_id.ids)],
-            'price_unit': float(line['PrcItem'] if 'PrcItem' in line else line['MontoItem']),
-            'product_qty': line['QtyItem'],
+            'price_unit': price,
+            'discount': discount,
+            'product_qty': line.find("QtyItem").text if line.find("QtyItem") is not None else 1,
             'date_planned': date_planned,
         }
-        return values
+        return (0, 0, values)
 
-    def _create_po(self, dte):
+    def _purchase_exist(self, purchase_vals, partner):
         purchase_model = self.env['purchase.order']
-        partner_id = self.env['res.partner'].search([
-            ('active','=', True),
-            ('parent_id', '=', False),
-            ('vat','=', self.format_rut(dte['Encabezado']['Emisor']['RUTEmisor'])),
-        ])
-        if not partner_id:
-            partner_id = self._create_partner(dte['Encabezado']['Emisor'])
-        elif not partner_id.supplier:
-            partner_id.supplier = True
-        company_id = self.env['res.company'].search(
-            [
-                ('vat', '=', self.format_rut(dte['Encabezado']['Receptor']['RUTRecep'])),
-            ],
-        )
-        data = {
-            'partner_ref' : dte['Encabezado']['IdDoc']['Folio'],
-            'date_order' :dte['Encabezado']['IdDoc']['FchEmis'],
-            'partner_id' : partner_id.id,
-            'company_id' : company_id.id,
-        }
         #antes de crear la OC, verificar que no exista otro documento con los mismos datos
         other_orders = purchase_model.search([
-            ('partner_id','=', data['partner_id']),
-            ('partner_ref','=', data['partner_ref']),
-            ('company_id','=', data['company_id']),
+            ('partner_id','=', purchase_vals['partner_id']),
+            ('partner_ref','=', purchase_vals['partner_ref']),
+            ('company_id','=', purchase_vals['company_id']),
             ])
         if other_orders:
             raise UserError("Ya existe un Pedido de compra con Referencia: %s para el Proveedor: %s.\n" \
                             "No se puede crear nuevamente, por favor verifique." %
-                            (data['partner_ref'], partner_id.name))
+                            (purchase_vals['partner_ref'], partner.name))
+        
+    def _prepare_purchase(self, documento, company, partner):
+        Encabezado = documento.find("Encabezado")
+        IdDoc = Encabezado.find("IdDoc")
+        purchase_vals = {
+            'partner_ref' : IdDoc.find("Folio").text,
+            'date_order' : IdDoc.find("FchEmis").text,
+            'partner_id' : partner.id,
+            'company_id' : company.id,
+        }
+        return purchase_vals
+        
+    def _create_po(self, documento, company):
+        purchase_model = self.env['purchase.order']
+        path_rut = "Encabezado/Emisor/RUTEmisor"
+        RUT = documento.find(path_rut).text
+        string = etree.tostring(documento)
+        dte = xmltodict.parse( string )['Documento']
+        Encabezado = documento.find("Encabezado")
+        price_included = Encabezado.find("MntBruto")
+        partner = self.env['res.partner'].search([
+            ('active','=', True),
+            ('parent_id', '=', False),
+            ('vat','=', self.format_rut(RUT)),
+        ])
+        if not partner:
+            partner = self._create_partner(dte['Encabezado']['Emisor'])
+        elif not partner.supplier:
+            partner.supplier = True
+        purchase_vals = self._prepare_purchase(documento, company, partner)
+        self._purchase_exist(purchase_vals, partner)
+        document_id = self._dte_exist(documento)
         lines = [(5,)]
-        vals_line = {}
-        detalles = dte['Detalle']
-        #cuando es un solo producto, no viene una lista sino un diccionario
-        #asi que tratarlo como una lista de un solo elemento
-        #para evitar error en la esructura que siempre espera una lista
-        if isinstance(dte['Detalle'], dict):
-            detalles = [dte['Detalle']]
-        for line in detalles:
-            vals_line = self.prepare_purchase_line(line, dte['Encabezado']['IdDoc']['FchEmis'])
-            if vals_line:
-                lines.append([0, 0, vals_line])
-
-        data['order_line'] = lines
-        po = purchase_model.create(data)
+        for line in documento.findall("Detalle"):
+            new_line = self.prepare_purchase_line(line, document_id, purchase_vals['date_order'], price_included=price_included)
+            if new_line:
+                lines.append(new_line)
+        if not lines:
+            _logger.warning("No se pudo crear el Pedido de compra xq no hay lineas, verifique si los productos existen en su sistema")
+            return False
+        purchase_vals['order_line'] = lines
+        po = purchase_model.create(purchase_vals)
         po.button_confirm()
         inv = self.env['account.invoice'].search([('purchase_id', '=', po.id)])
         #inv.sii_document_class_id = dte['Encabezado']['IdDoc']['TipoDTE']
@@ -1065,7 +1095,14 @@ class UploadXMLWizard(models.TransientModel):
         #self.validate()
         dtes = self._get_dtes()
         for dte in dtes:
-            if dte['Documento']['Encabezado']['IdDoc']['TipoDTE'] in ['34', '33']:
-                self._create_po(dte['Documento'])
-            elif dte['Documento']['Encabezado']['IdDoc']['TipoDTE'] in ['56','61']: # es una nota
-                self._create_inv(dte['Documento'])
+            documento = dte.find("Documento")
+            path_rut = "Encabezado/Receptor/RUTRecep"
+            company = self.env['res.company'].search([
+                ('vat', '=', self.format_rut(documento.find(path_rut).text)),
+                ], limit=1)
+            tipo_dte = documento.find("Encabezado/IdDoc/TipoDTE").text
+            if tipo_dte in ['34', '33']:
+                self._create_po(documento, company)
+            elif tipo_dte in ['56','61']: # es una nota
+                self._create_inv(documento, company)
+
