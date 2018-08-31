@@ -788,6 +788,14 @@ class UploadXMLWizard(models.TransientModel):
             limit=1,
         )
         return journal_sii
+    
+    def _get_invoice_lines(self, documento, document_id, account_id, invoice_type, price_included):
+        lines = []
+        for line in documento.findall("Detalle"):
+            new_line = self._prepare_line(line, document_id, account_id, invoice_type, price_included)
+            if new_line:
+                lines.append(new_line)
+        return lines
 
     def _get_data(self, documento, company_id):
         string = etree.tostring(documento)
@@ -802,10 +810,7 @@ class UploadXMLWizard(models.TransientModel):
         data = self._prepare_invoice(documento, company_id, journal_document_class_id)
         lines = [(5,)]
         document_id = self._dte_exist(documento)
-        for line in documento.findall("Detalle"):
-            new_line = self._prepare_line(line, document_id=document_id, account_id=data['account_id'], type=data['type'], price_included=price_included)
-            if new_line:
-                lines.append(new_line)
+        lines.extend(self._get_invoice_lines(documento, document_id, data['account_id'], data['type'], price_included))
         product_id = self.env['product.product'].search([
                 ('product_tmpl_id', '=', self.env.ref('l10n_cl_fe.product_imp').id),
             ]
