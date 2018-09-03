@@ -31,8 +31,8 @@ class ValidarDTEWizard(models.TransientModel):
 
     action = fields.Selection(
         [
-            ('receipt','Recibo de mercaderías'),
-            ('validate','Aprobar comercialmente'),
+            ('receipt', 'Recibo de mercaderías'),
+            ('validate', 'Aprobar comercialmente'),
         ],
         string="Acción",
         default="validate",

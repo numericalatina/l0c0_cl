@@ -329,7 +329,7 @@ class UploadXMLWizard(models.TransientModel):
            return True
         company_id = self.env['res.company'].search(
             [
-                ('vat','=', self.format_rut(envio['SetDTE']['Caratula']['RutReceptor']))
+                ('vat', '=', self.format_rut(envio['SetDTE']['Caratula']['RutReceptor']))
             ],
             limit=1)
         id_seq = self.env.ref('l10n_cl_fe.response_sequence').id
@@ -355,7 +355,7 @@ class UploadXMLWizard(models.TransientModel):
             caratula_recepcion_envio,
             root=False,
             attr_type=False,
-        ).decode().replace('<item>', '\n').replace('</item>','\n')
+        ).decode().replace('<item>', '\n').replace('</item>', '\n')
         resp = self._RecepcionEnvio(caratula, RecepcionEnvio )
         respuesta = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'+self.env['account.invoice'].with_context({'user_id': SUPERUSER_ID, 'company_id': company_id.id}).sign_full_xml(
             resp.replace('<?xml version="1.0" encoding="ISO-8859-1"?>\n', ''),
@@ -371,7 +371,7 @@ class UploadXMLWizard(models.TransientModel):
                 values = {
                     'model_id': self.dte_id.id,
                     'email_from': self.dte_id.company_id.dte_email,
-                    'email_to': self.sudo().dte_id.mail_id.email_from ,
+                    'email_to': self.sudo().dte_id.mail_id.email_from,
                     'auto_delete': False,
                     'model': "mail.message.dte",
                     'body': 'XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa'] ),
@@ -383,7 +383,7 @@ class UploadXMLWizard(models.TransientModel):
             self.dte_id.message_post(
                 body='XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa']),
                 subject='XML de Respuesta Envío',
-                attachment_ids=att.ids,
+                attachment_ids=[[6, 0, att.ids]],
                 message_type='comment',
                 subtype='mt_comment',
             )
@@ -394,7 +394,7 @@ class UploadXMLWizard(models.TransientModel):
         type = "Emis"
         if self.type == 'ventas':
             type = "Recep"
-        giro_id = self.env['sii.activity.description'].search([('name','=',data['Giro%s'%type])])
+        giro_id = self.env['sii.activity.description'].search([('name', '=', data['Giro%s'%type])])
         if not giro_id:
             giro_id = self.env['sii.activity.description'].create({
                 'name': data['Giro%s'%type],
@@ -465,7 +465,7 @@ class UploadXMLWizard(models.TransientModel):
                 'name': name,
                 'sii_code': sii_code,
                 'sii_type': sii_type,
-                'type_tax_use': 'purchase',
+                'type_tax_use': 'purchase' if self.type == 'compras' else 'sale',
             } )
         return imp
 
@@ -691,9 +691,9 @@ class UploadXMLWizard(models.TransientModel):
         Emisor = Encabezado.find(type)
         RUT = Emisor.find(rut_path).text
         string = etree.tostring(documento)
-        dte = xmltodict.parse( string )['Documento']
+        dte = xmltodict.parse(string)['Documento']
         invoice = {
-                'account_id':False,
+                'account_id': False,
             }
         partner_id = self.env['res.partner'].search(
             [
@@ -727,7 +727,9 @@ class UploadXMLWizard(models.TransientModel):
             name = self.filename.decode('ISO-8859-1').encode('UTF-8')
         except:
             name = self.filename.encode('UTF-8')
-        ted_string = etree.tostring(documento.find("TED"), method="c14n", pretty_print=False)
+        ted_string = b''
+        if documento.find("TED") is not None:
+            ted_string = etree.tostring(documento.find("TED"), method="c14n", pretty_print=False)
         FchEmis = IdDoc.find("FchEmis").text
         xml_envio = self.env['sii.xml.envio'].create(
             {
@@ -1049,7 +1051,7 @@ class UploadXMLWizard(models.TransientModel):
             raise UserError("Ya existe un Pedido de compra con Referencia: %s para el Proveedor: %s.\n" \
                             "No se puede crear nuevamente, por favor verifique." %
                             (purchase_vals['partner_ref'], partner.name))
-        
+
     def _prepare_purchase(self, documento, company, partner):
         Encabezado = documento.find("Encabezado")
         IdDoc = Encabezado.find("IdDoc")
@@ -1060,7 +1062,7 @@ class UploadXMLWizard(models.TransientModel):
             'company_id' : company.id,
         }
         return purchase_vals
-        
+
     def _create_po(self, documento, company):
         purchase_model = self.env['purchase.order']
         path_rut = "Encabezado/Emisor/RUTEmisor"
