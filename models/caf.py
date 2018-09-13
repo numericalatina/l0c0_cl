@@ -212,7 +212,7 @@ www.sii.cl'''.format(folio)
         if not self.dte_caf_ids:
             raise UserError(_('''No hay CAFs disponibles para la secuencia de %s. Por favor suba un CAF o solicite uno en el SII.''' % (self.name)))
         cafs = self.dte_caf_ids
-        sorted(cafs, key=lambda e: e.start_nm)
+        cafs = sorted(cafs, key=lambda e: e.start_nm)
         result = []
         for caffile in cafs:
             if int(folio) <= caffile.final_nm:
