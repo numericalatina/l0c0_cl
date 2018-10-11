@@ -394,6 +394,8 @@ class UploadXMLWizard(models.TransientModel):
         type = "Emis"
         if self.type == 'ventas':
             type = "Recep"
+            if data.get('RUT%s' % type) in [False, '66666666-6', '00000000-0']:
+                return self.env.ref('l10n_cl_fe.par_cfa')
         giro_id = self.env['sii.activity.description'].search([('name', '=', data['Giro%s'%type])])
         if not giro_id:
             giro_id = self.env['sii.activity.description'].create({
