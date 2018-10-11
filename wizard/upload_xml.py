@@ -21,8 +21,8 @@ class UploadXMLWizard(models.TransientModel):
 
     action = fields.Selection(
         [
-            ('create_po','Crear Orden de Pedido y Factura'),
-            ('create','Crear Solamente Factura'),
+            ('create_po', 'Crear Orden de Pedido y Factura'),
+            ('create', 'Crear Solamente Factura'),
         ],
         string="Acción",
         default="create",
@@ -506,6 +506,8 @@ class UploadXMLWizard(models.TransientModel):
         default_code = False
         CdgItem = line.find("CdgItem")
         NmbItem = line.find("NmbItem").text
+        if NmbItem.isspace():
+            NmbItem = 'Producto Genérico'
         if document_id:
             code = ' ' + etree.tostring(CdgItem).decode() if CdgItem is not None else ''
             line_id = self.env['mail.message.dte.document.line'].search(
@@ -587,7 +589,7 @@ class UploadXMLWizard(models.TransientModel):
             return False
         if line.find("MntExe") is not None:
             price_subtotal = float(line.find("MntExe").text)
-        else :
+        else:
             price_subtotal = float(line.find("MontoItem").text)
         discount = 0
         if line.find("DescuentoPct") is not None:
@@ -790,7 +792,7 @@ class UploadXMLWizard(models.TransientModel):
             limit=1,
         )
         return journal_sii
-    
+
     def _get_invoice_lines(self, documento, document_id, account_id, invoice_type, price_included):
         lines = []
         for line in documento.findall("Detalle"):
@@ -1068,13 +1070,13 @@ class UploadXMLWizard(models.TransientModel):
         path_rut = "Encabezado/Emisor/RUTEmisor"
         RUT = documento.find(path_rut).text
         string = etree.tostring(documento)
-        dte = xmltodict.parse( string )['Documento']
+        dte = xmltodict.parse(string )['Documento']
         Encabezado = documento.find("Encabezado")
         price_included = Encabezado.find("MntBruto")
         partner = self.env['res.partner'].search([
-            ('active','=', True),
+            ('active', '=', True),
             ('parent_id', '=', False),
-            ('vat','=', self.format_rut(RUT)),
+            ('vat', '=', self.format_rut(RUT)),
         ])
         if not partner:
             partner = self._create_partner(dte['Encabezado']['Emisor'])
