@@ -530,6 +530,9 @@ class UploadXMLWizard(models.TransientModel):
         if CdgItem is not None:
             for c in line.findall("CdgItem"):
                 VlrCodigo = c.find("VlrCodigo")
+                if VlrCodigo is None or VlrCodigo.text is None or\
+                        VlrCodigo.isspace():
+                    continue
                 TpoCodigo = c.find("TpoCodigo").text
                 if TpoCodigo == 'ean13':
                     query = [('barcode', '=', VlrCodigo.text)]
