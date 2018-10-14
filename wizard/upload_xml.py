@@ -775,10 +775,14 @@ class UploadXMLWizard(models.TransientModel):
                 'state': 'open',
             })
         else:
+            if Emisor.find("RznSoc") is not None:
+                RznSoc = Emisor.find("RznSoc")
+            else:
+                RznSoc = Emisor.find("RznSocEmisor")
             invoice.update({
                 'number': Folio,
                 'date': FchEmis,
-                'new_partner': RUT + ' ' + Emisor.find("RznSoc").text,
+                'new_partner': RUT + ' ' + RznSoc.text,
                 'sii_document_class_id': journal_document_class_id.sii_document_class_id.id,
                 'amount': dte['Encabezado']['Totales']['MntTotal'],
             })
@@ -808,7 +812,7 @@ class UploadXMLWizard(models.TransientModel):
 
     def _get_data(self, documento, company_id):
         string = etree.tostring(documento)
-        dte = xmltodict.parse( string )['Documento']
+        dte = xmltodict.parse(string)['Documento']
         Encabezado = documento.find("Encabezado")
         IdDoc = Encabezado.find("IdDoc")
         price_included = Encabezado.find("MntBruto")
@@ -916,13 +920,19 @@ class UploadXMLWizard(models.TransientModel):
         encabezado = documento.find("Encabezado")
         Emisor = encabezado.find("Emisor")
         IdDoc = encabezado.find("IdDoc")
+        new_partner = Emisor.find("RUTEmisor").text
+        if Emisor.find("RznSoc") is not None:
+            RznSoc = Emisor.find("RznSoc")
+        else:
+            RznSoc = Emisor.find("RznSocEmisor")
+        new_partner += ' ' + RznSoc.text
         return self.env['mail.message.dte.document'].search(
             [
                 ('number', '=', IdDoc.find("Folio").text),
                 ('sii_document_class_id.sii_code', '=', IdDoc.find("TipoDTE").text),
                 '|',
                 ('partner_id.vat', '=', self.format_rut(Emisor.find("RUTEmisor").text)),
-                ('new_partner', '=', Emisor.find("RUTEmisor").text + ' ' + Emisor.find("RznSoc").text),
+                ('new_partner', '=', new_partner),
             ]
         )
 
