@@ -21,8 +21,8 @@ class UploadXMLWizard(models.TransientModel):
 
     action = fields.Selection(
         [
-            ('create_po', 'Crear Orden de Pedido y Factura'),
-            ('create', 'Crear Solamente Factura'),
+            ('create_po','Crear Orden de Pedido y Factura'),
+            ('create','Crear Solamente Factura'),
         ],
         string="Acción",
         default="create",
@@ -396,10 +396,10 @@ class UploadXMLWizard(models.TransientModel):
             type = "Recep"
             if data.get('RUT%s' % type) in [False, '66666666-6', '00000000-0']:
                 return self.env.ref('l10n_cl_fe.par_cfa')
-        giro_id = self.env['sii.activity.description'].search([('name', '=', data['Giro%s'%type])])
+        giro_id = self.env['sii.activity.description'].search([('name', '=', data.get('Giro%s'%type, 'Boleta'))])
         if not giro_id:
             giro_id = self.env['sii.activity.description'].create({
-                'name': data['Giro%s'%type],
+                'name': data.get('Giro%s'%type, 'Boleta'),
             })
         type = 'Emisor'
         dest = 'Origen'
@@ -409,8 +409,9 @@ class UploadXMLWizard(models.TransientModel):
             dest = 'Recep'
             rut_path = 'RUTRecep'
         rut = self.format_rut(data[rut_path])
+        name = (data.get('RznSoc') or data.get('RznSocEmisor')) if self.type=="compras" else data['RznSocRecep']
         data = {
-            'name': data['RznSoc'] if self.type=="compras" else data['RznSocRecep'],
+            'name': name,
             'activity_description': giro_id.id,
             'vat': rut,
             'document_type_id': self.env.ref('l10n_cl_fe.dt_RUT').id,
@@ -508,8 +509,6 @@ class UploadXMLWizard(models.TransientModel):
         default_code = False
         CdgItem = line.find("CdgItem")
         NmbItem = line.find("NmbItem").text
-        if NmbItem.isspace():
-            NmbItem = 'Producto Genérico'
         if document_id:
             code = ' ' + etree.tostring(CdgItem).decode() if CdgItem is not None else ''
             line_id = self.env['mail.message.dte.document.line'].search(
@@ -530,9 +529,6 @@ class UploadXMLWizard(models.TransientModel):
         if CdgItem is not None:
             for c in line.findall("CdgItem"):
                 VlrCodigo = c.find("VlrCodigo")
-                if VlrCodigo is None or VlrCodigo.text is None or\
-                        VlrCodigo.isspace():
-                    continue
                 TpoCodigo = c.find("TpoCodigo").text
                 if TpoCodigo == 'ean13':
                     query = [('barcode', '=', VlrCodigo.text)]
@@ -594,7 +590,7 @@ class UploadXMLWizard(models.TransientModel):
             return False
         if line.find("MntExe") is not None:
             price_subtotal = float(line.find("MntExe").text)
-        else:
+        else :
             price_subtotal = float(line.find("MontoItem").text)
         discount = 0
         if line.find("DescuentoPct") is not None:
@@ -775,14 +771,10 @@ class UploadXMLWizard(models.TransientModel):
                 'state': 'open',
             })
         else:
-            if Emisor.find("RznSoc") is not None:
-                RznSoc = Emisor.find("RznSoc")
-            else:
-                RznSoc = Emisor.find("RznSocEmisor")
             invoice.update({
                 'number': Folio,
                 'date': FchEmis,
-                'new_partner': RUT + ' ' + RznSoc.text,
+                'new_partner': RUT + ' ' + Emisor.find("RznSoc").text,
                 'sii_document_class_id': journal_document_class_id.sii_document_class_id.id,
                 'amount': dte['Encabezado']['Totales']['MntTotal'],
             })
@@ -812,7 +804,7 @@ class UploadXMLWizard(models.TransientModel):
 
     def _get_data(self, documento, company_id):
         string = etree.tostring(documento)
-        dte = xmltodict.parse(string)['Documento']
+        dte = xmltodict.parse( string )['Documento']
         Encabezado = documento.find("Encabezado")
         IdDoc = Encabezado.find("IdDoc")
         price_included = Encabezado.find("MntBruto")
@@ -921,11 +913,10 @@ class UploadXMLWizard(models.TransientModel):
         Emisor = encabezado.find("Emisor")
         IdDoc = encabezado.find("IdDoc")
         new_partner = Emisor.find("RUTEmisor").text
-        if Emisor.find("RznSoc") is not None:
-            RznSoc = Emisor.find("RznSoc")
+        if Emisor.find("RznSoc"):
+            new_partner +=  ' ' + Emisor.find("RznSoc").text
         else:
-            RznSoc = Emisor.find("RznSocEmisor")
-        new_partner += ' ' + RznSoc.text
+            new_partner +=  ' ' + Emisor.find("RznSocEmisor").text
         return self.env['mail.message.dte.document'].search(
             [
                 ('number', '=', IdDoc.find("Folio").text),
