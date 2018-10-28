@@ -965,18 +965,17 @@ a VAT."""))
                     prefix = obj_inv.journal_document_class_id.sii_document_class_id.doc_code_prefix or ''
                     move_name = (prefix + str(sii_document_number)).replace(' ','')
                     obj_inv.write({'move_name': move_name})
-                elif invtype in ('in_invoice', 'in_refund'):
-                    sii_document_number = obj_inv.reference
         super(AccountInvoice, self).action_move_create()
         for obj_inv in self:
             invtype = obj_inv.type
-            if obj_inv.journal_document_class_id and not obj_inv.sii_document_number:
-                obj_inv.write({'sii_document_number': sii_document_number})
+            if invtype in ('in_invoice', 'in_refund'):
+                obj_inv.sii_document_number = obj_inv.reference
             document_class_id = obj_inv.sii_document_class_id.id
             guardar = {'document_class_id': document_class_id,
-                'sii_document_number': obj_inv.sii_document_number,
-                'no_rec_code':obj_inv.no_rec_code,
-                'iva_uso_comun':obj_inv.iva_uso_comun,}
+                       'sii_document_number': obj_inv.sii_document_number,
+                       'no_rec_code': obj_inv.no_rec_code,
+                       'iva_uso_comun': obj_inv.iva_uso_comun,
+                    }
             obj_inv.move_id.write(guardar)
         return True
 
