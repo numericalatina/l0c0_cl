@@ -4,6 +4,7 @@ from odoo.tools.translate import _
 import logging
 _logger = logging.getLogger(__name__)
 
+
 class SiiTax(models.Model):
     _inherit = 'account.tax'
 
@@ -113,13 +114,6 @@ class SiiTax(models.Model):
             'total_included': currency.round(total_included) if bool(self.env.context.get("round", True)) else total_included,
             'base': base,
             }
-
-    def _compute_amount(self, base_amount, price_unit, quantity=1.0, product=None, partner=None):
-        if self.amount_type == 'percent' and self.price_include:
-            neto = base_amount / (1 + self.amount / 100)
-            tax = base_amount - neto
-            return tax
-        return super(SiiTax, self)._compute_amount(base_amount, price_unit, quantity, product, partner)
 
     def _compute_amount_ret(self, base_amount, price_unit, quantity=1.0, product=None, partner=None):
         if self.amount_type == 'percent' and self.price_include:
