@@ -130,7 +130,6 @@ class AccountInvoiceLine(models.Model):
                 price_subtotal_signed = line.invoice_id.currency_id.with_context(date=line.invoice_id._get_currency_rate_date()).compute(price_subtotal_signed, line.invoice_id.company_id.currency_id)
             sign = line.invoice_id.type in ['in_refund', 'out_refund'] and -1 or 1
             line.price_subtotal_signed = price_subtotal_signed * sign
-            line.price_tax_included = taxes['total_included'] if (taxes and taxes['total_included'] > total) else total
             line.price_total = taxes['total_included'] if (taxes and taxes['total_included'] > total) else total
 
     # TODO: eliminar este campo en versiones futuras
@@ -501,43 +500,43 @@ class AccountInvoice(models.Model):
     #        move_lines = self._repairDiff( move_lines, dif)
     #    return move_lines
 
+    @api.one
     @api.depends('invoice_line_ids.price_subtotal', 'tax_line_ids.amount', 'tax_line_ids.amount_rounding',
                  'currency_id', 'company_id', 'date_invoice', 'type', 'global_descuentos_recargos')
     def _compute_amount(self):
-        for inv in self:
-            neto = 0
-            if inv.global_descuentos_recargos:
-                neto = inv.global_descuentos_recargos.get_monto_aplicar()
-                agrupados = inv.global_descuentos_recargos.get_agrupados()
-                inv.amount_untaxed_global_discount = agrupados['D']
-                inv.amount_untaxed_global_recargo = agrupados['R']
-            amount_tax = 0
-            amount_retencion = 0
-            included = False
-            for tax in inv.tax_line_ids:
-                if tax.tax_id.price_include:
-                    included = True
-                amount_tax += tax.amount
-                amount_retencion += tax.amount_retencion
-            inv.amount_retencion = amount_retencion
-            if included:
-                neto += inv.tax_line_ids._getNeto(inv.currency_id)
-                amount_retencion += amount_retencion
-            else:
-                neto += sum(line.price_subtotal for line in inv.invoice_line_ids)
-            inv.amount_untaxed = neto
-            inv.amount_tax = amount_tax
-            inv.amount_total = inv.amount_untaxed + inv.amount_tax - amount_retencion
-            amount_total_company_signed = inv.amount_total
-            amount_untaxed_signed = inv.amount_untaxed
-            if inv.currency_id and inv.currency_id != inv.company_id.currency_id:
-                currency_id = inv.currency_id.with_context(date=inv.date_invoice)
-                amount_total_company_signed = currency_id.compute(inv.amount_total, inv.company_id.currency_id)
-                amount_untaxed_signed = inv.currency_id.compute(inv.amount_untaxed, inv.company_id.currency_id)
-            sign = inv.type in ['in_refund', 'out_refund'] and -1 or 1
-            inv.amount_total_company_signed = amount_total_company_signed * sign
-            inv.amount_total_signed = inv.amount_total * sign
-            inv.amount_untaxed_signed = amount_untaxed_signed * sign
+        neto = 0
+        if self.global_descuentos_recargos:
+            neto = self.global_descuentos_recargos.get_monto_aplicar()
+            agrupados = self.global_descuentos_recargos.get_agrupados()
+            self.amount_untaxed_global_discount = agrupados['D']
+            self.amount_untaxed_global_recargo = agrupados['R']
+        amount_tax = 0
+        amount_retencion = 0
+        included = False
+        for tax in self.tax_line_ids:
+            if tax.tax_id.price_include:
+                included = True
+            amount_tax += tax.amount
+            amount_retencion += tax.amount_retencion
+        self.amount_retencion = amount_retencion
+        if included:
+            neto += self.tax_line_ids._getNeto(self.currency_id)
+            amount_retencion += amount_retencion
+        else:
+            neto += sum(line.price_subtotal for line in self.invoice_line_ids)
+        self.amount_untaxed = neto
+        self.amount_tax = amount_tax
+        self.amount_total = self.amount_untaxed + self.amount_tax - amount_retencion
+        amount_total_company_signed = self.amount_total
+        amount_untaxed_signed = self.amount_untaxed
+        if self.currency_id and self.currency_id != self.company_id.currency_id:
+            currency_id = self.currency_id.with_context(date=self.date_invoice)
+            amount_total_company_signed = currency_id.compute(self.amount_total, self.company_id.currency_id)
+            amount_untaxed_signed = self.currency_id.compute(self.amount_untaxed, self.company_id.currency_id)
+        sign = self.type in ['in_refund', 'out_refund'] and -1 or 1
+        self.amount_total_company_signed = amount_total_company_signed * sign
+        self.amount_total_signed = self.amount_total * sign
+        self.amount_untaxed_signed = amount_untaxed_signed * sign
 
     def _prepare_tax_line_vals(self, line, tax):
         vals = super(AccountInvoice, self)._prepare_tax_line_vals(line, tax)
@@ -638,21 +637,24 @@ class AccountInvoice(models.Model):
             if (line.invoice_line_tax_ids and line.invoice_line_tax_ids[0].price_include) :# se asume todos losproductos vienen con precio incluido o no ( no hay mixes)
                 if included or not tax_grouped:#genero error en caso de contenido mixto, en caso primer impusto no incluido segundo impuesto incluido
                     for t in line.invoice_line_tax_ids:
-                        if not t in totales:
+                        if t not in totales:
                             totales[t] = 0
-                        totales[t] += (self.currency_id.round(line.price_unit *line.quantity) * line.discount)
+                        amount_line = (self.currency_id.round(line.price_unit *line.quantity))
+                        totales[t] += (amount_line * (1 - (line.discount / 100)))
                 included = True
             else:
                 included = False
-            if (totales and not included) or ( included and not totales):
+            if (totales and not included) or (included and not totales):
                 raise UserError('No se puede hacer timbrado mixto, todos los impuestos en este pedido deben ser uno de estos dos:  1.- precio incluído, 2.-  precio sin incluir')
             taxes = line.invoice_line_tax_ids.compute_all(line.price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id, discount=line.discount)['taxes']
             tax_grouped = self._get_grouped_taxes(line, taxes, tax_grouped)
-        if totales:
-            for line in self.invoice_line_ids:
-                for t in line.invoice_line_tax_ids:
-                    taxes = t.compute_all(totales[t], self.currency_id, 1)['taxes']
-                    tax_grouped = self._get_grouped_taxes(line, taxes, tax_grouped)
+        #if totales:
+        #    tax_grouped = {}
+        #    for line in self.invoice_line_ids:
+        #        for t in line.invoice_line_tax_ids:
+        #            taxes = t.compute_all(totales[t], self.currency_id, 1)['taxes']
+        #            tax_grouped = self._get_grouped_taxes(line, taxes, tax_grouped)
+        #_logger.warning(tax_grouped)
         if not self.global_descuentos_recargos:
             return tax_grouped
         gdr = self.porcentaje_dr()
@@ -663,7 +665,7 @@ class AccountInvoice(models.Model):
             tax = self.env['account.tax'].browse(group['tax_id'])
             if tax.amount > 0:
                 taxes[t]['amount'] *= gdr
-                taxes[t]['base'] *=  gdr
+                taxes[t]['base'] *= gdr
         return taxes
 
     @api.onchange('global_descuentos_recargos' )
