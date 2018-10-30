@@ -963,9 +963,9 @@ a VAT."""))
                     if not obj_inv.journal_document_class_id.sequence_id:
                         raise UserError(_(
                             'Please define sequence on the journal related documents to this invoice.'))
-                    sii_document_number = obj_inv.journal_document_class_id.sequence_id.next_by_id()
+                    obj_inv.sii_document_number = obj_inv.journal_document_class_id.sequence_id.next_by_id()
                     prefix = obj_inv.journal_document_class_id.sii_document_class_id.doc_code_prefix or ''
-                    move_name = (prefix + str(sii_document_number)).replace(' ','')
+                    move_name = (prefix + str(obj_inv.sii_document_number)).replace(' ','')
                     obj_inv.write({'move_name': move_name})
         super(AccountInvoice, self).action_move_create()
         for obj_inv in self:
