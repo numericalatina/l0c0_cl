@@ -215,7 +215,6 @@ class AccountInvoice(models.Model):
             'account.journal.sii_document_class',
             string='Documents Type',
             default=lambda self: self._default_journal_document_class_id(),
-            domain=_domain_journal_document_class_id,
             readonly=True,
             store=True,
             states={'draft': [('readonly', False)]},
@@ -905,6 +904,7 @@ class AccountInvoice(models.Model):
                     limit=1,
                 ).id
             self.journal_document_class_id = self._default_journal_document_class_id(default)
+        return {'domain': {'journal_document_class_id': self._domain_journal_document_class_id()}}
 
     @api.onchange('sii_document_class_id', 'partner_id')
     def _check_vat(self):
