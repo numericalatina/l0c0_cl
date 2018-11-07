@@ -670,6 +670,12 @@ class AccountInvoice(models.Model):
     @api.onchange('global_descuentos_recargos' )
     def _onchange_descuentos(self):
         self._onchange_invoice_line_ids()
+        
+    @api.onchange('payment_term_id', 'date_invoice')
+    def _onchange_payment_term_date_invoice(self):
+        super(AccountInvoice, self)._onchange_payment_term_date_invoice()
+        if self.payment_term_id and self.payment_term_id.dte_sii_code:
+            self.forma_pago = self.payment_term_id.dte_sii_code
 
     @api.model
     def _prepare_refund(self, invoice, date_invoice=None, date=None, description=None, journal_id=None, tipo_nota=61, mode='1'):
