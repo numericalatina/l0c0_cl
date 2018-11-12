@@ -667,10 +667,10 @@ class AccountInvoice(models.Model):
                 taxes[t]['base'] *= gdr
         return taxes
 
-    @api.onchange('global_descuentos_recargos' )
+    @api.onchange('global_descuentos_recargos')
     def _onchange_descuentos(self):
         self._onchange_invoice_line_ids()
-        
+
     @api.onchange('payment_term_id', 'date_invoice')
     def _onchange_payment_term_date_invoice(self):
         super(AccountInvoice, self)._onchange_payment_term_date_invoice()
@@ -1326,7 +1326,6 @@ version="1.0">
         return envio['xml_envio'].encode('ISO-8859-1')
 
     def _create_attachment(self,):
-        xml_intercambio = self.crear_intercambio()
         url_path = '/download/xml/invoice/%s' % (self.id)
         filename = ('%s.xml' % self.document_number).replace(' ', '_')
         att = self.env['ir.attachment'].search(
@@ -1339,6 +1338,7 @@ version="1.0">
             )
         if att:
             return att
+        xml_intercambio = self.crear_intercambio()
         data = base64.b64encode(xml_intercambio)
         values = dict(
                         name=filename,
@@ -1349,7 +1349,7 @@ version="1.0">
                         type='binary',
                         datas=data,
                     )
-        att = self.env['ir.attachment'].create(values)
+        att = self.env['ir.attachment'].sudo().create(values)
         return att
 
     @api.multi
