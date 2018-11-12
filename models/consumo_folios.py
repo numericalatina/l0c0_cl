@@ -601,9 +601,12 @@ version="1.0">
         TaxMnt = 0
         MntTotal = 0
         if 'lines' in rec:
-            TaxMnt =  rec.amount_tax
-            MntTotal = rec.amount_total
+            # NC pasar a positivo
+            TaxMnt =  rec.amount_tax if rec.amount_tax > 0 else rec.amount_tax * -1
+            MntTotal = rec.amount_total if rec.amount_total > 0 else rec.amount_total * -1
             Neto = rec.pricelist_id.currency_id.round(sum(line.price_subtotal for line in rec.lines))
+            if Neto < 0:
+                Neto *= -1 
             MntExe = rec.exento()
             TasaIVA = self.env['pos.order.line'].search([('order_id', '=', rec.id), ('tax_ids.amount', '>', 0)], limit=1).tax_ids.amount
             Neto -= MntExe
