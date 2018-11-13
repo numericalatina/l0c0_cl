@@ -385,7 +385,7 @@ class UploadXMLWizard(models.TransientModel):
             self.dte_id.message_post(
                 body='XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (recep['EstadoRecepEnv'], recep['RecepEnvGlosa']),
                 subject='XML de Respuesta Envío',
-                attachment_ids=[[6, 0, att.ids]],
+                attachment_ids=att.ids,
                 message_type='comment',
                 subtype='mt_comment',
             )

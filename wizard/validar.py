@@ -197,7 +197,7 @@ class ValidarDTEWizard(models.TransientModel):
                 body='XML de Rechazo Comercial, Estado: %s, Glosa: %s' % (dte['ResultadoDTE']['EstadoDTE'], dte['ResultadoDTE']['EstadoDTEGlosa']),
                 subject='XML de Validación Comercial',
                 partner_ids=partners,
-                attachment_ids=[att.id],
+                attachment_ids=att.ids,
                 message_type='comment',
                 subtype='mt_comment',
             )
@@ -262,7 +262,7 @@ class ValidarDTEWizard(models.TransientModel):
                 body='XML de Validación Comercial, Estado: %s, Glosa: %s' % (dte['ResultadoDTE']['EstadoDTE'], dte['ResultadoDTE']['EstadoDTEGlosa']),
                 subject='XML de Validación Comercial',
                 partner_ids=[inv.partner_id.id],
-                attachment_ids=[att.id],
+                attachment_ids=att.ids,
                 message_type='comment',
                 subtype='mt_comment',
             )
@@ -378,7 +378,7 @@ class ValidarDTEWizard(models.TransientModel):
                 body='XML de Recepción de Mercaderías\n %s' % (message),
                 subject='XML de Recepción de Documento',
                 partner_ids=[inv.partner_id.id],
-                attachment_ids=[ att.id ],
+                attachment_ids=att.ids,
                 message_type='comment',
                 subtype='mt_comment',
             )
