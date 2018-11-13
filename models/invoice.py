@@ -1354,44 +1354,13 @@ version="1.0">
 
     @api.multi
     def action_invoice_sent(self):
-        self.ensure_one()
-        template = self.env.ref('account.email_template_edi_invoice', False)
-        atts = []
-        if template.attachment_ids:
-            for a in template.attachment_ids:
-                if a.res_model != 'acount.invoice':
-                    atts.append(a.id)
-        if not self.sii_xml_dte:
-            template.attachment_ids = [(6, 0, atts)]
-            return super(AccountInvoice, self).action_invoice_sent()
-        """ Open a window to compose an email, with the edi invoice template
-            message loaded by default
-        """
-        compose_form = self.env.ref('mail.email_compose_message_wizard_form', False)
-        att = self._create_attachment()
-        atts.append(att.id)
-        template.attachment_ids = [(6, 0, atts)]
-        ctx = dict(
-            default_model='account.invoice',
-            default_res_id=self.id,
-            default_use_template=bool(template),
-            default_template_id=template and template.id or False,
-            default_composition_mode='comment',
-            mark_invoice_as_sent=True,
-            custom_layout="account.mail_template_data_notification_email_account_invoice",
-            force_email=True,
-        )
-        return {
-            'name': _('Compose Email'),
-            'type': 'ir.actions.act_window',
-            'view_type': 'form',
-            'view_mode': 'form',
-            'res_model': 'mail.compose.message',
-            'views': [(compose_form.id, 'form')],
-            'view_id': compose_form.id,
-            'target': 'new',
-            'context': ctx,
-        }
+        result = super(AccountInvoice, self).action_invoice_sent()
+        if self.sii_xml_dte:
+            att = self._create_attachment()
+            result['context'].update({
+                'default_attachment_ids': att.ids,
+            })
+        return result
 
     @api.multi
     def get_xml_file(self):
