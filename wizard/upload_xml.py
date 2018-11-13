@@ -582,8 +582,6 @@ class UploadXMLWizard(models.TransientModel):
                 'price': price,
             }
             self.env['product.supplierinfo'].create(supplier_info)
-        _logger.warning(NmbItem)
-        _logger.warning(query)
         return product_id.id
 
     def _prepare_line(self, line, document_id, account_id, type, price_included=False):
