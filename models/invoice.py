@@ -1770,8 +1770,7 @@ version="1.0">
                 taxInclude = t.price_include or ( (self._es_boleta() or self._nc_boleta()) and not t.sii_detailed )
                 if t.amount == 0 or t.sii_code in [0]:#@TODO mejor manera de identificar exento de afecto
                     lines['IndExe'] = 1
-                    price_exe = line.price_tax_included
-                    MntExe += self.currency_id.round(price_exe)
+                    MntExe += self.currency_id.round(line.price_subtotal)
             #if line.product_id.type == 'events':
             #   lines['ItemEspectaculo'] =
 #            if self._es_boleta():
@@ -1801,17 +1800,17 @@ version="1.0">
                     lines['OtrMnda']['DctoOtrMnda'] = line.discount
                 lines['DescuentoPct'] = line.discount
                 DescMonto = (((line.discount / 100) * lines['PrcItem'])* qty)
-                lines['DescuentoMonto'] = self.currency_id.round( DescMonto )
+                lines['DescuentoMonto'] = self.currency_id.round(DescMonto)
                 if currency_id:
                    lines['OtrMnda']['DctoOtrMnda'] = currency_id.compute(DescMonto, self.company_id.currency_id)
             if not no_product and not taxInclude:
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_id.compute( line.price_subtotal, self.company_id.currency_id)
+                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_id.compute(line.price_subtotal, self.company_id.currency_id)
                 lines['MontoItem'] = self.currency_id.round(line.price_subtotal)
             elif not no_product :
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_id.compute( line.price_tax_included, self.company_id.currency_id)
-                lines['MontoItem'] = self.currency_id.round(line.price_tax_included)
+                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_id.compute(line.price_total, self.company_id.currency_id)
+                lines['MontoItem'] = self.currency_id.round(line.price_total)
             if no_product:
                 lines['MontoItem'] = 0
             line_number += 1
