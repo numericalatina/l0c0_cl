@@ -1483,11 +1483,13 @@ version="1.0">
                 return True
         return False
 
-    def _giros_emisor(self):
-        giros_emisor = []
-        for turn in self.journal_id.journal_activities_ids:
-            giros_emisor.extend([{'Acteco': turn.code}])
-        return giros_emisor
+    def _actecos_emisor(self):
+        actecos = []
+        if not self.journal_id.journal_activities_ids:
+            raise UserError('El Diario no tiene ACTECOS asignados')
+        for acteco in self.journal_id.journal_activities_ids:
+            actecos.extend([{'Acteco': acteco.code}])
+        return actecos
 
     def _id_doc(self, taxInclude=False, MntExe=0):
         IdDoc = collections.OrderedDict()
@@ -1527,7 +1529,7 @@ version="1.0">
             if self.company_id.phone:
                 Emisor['Telefono'] = self._acortar_str(self.company_id.phone, 20)
             Emisor['CorreoEmisor'] = self.company_id.dte_email
-            Emisor['item'] = self._giros_emisor()
+            Emisor['item'] = self._actecos_emisor()
         if self.journal_id.sucursal_id:
             Emisor['Sucursal'] = self._acortar_str(self.journal_id.sucursal_id.name, 20)
             Emisor['CdgSIISucur'] = self._acortar_str(self.journal_id.sucursal_id.sii_code, 9)
