@@ -2221,17 +2221,20 @@ version="1.0">
         )
         if not self.commercial_partner_id.dte_email or self.commercial_partner_id.dte_email == self.commercial_partner_id.email:
             return
-        values = {
-            'email_from': self.company_id.dte_email,
-            'email_to': self.commercial_partner_id.dte_email,
-            'auto_delete': False,
-            'model': 'account.invoice',
-            'body': body,
-            'subject': subject,
-            'attachment_ids': [[6, 0, att.ids]],
-        }
-        send_mail = self.env['mail.mail'].sudo().create(values)
-        send_mail.send()
+        for dte_email in self.commercial_partner_id.child_ids:
+            if not dte_email.send_dte:
+                continue
+            values = {
+                'email_from': self.company_id.dte_email,
+                'email_to': dte_email.name,
+                'auto_delete': False,
+                'model': 'account.invoice',
+                'body': body,
+                'subject': subject,
+                'attachment_ids': [[6, 0, att.ids]],
+            }
+            send_mail = self.env['mail.mail'].sudo().create(values)
+            send_mail.send()
 
     @api.multi
     def manual_send_exchange(self):
