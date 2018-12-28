@@ -776,6 +776,7 @@ class UploadXMLWizard(models.TransientModel):
                 'sii_document_number': Folio,
                 'journal_document_class_id': journal_document_class_id.id,
                 'state': 'open',
+                'move_name': '%s%s' % (journal_document_class_id.sii_document_class_id.doc_code_prefix, Folio),
             })
         else:
             RznSoc = Emisor.find('RznSoc')
@@ -997,7 +998,7 @@ class UploadXMLWizard(models.TransientModel):
                     inv = self._inv_exist(documento)
                     pre.write({
                         'xml': etree.tostring(dte),
-                        'invoice_id' : inv.id ,
+                        'invoice_id': inv.id,
                         }
                     )
                     created.append(pre.id)
@@ -1025,12 +1026,21 @@ class UploadXMLWizard(models.TransientModel):
                     documento,
                     company_id,
                 )
-                if self.document_id :
+                if self.document_id:
                     self.document_id.invoice_id = inv.id
                 if inv:
                     created.append(inv.id)
                 if not inv:
                     raise UserError('El archivo XML no contiene documentos para alguna empresa registrada en Odoo, o ya ha sido procesado anteriormente ')
+                if self.type == 'ventas':
+                    #inv._onchange_invoice_line_ids()
+                    inv._onchange_partner_id()
+                    inv.action_move_create()
+                    guardar = {
+                        'document_class_id': inv.sii_document_class_id.id,
+                        'sii_document_number': inv.sii_document_number
+                    }
+                    inv.move_id.write(guardar)
             except Exception as e:
                 _logger.warning('Error en crear 1 factura con error:  %s' % str(e))
         if created and self.option not in [False, 'upload'] and self.type == 'compras':
