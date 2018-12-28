@@ -2059,8 +2059,8 @@ version="1.0">
             return "Reparo"
         elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["DNK", "FAU", "RCT"]:
             return "Rechazado"
-        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["FAN"]:
-            return "Anulado" #Desde El sii
+        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["FAN", "ANC"]:
+            return "Anulado" #Desde El sii o por NC
 
     @api.onchange('sii_message')
     def get_sii_result(self):
