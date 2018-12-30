@@ -9,20 +9,6 @@ _logger = logging.getLogger(__name__)
 class account_move(models.Model):
     _inherit = "account.move"
 
-    @api.depends(
-        'sii_document_number',
-        'name',
-        'document_class_id',
-        'document_class_id.doc_code_prefix',
-        )
-    def _get_document_number(self):
-        for r in self:
-            if r.sii_document_number and r.document_class_id:
-                document_number = (r.document_class_id.doc_code_prefix or '') + r.sii_document_number
-            else:
-                document_number = r.name
-            r.document_number = document_number
-
     document_class_id = fields.Many2one(
             'sii.document_class',
             string='Document Type',
@@ -59,13 +45,6 @@ class account_move(models.Model):
             readonly=True,
             states={'draft': [('readonly', False)]},
         )# @TODO select 1 automático si es emisor 2Categoría
-    document_number = fields.Char(
-            compute='_get_document_number',
-            string='Document Number',
-            store=True,
-            readonly=True,
-            states={'draft': [('readonly', False)]},
-        )
     sended = fields.Boolean(
             string="Enviado al SII",
             default=False,
@@ -121,12 +100,6 @@ class account_move_line(models.Model):
             'sii.document_class',
             string='Document Type',
             related='move_id.document_class_id',
-            store=True,
-            readonly=True,
-        )
-    document_number = fields.Char(
-            string='Document Number',
-            related='move_id.document_number',
             store=True,
             readonly=True,
         )

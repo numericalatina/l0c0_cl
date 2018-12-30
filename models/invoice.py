@@ -248,17 +248,6 @@ class AccountInvoice(models.Model):
             readonly=True,
             states={'draft': [('readonly', False)]},
         )# @TODO select 1 automático si es emisor 2Categoría
-
-    document_number = fields.Char(
-            compute='_get_document_number',
-            string='Document Number',
-            readonly=True,
-        )
-    next_invoice_number = fields.Integer(
-            related='journal_document_class_id.sequence_id.number_next_actual',
-            string='Next Document Number',
-            readonly=True,
-        )
     use_documents = fields.Boolean(
             related='journal_id.use_documents',
             string='Use Documents?',
@@ -405,6 +394,22 @@ class AccountInvoice(models.Model):
             readonly=True,
             states={'draft': [('readonly', False)]},
         )
+
+    @api.depends('state', 'journal_id', 'date_invoice', 'sii_document_class_id')
+    def _get_sequence_prefix(self):
+        for invoice in self:
+            if invoice.use_documents:
+                invoice.sequence_number_next_prefix = invoice.sii_document_class_id.doc_code_prefix or ''
+            else:
+                super(AccountInvoice, self)._get_sequence_prefix()
+
+    @api.depends('state', 'journal_id', 'sii_document_class_id)
+    def _get_sequence_number_next(self):
+        for invoice in self:
+            if invoice.use_documents:
+                invoice.sequence_number_next = invoice.journal_document_class_id.sequence_id.number_next_actual
+            else:
+                super(AccountInvoice, self)._get_sequence_number_next()
 
     @api.multi
     def compute_invoice_totals(self, company_currency, invoice_move_lines):
@@ -749,21 +754,18 @@ class AccountInvoice(models.Model):
         result = []
         for inv in self:
             result.append(
-                (inv.id, "%s %s" % (inv.document_number or TYPES[inv.type], inv.name or '')))
+                (inv.id, "%s %s" % (inv.number or TYPES[inv.type], inv.name or '')))
         return result
 
     @api.model
     def name_search(self, name, args=None, operator='ilike', limit=100):
         args = args or []
         recs = self.browse()
-        if name:
-            recs = self.search(
-                [('document_number', '=', name)] + args, limit=limit)
         if not recs:
             recs = self.search([('name', operator, name)] + args, limit=limit)
         return recs.name_get()
 
-    def _buscarTaxEquivalente(self,tax):
+    def _buscarTaxEquivalente(self, tax):
         tax_n = self.env['account.tax'].search(
             [
                 ('sii_code', '=', tax.sii_code),
@@ -926,17 +928,6 @@ a VAT."""))
             if inv.sii_document_class_id.document_letter_id.vat_discriminated or inv.company_id.invoice_vat_discrimination_default == 'discriminate_default':
                 vat_discriminated = True
             inv.vat_discriminated = vat_discriminated
-
-    @api.depends('sii_document_number', 'number')
-    def _get_document_number(self):
-        for inv in self:
-            if inv.sii_document_number and inv.sii_document_class_id:
-                document_number = "%s%s" % (
-                    (inv.sii_document_class_id.doc_code_prefix or ''),
-                    inv.sii_document_number)
-            else:
-                document_number = inv.number
-            inv.document_number = document_number
 
     @api.one
     @api.constrains('reference', 'partner_id', 'company_id', 'type','journal_document_class_id')
@@ -1326,7 +1317,7 @@ version="1.0">
 
     def _create_attachment(self,):
         url_path = '/download/xml/invoice/%s' % (self.id)
-        filename = ('%s.xml' % self.document_number).replace(' ', '_')
+        filename = ('%s.xml' % self.number).replace(' ', '_')
         att = self.env['ir.attachment'].search(
                 [
                     ('name', '=', filename),
@@ -2064,6 +2055,9 @@ version="1.0">
     @api.onchange('sii_message')
     def get_sii_result(self):
         for r in self:
+            if r._es_boleta():
+                r.sii_result = "Proceso"
+                continue
             if r.sii_message:
                 r.sii_result = r.process_response_xml(xmltodict.parse(r.sii_message))
                 continue
@@ -2074,6 +2068,8 @@ version="1.0">
 
     def _get_dte_status(self):
         for r in self:
+            if r._es_boleta():
+                continue
             if r.sii_xml_request and r.sii_xml_request.state not in ['Aceptado', 'Rechazado']:
                 continue
             token = r.sii_xml_request.get_token(self.env.user, r.company_id)
@@ -2208,8 +2204,8 @@ version="1.0">
 
     def send_exchange(self):
         att = self._create_attachment()
-        body = 'XML de Intercambio DTE: %s' % (self.document_number)
-        subject = 'XML de Intercambio DTE: %s' % (self.document_number)
+        body = 'XML de Intercambio DTE: %s' % (self.number)
+        subject = 'XML de Intercambio DTE: %s' % (self.number)
         self.sudo().message_post(
             body=body,
             subject=subject,
