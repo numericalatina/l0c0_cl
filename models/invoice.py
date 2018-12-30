@@ -227,7 +227,7 @@ class AccountInvoice(models.Model):
             readonly=True,
             store=True,
         )
-    sii_document_number = fields.Char(
+    sii_document_number = fields.Integer(
         string='Document Number',
         copy=False,
         readonly=True,)
@@ -244,11 +244,11 @@ class AccountInvoice(models.Model):
         ) # solamente para compras tratamiento del iva
     no_rec_code = fields.Selection(
             [
-                    ('1','Compras destinadas a IVA a generar operaciones no gravados o exentas.'),
-                    ('2','Facturas de proveedores registrados fuera de plazo.'),
-                    ('3','Gastos rechazados.'),
-                    ('4','Entregas gratuitas (premios, bonificaciones, etc.) recibidos.'),
-                    ('9','Otros.')
+                    ('1', 'Compras destinadas a IVA a generar operaciones no gravados o exentas.'),
+                    ('2', 'Facturas de proveedores registrados fuera de plazo.'),
+                    ('3', 'Gastos rechazados.'),
+                    ('4', 'Entregas gratuitas (premios, bonificaciones, etc.) recibidos.'),
+                    ('9', 'Otros.')
             ],
             string="Código No recuperable",
             readonly=True,
@@ -278,11 +278,11 @@ class AccountInvoice(models.Model):
     )
     forma_pago = fields.Selection(
             [
-                    ('1','Contado'),
-                    ('2','Crédito'),
-                    ('3','Gratuito')
-            ]
-            ,string="Forma de pago",
+                    ('1', 'Contado'),
+                    ('2', 'Crédito'),
+                    ('3', 'Gratuito')
+            ],
+            string="Forma de pago",
             readonly=True,
             states={'draft': [('readonly', False)]},
             default='1',
@@ -347,8 +347,8 @@ class AccountInvoice(models.Model):
     estado_recep_dte = fields.Selection(
         [
             ('recibido', 'Recibido en DTE'),
-            ('mercaderias','Recibido mercaderias'),
-            ('validate','Validada Comercial')
+            ('mercaderias', 'Recibido mercaderias'),
+            ('validate', 'Validada Comercial')
         ],
         string="Estado de Recepcion del Envio",
         default='recibido',
@@ -937,8 +937,9 @@ a VAT."""))
     def _get_document_number(self):
         for inv in self:
             if inv.sii_document_number and inv.sii_document_class_id:
-                document_number = (
-                    inv.sii_document_class_id.doc_code_prefix or '') + inv.sii_document_number
+                document_number = "%s%s" % (
+                    (inv.sii_document_class_id.doc_code_prefix or ''),
+                    inv.sii_document_number)
             else:
                 document_number = inv.number
             inv.document_number = document_number
@@ -969,18 +970,22 @@ a VAT."""))
                     if not obj_inv.journal_document_class_id.sequence_id:
                         raise UserError(_(
                             'Please define sequence on the journal related documents to this invoice.'))
-                    obj_inv.sii_document_number = obj_inv.journal_document_class_id.sequence_id.next_by_id()
+                    sii_document_number = obj_inv.journal_document_class_id.sequence_id.next_by_id()
                     prefix = obj_inv.journal_document_class_id.sii_document_class_id.doc_code_prefix or ''
-                    move_name = (prefix + str(obj_inv.sii_document_number)).replace(' ','')
-                    obj_inv.write({'move_name': move_name})
+                    move_name = (prefix + str(sii_document_number)).replace(' ','')
+                    obj_inv.write(
+                        {
+                            'sii_document_number': int(sii_document_number),
+                            'move_name': move_name
+                        })
         super(AccountInvoice, self).action_move_create()
         for obj_inv in self:
             invtype = obj_inv.type
             if invtype in ('in_invoice', 'in_refund'):
-                obj_inv.sii_document_number = obj_inv.reference
+                obj_inv.sii_document_number = int(obj_inv.reference)
             document_class_id = obj_inv.sii_document_class_id.id
             guardar = {'document_class_id': document_class_id,
-                       'sii_document_number': obj_inv.sii_document_number,
+                       'sii_document_number': int(obj_inv.sii_document_number),
                        'no_rec_code': obj_inv.no_rec_code,
                        'iva_uso_comun': obj_inv.iva_uso_comun,
                     }
@@ -1382,7 +1387,7 @@ version="1.0">
 
     def get_folio(self):
         # saca el folio directamente de la secuencia
-        return int(self.sii_document_number)
+        return self.sii_document_number
 
     def format_vat(self, value, con_cero=False):
         ''' Se Elimina el 0 para prevenir problemas con el sii, ya que las muestras no las toma si va con

@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 import logging
 _logger = logging.getLogger(__name__)
 
+
 class account_move(models.Model):
     _inherit = "account.move"
 
@@ -29,7 +30,7 @@ class account_move(models.Model):
             readonly=True,
             states={'draft': [('readonly', False)]},
         )
-    sii_document_number = fields.Char(
+    sii_document_number = fields.Integer(
             string='Document Number',
             copy=False,
             readonly=True,
