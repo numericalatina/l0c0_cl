@@ -132,12 +132,6 @@ class AccountInvoiceLine(models.Model):
             line.price_subtotal_signed = price_subtotal_signed * sign
             line.price_total = taxes['total_included'] if (taxes and taxes['total_included'] > total) else total
 
-    # TODO: eliminar este campo en versiones futuras
-    # odoo en V11 ya agrega un campo para guardar el precio incluido impuestos
-    # este campo es innecesario a partir de V11
-    price_tax_included = fields.Monetary(string='Amount', readonly=True, compute='_compute_price')
-
-
 class Referencias(models.Model):
     _name = 'account.invoice.referencias'
 
