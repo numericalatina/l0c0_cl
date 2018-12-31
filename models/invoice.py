@@ -403,7 +403,7 @@ class AccountInvoice(models.Model):
             else:
                 super(AccountInvoice, self)._get_sequence_prefix()
 
-    @api.depends('state', 'journal_id', 'sii_document_class_id)
+    @api.depends('state', 'journal_id', 'sii_document_class_id')
     def _get_sequence_number_next(self):
         for invoice in self:
             if invoice.use_documents:
