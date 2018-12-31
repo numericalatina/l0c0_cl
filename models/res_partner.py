@@ -92,15 +92,20 @@ class ResPartner(models.Model):
         ''' Esto eliminar en la versión siguiente, es solamente para evitar
             problemas al actualizar '''
         if not self.dte_email_id:
-            self.dte_email_id = [(0, 0,
-                                  {
-                                      'type': 'dte',
-                                      'name': self.dte_email,
-                                      'email': self.dte_email,
-                                      'send_dte': True,
-                                      'principal': True,
-                                  })]
-        elif self.dte_email_id and self.dte_email_id.name != self.dte_email:
+            partners = []
+            for rec in self.child_ids:
+                partners.append((4, rec.id, False))
+            partners.append((0, 0,
+                            {
+                                'type': 'dte',
+                                'name': self.dte_email,
+                                'email': self.dte_email,
+                                'send_dte': True,
+                                'principal': True,
+                            })
+                        )
+            self.child_ids = partners
+        elif self.dte_email_id and self.dte_email_id.email != self.dte_email:
             __name = self.dte_email_id.name
             if __name == self.dte_email_id.email:
                 __name = self.dte_email
@@ -121,6 +126,21 @@ class ResPartner(models.Model):
         if another:
             raise UserError(_('Existe otro correo establecido como Principal'))
         return True
+
+    #def create(self, vals):
+    #    partner = super(ResPartner, self).create(vals)
+    #    if vals.get('email_dte'):
+    #        dte_email_id = self.env['res.partner'].create(
+    #                              {
+    #                                  'parent_id': self.id,
+    #                                  'type': 'dte',
+    #                                  'name': self.dte_email,
+    #                                  'email': self.dte_email,
+    #                                  'send_dte': True,
+    #                                  'principal': True,
+    #                              })
+    #        self.dte_email_id = dte_email_id.id
+
 
     @api.multi
     @api.onchange('responsability_id')
