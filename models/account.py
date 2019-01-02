@@ -2,6 +2,7 @@
 from odoo import api, models, fields
 from odoo.tools.translate import _
 from odoo.exceptions import UserError
+from .bigint import BigInt
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -16,13 +17,12 @@ class account_move(models.Model):
             readonly=True,
             states={'draft': [('readonly', False)]},
         )
-    sii_document_number = fields.Float(
+    sii_document_number = BigInt(
             string='Document Number',
             copy=False,
             readonly=True,
             states={'draft': [('readonly', False)]},
         )
-
     canceled = fields.Boolean(
             string="Canceled?",
             readonly=True,

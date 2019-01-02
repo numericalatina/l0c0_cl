@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, date
 from lxml import etree
 from lxml.etree import Element, SubElement
 from odoo.tools.translate import _
+from .bigint import BigInt
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -221,7 +222,7 @@ class AccountInvoice(models.Model):
             readonly=True,
             store=True,
         )
-    sii_document_number = fields.Integer(
+    sii_document_number = BigInt(
         string='Document Number',
         copy=False,
         readonly=True,)
