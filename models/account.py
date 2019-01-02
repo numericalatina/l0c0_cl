@@ -16,7 +16,7 @@ class account_move(models.Model):
             readonly=True,
             states={'draft': [('readonly', False)]},
         )
-    sii_document_number = fields.Integer(
+    sii_document_number = fields.Float(
             string='Document Number',
             copy=False,
             readonly=True,
@@ -104,6 +104,7 @@ class account_move_line(models.Model):
             readonly=True,
         )
 
+
 class AccountJournalSiiDocumentClass(models.Model):
     _name = "account.journal.sii_document_class"
     _description = "Journal SII Documents"
@@ -144,6 +145,7 @@ class AccountJournalSiiDocumentClass(models.Model):
         if self.sii_document_class_id and self.sequence_id and self.sii_document_class_id != self.sequence_id.sii_document_class_id:
             raise UserError("El tipo de Documento de la secuencia es distinto")
 
+
 class account_journal(models.Model):
     _inherit = "account.journal"
 
@@ -177,6 +179,15 @@ class account_journal(models.Model):
             string="Restore Mode",
             default=False,
         )
+
+    @api.onchange('company_id')
+    def set_domain_journals(self):
+        res = {
+            'domain': {
+                'journal_document_class_id': [('id', 'in', self.company_id.company_activities_ids.ids)]
+                }
+        }
+        return res
 
     @api.onchange('journal_activities_ids')
     def max_actecos(self):
