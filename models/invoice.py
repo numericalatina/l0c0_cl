@@ -62,6 +62,11 @@ try:
 except ImportError:
     _logger.warning('Cannot import hashlib library')
 
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except:
+    _logger.warning("no se ha cargado PIL")
+
 # timbre patrón. Permite parsear y formar el
 # ordered-dict patrón corespondiente al documento
 timbre  = """<TED version="1.0"><DD><RE>99999999-9</RE><TD>11</TD><F>1</F>\
@@ -185,14 +190,18 @@ class AccountInvoice(models.Model):
         domain = self._get_available_journal_document_class()
         return [('id', 'in', domain)]
 
+    @api.multi
+    def get_barcode_img(self, columns=13, ratio=3):
+        barcodefile = BytesIO()
+        image = self.pdf417bc(self.sii_barcode, columns, ratio)
+        image.save(barcodefile, 'PNG')
+        data = barcodefile.getvalue()
+        return base64.b64encode(data)
+
     def _get_barcode_img(self):
         for r in self:
             if r.sii_barcode:
-                barcodefile = BytesIO()
-                image = self.pdf417bc(r.sii_barcode)
-                image.save(barcodefile, 'PNG')
-                data = barcodefile.getvalue()
-                r.sii_barcode_img = base64.b64encode(data)
+                r.sii_barcode_img =  r.get_barcode_img()
 
     vat_discriminated = fields.Boolean(
             'Discriminate VAT?',
@@ -1387,16 +1396,17 @@ version="1.0">
         rut = rut.replace('CL','')
         return rut
 
-    def pdf417bc(self, ted):
+    def pdf417bc(self, ted, columns=13, ratio=3):
         bc = pdf417gen.encode(
             ted,
             security_level=5,
-            columns=13,
+            columns=columns,
         )
         image = pdf417gen.render_image(
             bc,
             padding=15,
             scale=1,
+            ratio=ratio,
         )
         return image
 
@@ -2254,3 +2264,26 @@ version="1.0">
         for l in self.invoice_line_ids:
             total_discount +=  (((l.discount or 0.00) /100) * l.price_unit * l.quantity)
         return self.currency_id.round(total_discount)
+
+    @api.multi
+    def sii_header(self):
+        W, H = (560, 255)
+        img = Image.new('RGB', (W, H), color=(255,255,255))
+
+        d = ImageDraw.Draw(img)
+        w, h = (0, 0)
+        for i in range(10):
+            d.rectangle(((w, h), (550+w, 220+h)), outline="black")
+            w += 1
+            h += 1
+        font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 40)
+        d.text((50,30), "R.U.T.: %s" % self.company_id.document_number, fill=(0,0,0), font=font)
+        d.text((50,90), self.sii_document_class_id.name, fill=(0,0,0), font=font)
+        d.text((220,150), "N° %s" % self.sii_document_number, fill=(0,0,0), font=font)
+        font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 20)
+        d.text((200,235), "SII %s" %self.company_id.sii_regional_office_id.name, fill=(0,0,0), font=font)
+
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        imm = base64.b64encode(buffered.getvalue()).decode()
+        return imm
