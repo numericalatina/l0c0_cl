@@ -91,6 +91,8 @@ class ResPartner(models.Model):
     def set_temporal_email_cambiar_a_related(self):
         ''' Esto eliminar en la versión siguiente, es solamente para evitar
             problemas al actualizar '''
+        if not self.is_company and not self.dte_email:
+            return
         if not self.dte_email_id:
             partners = []
             for rec in self.child_ids:
@@ -111,6 +113,11 @@ class ResPartner(models.Model):
                 __name = self.dte_email
             self.dte_email_id.name = __name
             self.dte_email_id.email = self.dte_email
+        else:
+            for r in self.child_ids:
+                if r.type == 'dte':
+                    r.email = self.email_dte
+                    r.name = self.email_dte
 
     @api.onchange('principal')
     def verify_principal(self):
