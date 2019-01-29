@@ -2016,23 +2016,25 @@ version="1.0">
 
     @api.multi
     def do_dte_send(self, n_atencion=None):
-        if not self[0].sii_xml_request or self[0].sii_result in ['Rechazado'] or (self[0].company_id.dte_service_provider == 'SIICERT' and self[0].sii_xml_request.state in ['', 'NoEnviado']):
-            tipo_envio = {
+        tipo_envio = {
                 'boleta': [],
                 'normal': [],
             }
-            for r in self:
-                if r._es_boleta():
-                    tipo_envio['boleta'].append(r.id)
-                else:
-                    tipo_envio['normal'].append(r.id)
+        for r in self:
+            if r._es_boleta():
+                tipo_envio['boleta'].append(r.id)
+            else:
+                tipo_envio['normal'].append(r.id)
+            if r.sii_result in ['Rechazado'] or (r.company_id.dte_service_provider == 'SIICERT' and r.sii_xml_request.state in ['', 'NoEnviado']):
                 if r.sii_xml_request:
                     r.sii_xml_request.unlink()
-                    r.sii_message = ''
-            for k, t in tipo_envio.items():
-                if not t:
-                    continue
-                recs = self.browse(t)
+                r.sii_message = ''
+        for k, t in tipo_envio.items():
+            if not t:
+                continue
+            recs = self.browse(t)
+            envio_id = recs[0].sii_xml_request
+            if not envio_id:
                 envio = recs._crear_envio(n_atencion, RUTRecep="60803000-K")
                 if k in ['boleta']:
                     envio.update({
@@ -2044,11 +2046,9 @@ version="1.0">
                     r.sii_xml_request = envio_id.id
                     if r._es_boleta():
                         r.sii_result = 'Proceso'
-                if k in ['factura']:
-                    resp = envio_id.send_xml()
-            return envio_id
-        self[0].sii_xml_request.send_xml()
-        return self[0].sii_xml_request
+            if k in ['normal']:
+                resp = envio_id.send_xml()
+        return envio_id
 
     def process_response_xml(self, resp):
         if resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] == '2':
