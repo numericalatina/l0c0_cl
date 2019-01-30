@@ -1062,6 +1062,8 @@ a VAT."""))
                 raise UserError('Las Notas deben llevar por obligación una referencia al documento que están afectando')
             if not inv.journal_id.use_documents or not inv.sii_document_class_id.dte:
                 continue
+            if not self.env.user.get_digital_signature(inv.company_id):
+                raise UserError(_('Usuario no autorizado a usar firma electrónica para esta compañia. Por favor solicatar autorización en la ficha de compañia del documento por alguien con los permisos suficientes de administrador'))
             inv.sii_result = 'NoEnviado'
             inv.responsable_envio = self.env.user.id
             if inv.type in ['out_invoice', 'out_refund']:
