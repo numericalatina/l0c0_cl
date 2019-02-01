@@ -168,7 +168,7 @@ class ResUsers(models.Model):
             obj = company_id or self.company_id
             if not self._check_auth_dte(obj):
                 obj = self.env['res.users'].search([("authorized_users_ids", "child_of", [self.id]), ('status', '=', 'valid')])
-                if not obj or not self._check_auth_dte(obj)
+                if not obj or not self._check_auth_dte(obj):
                     return False
         if obj.status == 'expired':
             raise UserError(_('Expired signature since %s' %obj.not_after))

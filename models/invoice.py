@@ -1819,6 +1819,8 @@ version="1.0">
             if no_product:
                 lines['MontoItem'] = 0
             line_number += 1
+            if lines.get('PrcItem', 1) == 0:
+                del(lines['PrcItem'])
             invoice_lines.extend([{'Detalle': lines}])
             if 'IndExe' in lines:
                 taxInclude = False
