@@ -1955,7 +1955,7 @@ version="1.0">
                 if not es_boleta and clases:
                     raise UserError('No se puede hacer envío masivo con contenido mixto, para este envío solamente boleta electrónica, boleta exenta electrónica o NC de Boleta ( o eliminar los casos descitos del set)')
                 es_boleta = True
-            if inv.company_id.dte_service_provider == 'SIICERT': #Retimbrar con número de atención y envío
+            if inv.company_id.dte_service_provider == 'SIICERT' or inv.sii_result == 'Rechazado': #Retimbrar con número de atención y envío
                 inv._timbrar(n_atencion)
             #@TODO Mejarorar esto en lo posible
             if not inv.sii_document_class_id.sii_code in clases:
