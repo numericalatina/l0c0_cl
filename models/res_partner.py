@@ -91,7 +91,10 @@ class ResPartner(models.Model):
     def set_temporal_email_cambiar_a_related(self):
         ''' Esto eliminar en la versión siguiente, es solamente para evitar
             problemas al actualizar '''
-        if not self.is_company and not self.dte_email:
+        if not self.is_company and not self.dte_email or\
+            (not self.email and not self.dte_email):
+            if self.dte_email_id:
+                self.dte_email_id.unlink()
             return
         if not self.dte_email_id:
             partners = []
