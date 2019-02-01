@@ -44,6 +44,7 @@
                   <field name="use_documents" invisible="1"/>
                   <field name="sii_document_number" invisible="1"/>
                   <field name="move_name" invisible="1"/>
+                  <field name="sii_code" invisible="1"/>
               </form>
 
               <button name="invoice_print" position="after">
@@ -136,7 +137,7 @@
                   <field name="journal_document_class_id"
                         attrs="{'invisible':[('use_documents','=',False)],'required':[('use_documents','=',True)],'readonly':['|',('state','!=','draft'),('sii_document_number','>',0)]}"
                         options="{'no_create': True}"/>
-                  <field name="ticket" />
+                  <field name="ticket" attrs="{'invisible': [('sii_code', 'in', [39, 41])]}" />
               </field>
 
               <field name="account_id" position="attributes">

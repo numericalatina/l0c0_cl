@@ -231,6 +231,13 @@ class AccountInvoice(models.Model):
             readonly=True,
             store=True,
         )
+    sii_code = fields.Integer(
+            related='sii_document_class_id.sii_code',
+            string='Document Code',
+            copy=False,
+            readonly=True,
+            store=True,
+        )
     sii_document_number = BigInt(
         string='Document Number',
         copy=False,
@@ -1501,7 +1508,7 @@ version="1.0">
         IdDoc['FchEmis'] = self.date_invoice
         if self._es_boleta():
             IdDoc['IndServicio'] = 3 #@TODO agregar las otras opciones a la fichade producto servicio
-        if self.ticket:
+        if self.ticket and not self._es_boleta():
             IdDoc['TpoImpresion'] = "T"
         #if self.tipo_servicio:
         #    Encabezado['IdDoc']['IndServicio'] = 1,2,3,4
