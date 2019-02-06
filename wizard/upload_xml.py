@@ -552,14 +552,11 @@ class UploadXMLWizard(models.TransientModel):
             query2.append(('product_name', '=', NmbItem))
         product_supplier = False
         if not product_id and self.type == 'compras':
-            product_supplier = self.env['product.supplierinfo'].search(query2)
-            product_id = product_supplier.product_id or self.env['product.product'].search(
-                [
-                    ('product_tmpl_id', '=', product_supplier.product_tmpl_id.id),
-                ],
-                limit=1)
+            if not product_supplier.product_tmpl_id.active:
+                raise UserError(_('Plantilla Producto para el proveedor marcado como archivado'))
+            product_id = product_supplier.product_id or product_supplier.product_tmpl_id.product_variant_id.id
             if not product_id:
-                if not product_supplier and not self.pre_process:
+                if not self.pre_process:
                     product_id = self._create_prod(line, price_included)
                 else:
                     code = ''
@@ -580,8 +577,11 @@ class UploadXMLWizard(models.TransientModel):
                 'product_code': default_code,
                 'product_tmpl_id': product_id.product_tmpl_id.id,
                 'price': price,
+                'product_id': product_id.id,
             }
             self.env['product.supplierinfo'].create(supplier_info)
+        if not product_id.active:
+                raise UserError(_('Producto para el proveedor marcado como archivado'))
         return product_id.id
 
     def _prepare_line(self, line, document_id, account_id, type, price_included=False):
