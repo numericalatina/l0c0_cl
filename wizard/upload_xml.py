@@ -552,9 +552,10 @@ class UploadXMLWizard(models.TransientModel):
             query2.append(('product_name', '=', NmbItem))
         product_supplier = False
         if not product_id and self.type == 'compras':
-            if not product_supplier.product_tmpl_id.active:
+            product_supplier = self.env['product.supplierinfo'].search(query2)
+            if product_supplier and not product_supplier.product_tmpl_id.active:
                 raise UserError(_('Plantilla Producto para el proveedor marcado como archivado'))
-            product_id = product_supplier.product_id or product_supplier.product_tmpl_id.product_variant_id.id
+            product_id = product_supplier.product_id or product_supplier.product_tmpl_id.product_variant_id
             if not product_id:
                 if not self.pre_process:
                     product_id = self._create_prod(line, price_included)
