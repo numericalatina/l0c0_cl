@@ -1457,8 +1457,10 @@ version="1.0">
             if inv.sii_result in ['','NoEnviado','Rechazado'] or inv.company_id.dte_service_provider == 'SIICERT':
                 if inv.sii_result in ['Rechazado']:
                     inv._timbrar()
-                    if inv.sii_xml_request:
+                    if len(inv.sii_xml_request) == 1:
                         inv.sii_xml_request.unlink()
+                    else:
+                        inv.sii_xml_request = False
                 inv.sii_result = 'EnCola'
                 ids.append(inv.id)
                 if not envio_boleta and (inv._es_boleta() or inv._nc_boleta()):
@@ -2038,7 +2040,10 @@ version="1.0">
                 tipo_envio['normal'].append(r.id)
             if r.sii_result in ['Rechazado'] or (r.company_id.dte_service_provider == 'SIICERT' and r.sii_xml_request.state in ['', 'NoEnviado']):
                 if r.sii_xml_request:
-                    r.sii_xml_request.unlink()
+                    if len(r.sii_xml_request.invoice_ids) == 1:
+                        r.sii_xml_request.unlink()
+                    else:
+                        r.sii_xml_request = False
                 r.sii_message = ''
         for k, t in tipo_envio.items():
             if not t:
