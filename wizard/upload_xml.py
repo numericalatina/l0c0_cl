@@ -956,7 +956,7 @@ class UploadXMLWizard(models.TransientModel):
     def _create_pre(self, documento, company_id):
         dte = self._dte_exist(documento)
         if dte:
-            _logger.warning(_("El documento ya se encuentra regsitrado" ))
+            _logger.warning(_("El documento %s ya se encuentra registrado" % dte.name ))
             return dte
         data = self._get_data(documento, company_id)
         data.update({
