@@ -411,6 +411,17 @@ class AccountInvoice(models.Model):
             readonly=True,
             states={'draft': [('readonly', False)]},
         )
+    acteco_ids = fields.Many2many(
+        'partner.activities',
+        related="commercial_partner_id.acteco_ids",
+        string="Partner Activities"
+    )
+    acteco_id = fields.Many2one(
+        'partner.activities',
+        string="Partner Activity",
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
 
     @api.depends('state', 'journal_id', 'date_invoice', 'sii_document_class_id')
     def _get_sequence_prefix(self):
@@ -1545,7 +1556,7 @@ version="1.0">
         if self.journal_id.sucursal_id:
             Emisor['Sucursal'] = self._acortar_str(self.journal_id.sucursal_id.name, 20)
             Emisor['CdgSIISucur'] = self._acortar_str(self.journal_id.sucursal_id.sii_code, 9)
-        Emisor['DirOrigen'] = self._acortar_str(self.company_id.street + ' ' +(self.company_id.street2 or ''), 70)
+        Emisor['DirOrigen'] = self._acortar_str(self.company_id.street + ' ' + (self.company_id.street2 or ''), 70)
         Emisor['CmnaOrigen'] = self.company_id.city_id.name or ''
         Emisor['CiudadOrigen'] = self.company_id.city or ''
         return Emisor
@@ -1561,9 +1572,10 @@ version="1.0">
         if not self.partner_id or Receptor['RUTRecep'] == '66666666-6':
             return Receptor
         if not self._es_boleta() and not self._nc_boleta():
-            if not self.commercial_partner_id.activity_description:
+            GiroRecep = self.partner_activity_id.name or self.commercial_partner_id.activity_description.name
+            if not GiroRecep:
                 raise UserError(_('Seleccione giro del partner'))
-            Receptor['GiroRecep'] = self._acortar_str(self.commercial_partner_id.activity_description.name, 40)
+            Receptor['GiroRecep'] = self._acortar_str(GiroRecep, 40)
         if self.partner_id.phone or self.commercial_partner_id.phone:
             Receptor['Contacto'] = self._acortar_str(self.partner_id.phone or self.commercial_partner_id.phone or self.partner_id.email, 80)
         if (self.commercial_partner_id.email or self.commercial_partner_id.dte_email or self.partner_id.email or self.partner_id.dte_email) and not self._es_boleta():

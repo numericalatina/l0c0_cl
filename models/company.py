@@ -55,8 +55,7 @@ stamp to be legally valid.''',
         )
     company_activities_ids = fields.Many2many(
             'partner.activities',
-            id1='company_id', 
-            id2='activities_id',
+            related="partner_id.acteco_ids",
             string='Activities Names',
         )
     responsability_id = fields.Many2one(
@@ -131,7 +130,7 @@ stamp to be legally valid.''',
             vat = 'CL%s' % document_number
             exist = self.env['res.partner'].search(
                 [
-                    ('vat','=', vat),
+                    ('vat', '=', vat),
                     ('vat', '!=',  'CL555555555'),
                     ('commercial_partner_id', '!=', self.id ),
                 ],
