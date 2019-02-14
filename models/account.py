@@ -184,15 +184,6 @@ class account_journal(models.Model):
             default=False,
         )
 
-    @api.onchange('company_id')
-    def set_domain_journals(self):
-        res = {
-            'domain': {
-                'journal_document_class_id': self._domain_journal()
-                }
-        }
-        return res
-
     @api.onchange('journal_activities_ids')
     def max_actecos(self):
         if len(self.journal_activities_ids) > 4:
