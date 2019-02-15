@@ -205,7 +205,7 @@
                   <field name="acteco_ids"  invisible="1"/>
                   <field name="acteco_id" attrs="{'invisible': [('acteco_ids', '=', [])]}"
                     domain="[('id', 'in', acteco_ids)]" 
-                    options="{'no_open': True}"/>
+                    options="{'no_open': True, 'no_create': True}"/>
               </field>
 
               <field name="amount_untaxed" position="after">
