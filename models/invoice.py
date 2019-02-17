@@ -1140,7 +1140,7 @@ a VAT."""))
         return resolution_data
 
     def create_template_envio(self, RutEmisor, RutReceptor, FchResol, NroResol,
-                              TmstFirmaEnv, EnvioDTE,signature_d,SubTotDTE):
+                              TmstFirmaEnv, EnvioDTE, subject_serial_number,SubTotDTE):
         xml = '''<SetDTE ID="SetDoc">
 <Caratula version="1.0">
 <RutEmisor>{0}</RutEmisor>
@@ -1151,7 +1151,7 @@ a VAT."""))
 <TmstFirmaEnv>{5}</TmstFirmaEnv>
 {6}</Caratula>{7}
 </SetDTE>
-'''.format(RutEmisor, signature_d['subject_serial_number'], RutReceptor,
+'''.format(RutEmisor, subject_serial_number, RutReceptor,
            FchResol, NroResol, TmstFirmaEnv, SubTotDTE, EnvioDTE)
         return xml
 
@@ -1287,16 +1287,16 @@ version="1.0">
 
     def sign_full_xml(self, message, uri, type='doc'):
         user_id = self.env.user
-        signature_d = user_id.get_digital_signature(self.company_id)
-        if not signature_d:
+        signature_id = user_id.get_digital_signature(self.company_id)
+        if not signature_id:
             raise UserError(_('''There is no Signer Person with an \
         authorized signature for you in the system. Please make sure that \
         'user_signature_key' module has been installed and enable a digital \
         signature, for you or make the signer to authorize you to use his \
         signature.'''))
-        cert = signature_d['cert'].replace(
+        cert = signature_id.cert.replace(
             BC, '').replace(EC, '').replace('\n', '').replace(' ','')
-        privkey = signature_d['priv_key']
+        privkey = signature_id.priv_key
         doc = etree.fromstring(message)
         string = etree.tostring(doc[0])
         mess = etree.tostring(etree.fromstring(string), method="c14n")
@@ -1995,7 +1995,7 @@ version="1.0">
         dtes = {}
         SubTotDTE = ''
         resol_data = self.get_resolution_data(company_id)
-        signature_d = self.env.user.get_digital_signature(company_id)
+        signature_id = self.env.user.get_digital_signature(company_id)
         RUTEmisor = self.format_vat(company_id.vat)
         for id_class_doc, classes in clases.items():
             NroDte = 0
@@ -2018,7 +2018,7 @@ version="1.0">
                 resol_data['dte_resolution_number'],
                 self.time_stamp(),
                 documentos,
-                signature_d,
+                signature_id.subject_serial_number,
                 SubTotDTE,
             )
         env = 'env'
@@ -2116,8 +2116,8 @@ version="1.0">
             _server = Client(url)
             receptor = r.format_vat(r.commercial_partner_id.vat)
             date_invoice = datetime.strptime(r.date_invoice, "%Y-%m-%d").strftime("%d-%m-%Y")
-            signature_d = self.env.user.get_digital_signature(r.company_id)
-            rut = signature_d['subject_serial_number']
+            signature_id = self.env.user.get_digital_signature(r.company_id)
+            rut = signature_id.subject_serial_number
             respuesta = _server.service.getEstDte(
                 rut[:8],
                 str(rut[-1]),
