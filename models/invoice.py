@@ -1573,7 +1573,7 @@ version="1.0">
         if not self.partner_id or Receptor['RUTRecep'] == '66666666-6':
             return Receptor
         if not self._es_boleta() and not self._nc_boleta():
-            GiroRecep = self.partner_activity_id.name or self.commercial_partner_id.activity_description.name
+            GiroRecep = self.acteco_id.name or self.commercial_partner_id.activity_description.name
             if not GiroRecep:
                 raise UserError(_('Seleccione giro del partner'))
             Receptor['GiroRecep'] = self._acortar_str(GiroRecep, 40)
