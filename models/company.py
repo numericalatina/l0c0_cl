@@ -6,7 +6,6 @@ import re
 class DTECompany(models.Model):
     _inherit = 'res.company'
 
-
     def _get_default_tp_type(self):
         try:
             return self.env.ref('l10n_cl_fe.res_IVARI')
@@ -19,9 +18,11 @@ class DTECompany(models.Model):
         except:
             return self.env['sii.document_type']
 
-    dte_email = fields.Char(
-            string='DTE Email',
-            related='partner_id.dte_email'
+    dte_email_id = fields.Many2one(
+            'mail.alias',
+            string='DTE EMail',
+            ondelete="restrict",
+            help="The email address associated with electronica invoice, where all emails vendors would send Exchange DTE, for automatic reception in Odoo."
     )
     dte_service_provider = fields.Selection(
             (

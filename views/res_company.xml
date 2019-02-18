@@ -6,7 +6,7 @@
 		<field name="model">res.company</field>
 		<field name="arch" type="xml">
 			<field name="website" position="after">
-				<field name="dte_email" widget="email" />
+				<field name="dte_email_id" required="True" context="{'alias_model_name': 'mail.message.dte', 'alias_parent_model_name': 'res.company', 'default_alias_user_id': 3, 'alias_parent_thread_id': active_id}"/>
 				<field name="dte_service_provider" />
 				<field name="dte_resolution_number"
 					attrs="{'invisible': [('dte_service_provider', 'not in', ['SII', 'SIICERT'])],

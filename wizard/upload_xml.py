@@ -369,7 +369,7 @@ class UploadXMLWizard(models.TransientModel):
             if att:
                 values = {
                     'model_id': self.dte_id.id,
-                    'email_from': self.dte_id.company_id.dte_email,
+                    'email_from': self.dte_id.company_id.dte_email_id.name,
                     'email_to': self.sudo().dte_id.mail_id.email_from,
                     'auto_delete': False,
                     'model': "mail.message.dte",
