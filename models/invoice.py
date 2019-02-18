@@ -967,7 +967,8 @@ a VAT."""))
                       ('journal_document_class_id.sii_document_class_id', '=',
                        self.journal_document_class_id.sii_document_class_id.id),
                       ('company_id', '=', self.company_id.id),
-                      ('id', '!=', self.id)]
+                      ('id', '!=', self.id),
+                      ('state', '!=', 'cancel')]
             invoice_ids = self.search(domain)
             if invoice_ids:
                 raise UserError(u'El numero de factura debe ser unico por Proveedor.\n'\
