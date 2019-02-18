@@ -26,17 +26,12 @@ Facturación Electrónica para Chile.
         ],
     'external_dependencies': {
         'python': [
-            'xmltodict',
-            'dicttoxml',
-            'pdf417gen',
+            'facturacion_electronica',
             'base64',
             'hashlib',
-            'cchardet',
             'suds',
-            'urllib3',
             'signxml',
             'ast',
-            'pysftp',
             'num2words',
             'xlsxwriter',
             'io',
