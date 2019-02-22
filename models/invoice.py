@@ -1671,7 +1671,7 @@ version="1.0">
                 for t in self.tax_line_ids:
                     if t.tax_id.sii_code in [ 14, 15 ]:
                         IVA = t
-                    elif t.tax_id.sii_code in [ 15, 17, 18, 19 ]:
+                    elif t.tax_id.sii_code in [ 15, 17, 18, 19, 27, 271, 26 ]:
                         OtrosImp.append(t)
                     if t.tax_id.sii_code in [ 14, 15 ]:
                         MntNeto += self.currency_id.round(t.base)
@@ -1817,6 +1817,9 @@ version="1.0">
             if not no_product:
                 lines['UnmdItem'] = line.uom_id.name[:4]
                 lines['PrcItem'] = round(line.price_unit, 6)
+                for t in line.invoice_line_tax_ids:
+                    if t.sii_code in [26,27,271]:#@Agregar todos los adicionales
+                        lines['CodImpAdic'] = t.sii_code
                 if currency_id:
                     lines['OtrMnda'] = collections.OrderedDict()
                     lines['OtrMnda']['PrcOtrMon'] = round(currency_id.compute( line.price_unit, self.company_id.currency_id, round=False), 6)
