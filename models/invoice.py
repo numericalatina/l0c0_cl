@@ -2255,30 +2255,25 @@ version="1.0">
         att = self._create_attachment()
         body = 'XML de Intercambio DTE: %s' % (self.number)
         subject = 'XML de Intercambio DTE: %s' % (self.number)
-        self.sudo().message_post(
-            body=body,
-            subject=subject,
-            partner_ids=[self.commercial_partner_id.id],
-            attachment_ids=att.ids,
-            message_type='comment',
-            subtype='mt_comment',
-        )
-        if not self.commercial_partner_id.dte_email or self.commercial_partner_id.dte_email == self.commercial_partner_id.email:
-            return
-        for dte_email in self.commercial_partner_id.child_ids:
+        dte_email_id = self.company_id.dte_email_id or self.env.user.company_id.dte_email_id
+        dte_receptors = self.commercial_partner_id.child_ids + self.commercial_partner_id
+        email_to = ''
+        for dte_email in dte_recptors:
             if not dte_email.send_dte:
                 continue
-            values = {
-                'email_from': self.company_id.dte_email_id.name_get()[0][1],
-                'email_to': dte_email.name,
+            email_to += dte_email.name+','
+        values = {
+                'res_id': self.id,
+                'email_from': dte_email_id.name_get()[0][1],
+                'email_to': email_to[:-1],
                 'auto_delete': False,
                 'model': 'account.invoice',
                 'body': body,
                 'subject': subject,
                 'attachment_ids': [[6, 0, att.ids]],
             }
-            send_mail = self.env['mail.mail'].sudo().create(values)
-            send_mail.send()
+        send_mail = self.env['mail.mail'].sudo().create(values)
+        send_mail.send()
 
     @api.multi
     def manual_send_exchange(self):
