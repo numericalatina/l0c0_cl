@@ -21,7 +21,7 @@ def migrate(cr, installed_version):
         firma = env['sii.firma'].create({
                     'file_content': row['key_file_temp'].tobytes(),
                     'name': row['filename_temp'],
-                    'company_ids': [row['company_id']],
+                    'company_ids': [row['company_id'] or env.user.company_id.id],
                     'user_ids': users,
                     'priority': 1,
                     'active': True,
