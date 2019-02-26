@@ -92,6 +92,7 @@ class userSignature(models.Model):
         'res.company',
         string='Authorized Companies',
         default=lambda self: [self.env.user.company_id.id],
+        required=True,
     )
     priority = fields.Integer(
         string="Priority",
