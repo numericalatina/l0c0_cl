@@ -88,13 +88,13 @@ except ImportError:
     _logger.warning('Cannot import xmltodict library')
 
 server_url = {
-    'SIICERT':'https://maullin.sii.cl/DTEWS/',
-    'SII':'https://palena.sii.cl/DTEWS/',
+    'SIICERT': 'https://maullin.sii.cl/DTEWS/',
+    'SII': 'https://palena.sii.cl/DTEWS/',
 }
 
 claim_url = {
     'SIICERT': 'https://ws2.sii.cl/WSREGISTRORECLAMODTECERT/registroreclamodteservice',
-    'SII':'https://ws1.sii.cl/WSREGISTRORECLAMODTE/registroreclamodteservice',
+    'SII': 'https://ws1.sii.cl/WSREGISTRORECLAMODTE/registroreclamodteservice',
 }
 
 BC = '''-----BEGIN CERTIFICATE-----\n'''
@@ -1074,15 +1074,21 @@ a VAT."""))
                      ]):
                     raise UserError('El documento %s, Folio %s de la Empresa %s ya se en cuentra registrado' % ( invoice.journal_document_class_id.sii_document_class_id.name, invoice.reference, invoice.partner_id.name))
 
+    def _validaciones_uso_dte(self):
+        if self.sii_document_class_id.sii_code in [55, 56, 60, 61, 111, 112, 802] and not self.referencias:
+            raise UserError('Las Notas deben llevar por obligación una referencia al documento que están afectando')
+        if not self.env.user.get_digital_signature(self.company_id):
+            raise UserError(_('Usuario no autorizado a usar firma electrónica para esta compañia. Por favor solicatar autorización en la ficha de compañia del documento por alguien con los permisos suficientes de administrador'))
+        if not self.env.ref('base.lang_es_CL').active:
+            raise UserError(_('Lang es_CL must be enabled'))
+
+
     @api.multi
     def invoice_validate(self):
         for inv in self:
-            if inv.sii_document_class_id.sii_code in [55, 56, 60, 61, 111, 112, 802] and not inv.referencias:
-                raise UserError('Las Notas deben llevar por obligación una referencia al documento que están afectando')
             if not inv.journal_id.use_documents or not inv.sii_document_class_id.dte:
                 continue
-            if not self.env.user.get_digital_signature(inv.company_id):
-                raise UserError(_('Usuario no autorizado a usar firma electrónica para esta compañia. Por favor solicatar autorización en la ficha de compañia del documento por alguien con los permisos suficientes de administrador'))
+            inv._validaciones_uso_dte()
             inv.sii_result = 'NoEnviado'
             inv.responsable_envio = self.env.user.id
             if inv.type in ['out_invoice', 'out_refund']:
@@ -1290,11 +1296,7 @@ version="1.0">
         user_id = self.env.user
         signature_id = user_id.get_digital_signature(self.company_id)
         if not signature_id:
-            raise UserError(_('''There is no Signer Person with an \
-        authorized signature for you in the system. Please make sure that \
-        'user_signature_key' module has been installed and enable a digital \
-        signature, for you or make the signer to authorize you to use his \
-        signature.'''))
+            raise UserError(_('''There are not a Signature Cert Available for this user, pleaseupload your signature or tell to someelse.'''))
         cert = signature_id.cert.replace(
             BC, '').replace(EC, '').replace('\n', '').replace(' ','')
         privkey = signature_id.priv_key
