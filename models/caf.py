@@ -222,18 +222,19 @@ www.sii.cl'''.format(folio)
         if not caffiles:
             raise UserError(_('''No hay caf disponible para el documento %s folio %s. Por favor solicite suba un CAF o solicite uno en el SII.''' % (self.name, folio)))
         for caffile in caffiles:
-            if int(folio) >= caffile.start_nm and int(folio) <= caffile.final_nm and self.expiration_date:
-                timestamp = self.time_stamp()
-                expiration_caf = date(int(caffile.expiration_date[:4]),
-                                      int(caffile.expiration_date[5:7]),
-                                      int(caffile.expiration_date[8:10])
-                                     )
-                if date(int(timestamp[:4]),
-                        int(timestamp[5:7]),
-                        int(timestamp[8:10])) > expiration_caf:
-                    msg = "CAF Vencido. %s" % msg
-                else:
-                    return caffile.decode_caf()
+            if int(folio) >= caffile.start_nm and int(folio) <= caffile.final_nm:
+                if caffile.expiration_date:
+                    timestamp = self.time_stamp()
+                    expiration_caf = date(int(caffile.expiration_date[:4]),
+                                          int(caffile.expiration_date[5:7]),
+                                          int(caffile.expiration_date[8:10])
+                                         )
+                    if date(int(timestamp[:4]),
+                            int(timestamp[5:7]),
+                            int(timestamp[8:10])) > expiration_caf:
+                        msg = "CAF Vencido. %s" % msg
+                        continue
+                return caffile.decode_caf()
         raise UserError(_(msg))
 
     def get_caf_files(self, folio=None):
