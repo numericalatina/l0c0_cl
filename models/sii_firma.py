@@ -16,10 +16,14 @@ except ImportError:
 class userSignature(models.Model):
     _name = 'sii.firma'
 
+    @api.onchange('subject_serial_number')
     def check_signature(self):
         for s in self:
             if not s.cert:
                 s.state = 'unverified'
+                continue
+            if not s.subject_serial_number:
+                s.state = 'incomplete'
                 continue
             expired = datetime.strptime(s.expire_date, '%Y-%m-%d') < datetime.now()
             s.state = 'expired' if expired else 'valid'
@@ -49,6 +53,7 @@ class userSignature(models.Model):
     state = fields.Selection(
         [
                     ('unverified', 'Unverified'),
+                    ('incomplete', 'Incomplete'),
                     ('valid', 'Valid'),
                     ('expired', 'Expired')
         ],
