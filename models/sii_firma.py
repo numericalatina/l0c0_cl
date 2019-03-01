@@ -18,7 +18,7 @@ class userSignature(models.Model):
 
     @api.onchange('subject_serial_number')
     def check_signature(self):
-        for s in self:
+        for s in self.sudo():
             if not s.cert:
                 s.state = 'unverified'
                 continue
