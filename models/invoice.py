@@ -1081,7 +1081,8 @@ a VAT."""))
             raise UserError(_('Usuario no autorizado a usar firma electrónica para esta compañia. Por favor solicatar autorización en la ficha de compañia del documento por alguien con los permisos suficientes de administrador'))
         if not self.env.ref('base.lang_es_CL').active:
             raise UserError(_('Lang es_CL must be enabled'))
-
+        if not self.env.ref('base.CLP').active:
+            raise UserError(_('Currency CLP must be enabled'))
 
     @api.multi
     def invoice_validate(self):
@@ -1599,30 +1600,30 @@ version="1.0">
         Totales['TpoMoneda'] = self._acortar_str(currency_id.abreviatura, 15)
         Totales['TpoCambio'] = currency_id.rate
         if MntNeto > 0:
-            if currency_id:
-                MntNeto = currency_id.compute(MntNeto, self.company_id.currency_id)
+            if currency_id != self.currency_id:
+                MntNeto = currency_id.compute(MntNeto, self.currency_id)
             Totales['MntNetoOtrMnda'] = MntNeto
         if MntExe:
-            if currency_id:
-                MntExe = currency_id.compute(MntExe, self.company_id.currency_id)
+            if currency_id != self.currency_id:
+                MntExe = currency_id.compute(MntExe, self.currency_id)
             Totales['MntExeOtrMnda'] = MntExe
         if MntBase and MntBase > 0:
             Totales['MntFaeCarneOtrMnda'] = MntBase
         if TasaIVA:
-            if currency_id:
-                IVA = currency_id.compute(IVA, self.company_id.currency_id)
+            if currency_id != self.currency_id:
+                IVA = currency_id.compute(IVA, self.currency_id)
             Totales['IVAOtrMnda'] = IVA
         if ImptoReten:
             for item in ImptoReten:
                 ret = {'ImptRetOtrMnda': collections.OrderedDict()}
                 ret['ImptRetOtrMnda']['TipoImpOtrMnda'] = item['ImptRet']['TipoImp']
                 ret['ImptRetOtrMnda']['TasaImpOtrMnda'] = item['ImptRet']['TasaImp']
-                if currency_id:
-                    ret['ImptRetOtrMnda']['MontoImp'] = currency_id.compute(item['ImptRet']['MontoImp'], self.company_id.currency_id)
+                if currency_id != self.currency_id:
+                    ret['ImptRetOtrMnda']['MontoImp'] = currency_id.compute(item['ImptRet']['MontoImp'], self.currency_id)
                 ret['ImptRetOtrMnda']['ValorImpOtrMnda'] = item['ImptRet']['MontoImp']
             Totales['item_ret_otr'] = ret
-        if currency_id:
-            MntTotal = currency_id.compute(MntTotal, self.company_id.currency_id)
+        if currency_id != self.currency_id:
+            MntTotal = currency_id.compute(MntTotal, self.currency_id)
         Totales['MntTotOtrMnda'] = MntTotal
         #Totales['MontoNF']
         #Totales['TotalPeriodo']
@@ -1633,17 +1634,26 @@ version="1.0">
     def _totales_normal(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal=0, MntBase=0):
         Totales = collections.OrderedDict()
         if MntNeto > 0:
-            Totales['MntNeto'] = MntNeto
+            if currency_id != self.currency_id:
+                    MntNeto = currency_id.compute(MntNeto, self.currency_id)
+            Totales['MntNeto'] = currency_id.round(MntNeto)
         if MntExe:
-            Totales['MntExe'] = MntExe
+            if currency_id != self.currency_id:
+                MntExe = currency_id.compute(MntExe, self.currency_id)
+            Totales['MntExe'] = currency_id.round(MntExe)
         if MntBase > 0:
-            Totales['MntBase'] = MntBase
+            Totales['MntBase'] = currency_id.round(MntBase)
         if TasaIVA:
             Totales['TasaIVA'] = TasaIVA
-            Totales['IVA'] = IVA
+            if currency_id != self.currency_id:
+                IVA = currency_id.compute(IVA, self.currency_id)
+            Totales['IVA'] = currency_id.round(IVA)
         if ImptoReten:
+            '''@TODO desglose ImptoReten'''
             Totales['item_ret'] = ImptoReten
-        Totales['MntTotal'] = MntTotal
+        if currency_id != self.currency_id:
+            MntTotal = currency_id.compute(MntTotal, self.currency_id)
+        Totales['MntTotal'] = currency_id.round(MntTotal)
         #Totales['MontoNF']
         #Totales['TotalPeriodo']
         #Totales['SaldoAnterior']
@@ -1662,7 +1672,7 @@ version="1.0">
         MntBase = 0
         OtrosImp = []
         if self._es_exento():
-            MntExe = self.currency_id.round(self.amount_total)
+            MntExe = self.amount_total
             if no_product:
                 MntExe = 0
             if self.amount_tax > 0:
@@ -1676,18 +1686,18 @@ version="1.0">
                     elif t.tax_id.sii_code in [ 15, 17, 18, 19, 27, 271, 26 ]:
                         OtrosImp.append(t)
                     if t.tax_id.sii_code in [ 14, 15 ]:
-                        MntNeto += self.currency_id.round(t.base)
+                        MntNeto += t.base
                     if t.tax_id.sii_code in [ 17 ]:
                         MntBase += IVA.base # @TODO Buscar forma de calcular la base para faenamiento
         if self.amount_tax == 0 and MntExe > 0 and not self._es_exento():
             raise UserError("Debe ir almenos un producto afecto")
         if MntExe > 0:
-            MntExe = self.currency_id.round( MntExe )
+            MntExe = MntExe
         if not self._es_boleta() or not taxInclude:
             if IVA:
                 if not self._es_boleta():
                     TasaIVA = round(IVA.tax_id.amount, 2)
-                MntIVA = self.currency_id.round(IVA.amount)
+                MntIVA = IVA.amount
             if no_product:
                 MntNeto = 0
                 if not self._es_boleta():
@@ -1698,10 +1708,10 @@ version="1.0">
             for item in OtrosImp:
                 itemRet = {'ImptoReten': collections.OrderedDict()}
                 itemRet['ImptoReten']['TipoImp'] = item.tax_id.sii_code
-                itemRet['ImptoReten']['TasaImp'] = self.currency_id.round( item.tax_id.amount)
-                itemRet['ImptoReten']['MontoImp'] = self.currency_id.round(item.amount_retencion if item.tax_id.sii_type == 'R' else item.amount)
+                itemRet['ImptoReten']['TasaImp'] = item.tax_id.amount
+                itemRet['ImptoReten']['MontoImp'] = item.amount_retencion if item.tax_id.sii_type == 'R' else item.amount
                 ImptoReten.append(itemRet)
-        MntTotal = self.currency_id.round(self.amount_total)
+        MntTotal = self.amount_total
         if no_product:
             MntTotal = 0
         return MntExe, MntNeto, MntIVA, TasaIVA, ImptoReten, MntTotal, MntBase
@@ -1711,13 +1721,14 @@ version="1.0">
         Encabezado['IdDoc'] = self._id_doc(taxInclude, MntExe)
         Encabezado['Emisor'] = self._emisor()
         Encabezado['Receptor'] = self._receptor()
-        currency_id = False
-        if self.currency_id and self.company_id and self.currency_id != self.company_id.currency_id:
-            currency_id = self.currency_id.with_context(date=self.date_invoice)
+        currency_base = self.env.ref('base.CLP').with_context(date=self.date_invoice)
+        another_currency_id = False
+        if self.currency_id != currency_base:
+            another_currency_id = self.currency_id
         MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase = self._totales(MntExe, no_product, taxInclude)
-        Encabezado['Totales'] = self._totales_normal(currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
-        if currency_id:
-            Encabezado['OtraMoneda'] = self._totales_otra_moneda( currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
+        Encabezado['Totales'] = self._totales_normal(currency_base, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
+        if another_currency_id:
+            Encabezado['OtraMoneda'] = self._totales_otra_moneda(another_currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
         return Encabezado
 
     @api.multi
@@ -1782,8 +1793,9 @@ version="1.0">
         invoice_lines = []
         no_product = False
         MntExe = 0
+        currency_base = self.env.ref('base.CLP').with_context(date=self.date_invoice)
         currency_id = False
-        if self.currency_id and self.company_id and self.currency_id != self.company_id.currency_id:
+        if self.currency_id != currency_base:
             currency_id = self.currency_id.with_context(date=self.date_invoice)
         for line in self.invoice_line_ids:
             if line.product_id.default_code == 'NO_PRODUCT':
@@ -1799,7 +1811,7 @@ version="1.0">
                 taxInclude = t.price_include or ( (self._es_boleta() or self._nc_boleta()) and not t.sii_detailed )
                 if t.amount == 0 or t.sii_code in [0]:#@TODO mejor manera de identificar exento de afecto
                     lines['IndExe'] = 1
-                    MntExe += self.currency_id.round(line.price_subtotal)
+                    MntExe += currency_base.round(line.price_subtotal)
             #if line.product_id.type == 'events':
             #   lines['ItemEspectaculo'] =
 #            if self._es_boleta():
@@ -1824,25 +1836,28 @@ version="1.0">
                         lines['CodImpAdic'] = t.sii_code
                 if currency_id:
                     lines['OtrMnda'] = collections.OrderedDict()
-                    lines['OtrMnda']['PrcOtrMon'] = round(currency_id.compute( line.price_unit, self.company_id.currency_id, round=False), 6)
-                    lines['OtrMnda']['Moneda'] = self._acortar_str(self.company_id.currency_id.name, 3)
+                    lines['OtrMnda']['PrcOtrMon'] = round(currency_base.compute( line.price_unit, currency_id, round=False), 6)
+                    lines['OtrMnda']['Moneda'] = self._acortar_str(currency_id.name, 3)
                     lines['OtrMnda']['FctConv'] = round(currency_id.rate, 4)
             if line.discount > 0:
-                if currency_id:
-                    lines['OtrMnda']['DctoOtrMnda'] = line.discount
                 lines['DescuentoPct'] = line.discount
                 DescMonto = (((line.discount / 100) * lines['PrcItem'])* qty)
-                lines['DescuentoMonto'] = self.currency_id.round(DescMonto)
+                lines['DescuentoMonto'] = currency_base.round(DescMonto)
                 if currency_id:
-                   lines['OtrMnda']['DctoOtrMnda'] = currency_id.compute(DescMonto, self.company_id.currency_id)
+                    lines['DescuentoMonto'] = currency_base.compute(DescMonto, currency_id)
+                    lines['OtrMnda']['DctoOtrMnda'] = DescMonto
             if not no_product and not taxInclude:
+                price_subtotal = line.price_subtotal
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_id.compute(line.price_subtotal, self.company_id.currency_id)
-                lines['MontoItem'] = self.currency_id.round(line.price_subtotal)
-            elif not no_product :
+                    lines['OtrMnda']['MontoItemOtrMnda'] = price_subtotal
+                    price_subtotal = currency_base.compute(price_subtotal, currency_id)
+                lines['MontoItem'] = currency_base.round(price_subtotal)
+            elif not no_product:
+                price_total = line.price_total
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_id.compute(line.price_total, self.company_id.currency_id)
-                lines['MontoItem'] = self.currency_id.round(line.price_total)
+                    lines['OtrMnda']['MontoItemOtrMnda'] = price_total
+                    price_total = currency_base.compute(price_total, currency_id)
+                lines['MontoItem'] = currency_base.round(price_total)
             if no_product:
                 lines['MontoItem'] = 0
             line_number += 1
@@ -1871,10 +1886,11 @@ version="1.0">
             if dr.gdr_type == "amount":
                 disc_type = "$"
             dr_line['TpoValor'] = disc_type
-            dr_line['ValorDR'] = self.currency_id.round(dr.valor)
-            if self.currency_id and self.company_id and self.currency_id != self.company_id.currency_id:
-                currency_id = self.currency_id.with_context(date=self.date_invoice)
-                dr_line['ValorDROtrMnda'] = currency_id.compute(dr.valor, self.company_id.currency_id)
+            currency_base = self.env.ref('base.CLP')
+            dr_line['ValorDR'] = currency_base.round(dr.valor).with_context(date=self.date_invoice)
+            if self.currency_id != currency_base:
+                currency_id = self.currency_id
+                dr_line['ValorDROtrMnda'] = currency_base.compute(dr.valor, currency_id)
             if self.sii_document_class_id.sii_code in [34] and (self.referencias and self.referencias[0].sii_referencia_TpoDocRef.sii_code == '34'):#solamente si es exento
                 dr_line['IndExeDR'] = 1
             dr_lines = [{'DscRcgGlobal':dr_line}]
