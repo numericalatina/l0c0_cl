@@ -161,7 +161,6 @@ class ResPartner(models.Model):
     #                              })
     #        self.dte_email_id = dte_email_id.id
 
-
     @api.multi
     @api.onchange('responsability_id')
     def _get_tp_sii_code(self):
