@@ -16,7 +16,6 @@ Facturación Electrónica para Chile.
             'base',
             'base_address_city',
             'account',
-            'account_invoicing',
             'purchase',
             'sale_management',
             'l10n_cl_chart_of_account',
