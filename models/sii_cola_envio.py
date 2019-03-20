@@ -52,7 +52,7 @@ class ColaEnvio(models.Model):
             if docs[0].sii_xml_request and docs[0].sii_xml_request.state in [ 'Aceptado', 'Enviado', 'Rechazado', 'Anulado']:
                 self.unlink()
                 return
-            if self.date_time and datetime.now() >= datetime.strptime(self.date_time, DTF):
+            if self.date_time and datetime.now() >= self.date_time:
                 try:
                     envio_id = docs.do_dte_send(self.n_atencion)
                     if envio_id.sii_send_ident:
