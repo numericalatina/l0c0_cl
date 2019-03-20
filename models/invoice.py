@@ -1756,7 +1756,7 @@ version="1.0">
         result['TED']['DD']['CAF'] = resultcaf['AUTORIZACION']['CAF']
         dte = result['TED']['DD']
         timestamp = self.time_stamp()
-        if date(int(timestamp[:4]), int(timestamp[5:7]), int(timestamp[8:10])) < date(int(self.date_invoice[:4]), int(self.date_invoice[5:7]), int(self.date_invoice[8:10])):
+        if date(int(timestamp[:4]), int(timestamp[5:7]), int(timestamp[8:10])) < date(int(self.date_invoice.year), int(self.date_invoice.month), int(self.date_invoice.day)):
             raise UserError("La fecha de timbraje no puede ser menor a la fecha de emisión del documento")
         dte['TSTED'] = timestamp
         dicttoxml.set_debug(False)
