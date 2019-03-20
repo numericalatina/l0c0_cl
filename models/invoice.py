@@ -2141,11 +2141,11 @@ version="1.0">
             signature_id = self.env.user.get_digital_signature(r.company_id)
             rut = signature_id.subject_serial_number
             respuesta = _server.service.getEstDte(
-                rut[:8],
+                rut[:8].replace('-', ''),
                 str(rut[-1]),
                 r.company_id.vat[2:-1],
                 r.company_id.vat[-1],
-                receptor[:8],
+                receptor[:8].replace('-', ''),
                 receptor[-1],
                 str(r.sii_document_class_id.sii_code),
                 str(r.sii_document_number),

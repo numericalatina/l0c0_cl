@@ -2,7 +2,7 @@
 {
     "name": """Facturación Electrónica para Chile\
     """,
-    'version': '0.8.16',
+    'version': '0.9.0',
     'category': 'Localization/Chile',
     'sequence': 12,
     'author':  'Daniel Santibáñez Polanco, Cooperativa OdooCoop',
@@ -63,7 +63,6 @@ Facturación Electrónica para Chile.
             'views/account_journal_sii_document_class_view.xml',
             'views/account_move_line_view.xml',
             'views/account_move_view.xml',
-            #'views/config_view.xml',
             'views/country_view.xml',
             'views/currency_view.xml',
             'views/honorarios.xml',

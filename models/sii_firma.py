@@ -19,8 +19,10 @@ class SignatureCert(models.Model):
     def check_signature(self):
         for s in self.sudo():
             expired = datetime.strptime(s.expire_date, '%Y-%m-%d') < datetime.now()
-            s.state = 'expired' if expired else 'valid'
-            s.active = not expired
+            state = 'expired' if expired else 'valid'
+            if s.state != state:
+                s.state = state
+                s.active = not expired
 
     @api.onchange('subject_serial_number')
     def set_state(self):
