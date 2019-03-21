@@ -1731,6 +1731,18 @@ version="1.0">
             Encabezado['OtraMoneda'] = self._totales_otra_moneda(another_currency_id, MntExe, MntNeto, IVA, TasaIVA, ImptoReten, MntTotal, MntBase)
         return Encabezado
 
+    def _validaciones_caf(self, caf):
+        if not self.commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
+            raise UserError(_("Fill Partner VAT"))
+        timestamp = self.time_stamp()
+        fecha_timbre = date(int(timestamp[:4]), int(timestamp[5:7]), int(timestamp[8:10]))
+        if fecha_timbre < self.date_invoice.date():
+            raise UserError("La fecha de timbraje no puede ser menor a la fecha de emisión del documento")
+        if fecha_timbre < \
+            date(int(caf['FA'][:4]), int(caf['FA'][5:7]), int(caf['FA'][8:10])):
+            raise UserError("La fecha del timbraje no puede ser menor a la fecha de emisión del CAF")
+        return timestamp
+
     @api.multi
     def get_barcode(self, no_product=False):
         ted = False
@@ -1739,8 +1751,6 @@ version="1.0">
         result['TED']['DD']['TD'] = self.sii_document_class_id.sii_code
         result['TED']['DD']['F'] = folio
         result['TED']['DD']['FE'] = self.date_invoice
-        if not self.commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
-            raise UserError(_("Fill Partner VAT"))
         result['TED']['DD']['RR'] = self.format_vat(self.commercial_partner_id.vat)
         result['TED']['DD']['RSR'] = self._acortar_str(self.commercial_partner_id.name,40)
         result['TED']['DD']['MNT'] = self.currency_id.round(self.amount_total)
@@ -1752,12 +1762,10 @@ version="1.0">
                 result['TED']['DD']['IT1'] = self._acortar_str(line.product_id.name.replace('['+line.product_id.default_code+'] ',''),40)
             break
 
-        resultcaf = self.journal_document_class_id.sequence_id.get_caf_file(self.get_folio() )
+        resultcaf = self.journal_document_class_id.sequence_id.get_caf_file(self.get_folio())
         result['TED']['DD']['CAF'] = resultcaf['AUTORIZACION']['CAF']
         dte = result['TED']['DD']
-        timestamp = self.time_stamp()
-        if date(int(timestamp[:4]), int(timestamp[5:7]), int(timestamp[8:10])) < date(int(self.date_invoice.year), int(self.date_invoice.month), int(self.date_invoice.day)):
-            raise UserError("La fecha de timbraje no puede ser menor a la fecha de emisión del documento")
+        timestamp = self._validaciones_caf(resultcaf)
         dte['TSTED'] = timestamp
         dicttoxml.set_debug(False)
         ddxml = '<DD>'+dicttoxml.dicttoxml(
