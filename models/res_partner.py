@@ -128,9 +128,9 @@ class ResPartner(models.Model):
                 self.dte_email_id.unlink()
             return
         if self.dte_email == self.email:
-           self.send_dte = True
-           self.principal = True
-           return
+            self.send_dte = True
+            self.principal = True
+            return
         if not self.dte_email_id:
             partners = []
             for rec in self.child_ids:
@@ -254,11 +254,11 @@ class ResPartner(models.Model):
                 continue
             partner = self.env['res.partner'].search(
                 [
-                    ('vat','=', r.vat),
-                    ('id','!=', r.id),
+                    ('vat', '=', r.vat),
+                    ('id', '!=', r.id),
                     ('commercial_partner_id', '!=', r.commercial_partner_id.id),
                 ])
-            if r.vat !="CL555555555" and partner:
+            if r.vat != "CL555555555" and partner:
                 raise UserError(_('El rut: %s debe ser único') % r.vat)
                 return False
 
@@ -323,7 +323,7 @@ class ResPartner(models.Model):
                                                     'telefono': self.phone,
                                                     'actectos': [ac.code for ac in self.acteco_ids],
                                                     'url': self.website,
-                                                    'origen': self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+                                                    'origen': ICPSudo.get_param('web.base.url')
                                                 }
                                             ).encode('utf-8'),
                             headers={'Content-Type': 'application/json'})
@@ -356,34 +356,31 @@ class ResPartner(models.Model):
     def fill_partner(self):
         if self.sync:
             return
-        if self.document_number and self.check_vat_cl(self.document_number.replace('.','').replace('-', '')):
+        if self.document_number and self.check_vat_cl(self.document_number.replace('.', '').replace('-', '')):
             self.get_remote_user_data(self.document_number)
-        elif self.name and self.check_vat_cl(self.name.replace('.','').replace('-', '')):
+        elif self.name and self.check_vat_cl(self.name.replace('.', '').replace('-', '')):
             self.get_remote_user_data(self.name)
 
     @api.model
     def _check_need_update(self):
-        if self.sync:
-            ICPSudo = self.env['ir.config_parameter'].sudo()
-            url = ICPSudo.get_param('partner.url_remote_partners')
-            token = ICPSudo.get_param('partner.token_remote_partners')
-            if not url or not token:
-                return
-            resp = pool.request('POST',
-                                url,
-                                body=json.dumps(
-                                                    {
-                                                        'rut': self.document_number,
-                                                        'token': token,
-                                                        'autorizado': self.last_sync_update,
-                                                    }
-                                                ).encode('utf-8'),
-                                headers={'Content-Type': 'application/json'})
-            data = json.loads(resp.data.decode('iso-8859-1'))
-            if data:
-                self.sync = False
-                self.fill_partner
+        ICPSudo = self.env['ir.config_parameter'].sudo()
+        url = ICPSudo.get_param('partner.url_remote_partners')
+        token = ICPSudo.get_param('partner.token_remote_partners')
+        if not url or not token:
+            return
+        for r in self.search([('document_number', 'not in', [False, 0]), ('parent_id', '=', False)]):
             if ICPSudo.get_param('partner.sync_remote_partners'):
-                self.put_remote_user_data()
+                r.put_remote_user_data()
+            resp = pool.request('GET',
+                                    url,
+                                    {
+                                        'rut': r.document_number,
+                                        'token': token,
+                                        'actualizado': r.last_sync_update,
+                                    })
+            data = json.loads(resp.data.decode('ISO-8859-1'))
+            if data.get('result', False):
+                r.sync = False
+                r.fill_partner()
 
 

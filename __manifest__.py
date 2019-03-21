@@ -106,6 +106,7 @@ Facturación Electrónica para Chile.
     'qweb': [
         "static/src/xml/base.xml",
     ],
+    'post_init_hook': '_set_default_configs',
     'installable': True,
     'auto_install': False,
     'application': True,
