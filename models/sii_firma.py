@@ -135,8 +135,8 @@ class SignatureCert(models.Model):
         subject = cert.get_subject()
 
         self.write({
-            'emision_date': datetime.strptime(cert.get_notBefore().decode("utf-8"), '%Y%m%d%H%M%SZ'),
-            'expire_date': datetime.strptime(cert.get_notAfter().decode("utf-8"), '%Y%m%d%H%M%SZ'),
+            'emision_date': datetime.strptime(cert.get_notBefore().decode("utf-8"), '%Y%m%d%H%M%SZ').date(),
+            'expire_date': datetime.strptime(cert.get_notAfter().decode("utf-8"), '%Y%m%d%H%M%SZ').date(),
             'subject_c': subject.C,
             'subject_title': subject.title,
             'subject_common_name': subject.CN,
