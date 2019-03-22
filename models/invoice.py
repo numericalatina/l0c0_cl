@@ -1075,7 +1075,9 @@ a VAT."""))
                     raise UserError('El documento %s, Folio %s de la Empresa %s ya se en cuentra registrado' % ( invoice.journal_document_class_id.sii_document_class_id.name, invoice.reference, invoice.partner_id.name))
 
     def _validaciones_uso_dte(self):
-        if self.sii_document_class_id.sii_code in [55, 56, 60, 61, 111, 112, 802] and not self.referencias:
+        ncs = [60, 61, 112, 802]
+        nds = [55, 56, 111]
+        if self.sii_document_class_id.sii_code in ncs+nds and not self.referencias:
             raise UserError('Las Notas deben llevar por obligación una referencia al documento que están afectando')
         if not self.env.user.get_digital_signature(self.company_id):
             raise UserError(_('Usuario no autorizado a usar firma electrónica para esta compañia. Por favor solicatar autorización en la ficha de compañia del documento por alguien con los permisos suficientes de administrador'))
@@ -1083,6 +1085,12 @@ a VAT."""))
             raise UserError(_('Lang es_CL must be enabled'))
         if not self.env.ref('base.CLP').active:
             raise UserError(_('Currency CLP must be enabled'))
+        if self.type in ['out_refund', 'in_refund'] and \
+            self.sii_document_class_id.sii_code not in ncs:
+            raise UserError(_('El tipo de documento %s, no es de tipo Rectificativo' % self.sii_document_class_id.name) )
+        if self.type in ['out_invoice', 'in_invoice'] and \
+            self.sii_document_class_id.sii_code in ncs:
+            raise UserError(_('El tipo de documento %s, no es de tipo Documento' % self.sii_document_class_id.name))
 
     @api.multi
     def invoice_validate(self):
