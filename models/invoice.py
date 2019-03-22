@@ -133,7 +133,7 @@ class AccountInvoiceLine(models.Model):
                 total -= total_discount
                 line.price_subtotal = price_subtotal_signed = total
             if line.invoice_id.currency_id and line.invoice_id.currency_id != line.invoice_id.company_id.currency_id:
-                price_subtotal_signed = line.invoice_id.currency_id.with_context(date=line.invoice_id._get_currency_rate_date()).compute(price_subtotal_signed, line.invoice_id.company_id.currency_id)
+                price_subtotal_signed = line.invoice_id.currency_id._convert(price_subtotal_signed, line.invoice_id.company_id.currency_id, line.invoice_id.company_id, line.invoice_id.date_invoice)
             sign = line.invoice_id.type in ['in_refund', 'out_refund'] and -1 or 1
             line.price_subtotal_signed = price_subtotal_signed * sign
             line.price_total = taxes['total_included'] if (taxes and taxes['total_included'] > total) else total
@@ -1813,7 +1813,7 @@ version="1.0">
         invoice_lines = []
         no_product = False
         MntExe = 0
-        currency_base = self.env.ref('base.CLP').with_context(date=self.date_invoice)
+        currency_base = self.env.ref('base.CLP')
         currency_id = False
         if self.currency_id != currency_base:
             currency_id = self.currency_id
@@ -1864,7 +1864,7 @@ version="1.0">
                 DescMonto = (((line.discount / 100) * lines['PrcItem'])* qty)
                 lines['DescuentoMonto'] = currency_base.round(DescMonto)
                 if currency_id:
-                    lines['DescuentoMonto'] = currency_base.compute(DescMonto, currency_id)
+                    lines['DescuentoMonto'] = currency_base._convert(DescMonto, currency_id, self.company_id, self.date_invoice)
                     lines['OtrMnda']['DctoOtrMnda'] = DescMonto
             if not no_product and not taxInclude:
                 price_subtotal = line.price_subtotal
@@ -1907,10 +1907,10 @@ version="1.0">
                 disc_type = "$"
             dr_line['TpoValor'] = disc_type
             currency_base = self.env.ref('base.CLP')
-            dr_line['ValorDR'] = currency_base.round(dr.valor).with_context(date=self.date_invoice)
+            dr_line['ValorDR'] = currency_base.round(dr.valor)
             if self.currency_id != currency_base:
                 currency_id = self.currency_id
-                dr_line['ValorDROtrMnda'] = currency_base.compute(dr.valor, currency_id)
+                dr_line['ValorDROtrMnda'] = currency_base._convert(dr.valor, currency_id, self.company_id, self.date_invoice)
             if self.sii_document_class_id.sii_code in [34] and (self.referencias and self.referencias[0].sii_referencia_TpoDocRef.sii_code == '34'):#solamente si es exento
                 dr_line['IndExeDR'] = 1
             dr_lines = [{'DscRcgGlobal':dr_line}]
