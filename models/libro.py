@@ -250,7 +250,7 @@ class Libro(models.Model):
             required=True,
             readonly=True,
             states={'draft': [('readonly', False)]},
-            default=lambda *a: datetime.now(),
+            default=lambda self: fields.Date.context_today(self),
         )
     boletas = fields.One2many(
             'account.move.book.boletas',
@@ -762,7 +762,7 @@ version="1.0">
                 continue
         #det['IndServicio']
         #det['IndSinCosto']
-        det['FchDoc'] = rec.date
+        det['FchDoc'] = rec.date.strftime(DF)
         if rec.journal_id.sii_code:
             det['CdgSIISucur'] = rec.journal_id.sii_code
         det['RUTDoc'] = self.format_vat(rec.partner_id.vat)
@@ -892,8 +892,8 @@ version="1.0">
         #    det['Anulado'] = 'A'
         det['TpoServ'] = 3
         try:
-            det['FchEmiDoc'] = rec.date
-            det['FchVencDoc'] = rec.date
+            det['FchEmiDoc'] = rec.date.strftime(DF)
+            det['FchVencDoc'] = rec.date.strftime(DF)
         except:
             util_model = self.env['cl.utils']
             fields_model = self.env['ir.fields.converter']
@@ -904,7 +904,7 @@ version="1.0">
             fields_model = self.env['ir.fields.converter']
             from_zone = pytz.UTC
             to_zone = pytz.timezone('America/Santiago')
-            date_order = util_model._change_time_zone(datetime.strptime(rec.date_order, DTF), from_zone, to_zone).strftime(DTF)
+            date_order = util_model._change_time_zone(rec.date_order, from_zone, to_zone).strftime(DTF)
             det['FchEmiDoc'] = date_order[:10]
             det['FchVencDoc'] = date_order[:10]
         #det['PeriodoDesde']

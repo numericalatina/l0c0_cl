@@ -190,7 +190,7 @@ class ConsumoFolios(models.Model):
             required=True,
         	readonly=True,
             states={'draft': [('readonly', False)]},
-            default=lambda *a: datetime.now(),
+            default=lambda self: fields.Date.context_today(self),
         )
     detalles = fields.One2many(
         'account.move.consumo_folios.detalles',
@@ -709,7 +709,7 @@ version="1.0">
                 recs.append(rec)
             #rec.sended = marc
         if 'pos.order' in self.env: # @TODO mejor forma de verificar si está instalado módulo POS
-            current = self.fecha_inicio + ' 00:00:00'
+            current = self.fecha_inicio.strftime(DTF) + ' 00:00:00'
             tz = pytz.timezone('America/Santiago')
             tz_current = tz.localize(datetime.strptime(current, DTF)).astimezone(pytz.utc)
             current = tz_current.strftime(DTF)
@@ -774,9 +774,7 @@ version="1.0">
         return resumenes, TpoDocs
 
     def _validar(self):
-        cant_doc_batch = 0
         company_id = self.company_id
-        dte_service = company_id.dte_service_provider
         signature_id = self.env.user.get_digital_signature(self.company_id)
         if not signature_id:
             raise UserError(_('''There is no Signer Person with an \
@@ -787,8 +785,8 @@ version="1.0">
         certp = signature_id.cert.replace(
             BC, '').replace(EC, '').replace('\n', '')
         resumenes, TpoDocs = self._get_resumenes(marc=True)
-        Resumen=[]
-        listado = [ 'TipoDocumento', 'MntNeto', 'MntIva', 'TasaIVA', 'MntExento', 'MntTotal', 'FoliosEmitidos',  'FoliosAnulados', 'FoliosUtilizados', 'itemUtilizados' ]
+        Resumen = []
+        listado = ['TipoDocumento', 'MntNeto', 'MntIva', 'TasaIVA', 'MntExento', 'MntTotal', 'FoliosEmitidos',  'FoliosAnulados', 'FoliosUtilizados', 'itemUtilizados' ]
         xml = '<Resumen><TipoDocumento>39</TipoDocumento><MntTotal>0</MntTotal><FoliosEmitidos>0</FoliosEmitidos><FoliosAnulados>0</FoliosAnulados><FoliosUtilizados>0</FoliosUtilizados></Resumen>'
         if resumenes:
             for r, value in resumenes.items():
@@ -819,7 +817,7 @@ version="1.0">
         resol_data = self.get_resolution_data(company_id)
         RUTEmisor = self.format_vat(company_id.vat)
         RUTRecep = "60803000-K" # RUT SII
-        doc_id =  'CF_'+self.date
+        doc_id = 'CF_' + self.date.strftime(DF)
         Correlativo = self.correlativo
         SecEnvio = self.sec_envio
         cf = self.create_template_envio( RUTEmisor,
