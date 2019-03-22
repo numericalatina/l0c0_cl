@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models, api
 from odoo.tools.translate import _
+from odoo.exceptions import UserError
 from .invoice import server_url
 from lxml import etree
 import collections
@@ -122,7 +123,14 @@ class SIIXMLEnvio(models.Model):
             pass
         url = server_url[company_id.dte_service_provider] + 'CrSeed.jws?WSDL'
         _server = Client(url)
-        resp = _server.service.getSeed().replace('<?xml version="1.0" encoding="UTF-8"?>','')
+        try:
+            resp = _server.service.getSeed().replace('<?xml version="1.0" encoding="UTF-8"?>','')
+        except Exception as e:
+            _logger.warning(e)
+            if str(e) == "(503, 'Service Temporarily Unavailable')":
+                raise UserError(_("Conexión SII no disponible, intente otra vez"))
+            else:
+                raise UserError(str(e))
         root = etree.fromstring(resp)
         semilla = root[0][0].text
         return semilla
