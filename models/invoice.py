@@ -1744,7 +1744,7 @@ version="1.0">
             raise UserError(_("Fill Partner VAT"))
         timestamp = self.time_stamp()
         fecha_timbre = date(int(timestamp[:4]), int(timestamp[5:7]), int(timestamp[8:10]))
-        if fecha_timbre < self.date_invoice.date():
+        if fecha_timbre < self.date_invoice:
             raise UserError("La fecha de timbraje no puede ser menor a la fecha de emisión del documento")
         if fecha_timbre < \
             date(int(caf['FA'][:4]), int(caf['FA'][5:7]), int(caf['FA'][8:10])):
@@ -1773,7 +1773,7 @@ version="1.0">
         resultcaf = self.journal_document_class_id.sequence_id.get_caf_file(self.get_folio())
         result['TED']['DD']['CAF'] = resultcaf['AUTORIZACION']['CAF']
         dte = result['TED']['DD']
-        timestamp = self._validaciones_caf(resultcaf)
+        timestamp = self._validaciones_caf(resultcaf['AUTORIZACION']['CAF']['DA'])
         dte['TSTED'] = timestamp
         dicttoxml.set_debug(False)
         ddxml = '<DD>'+dicttoxml.dicttoxml(
