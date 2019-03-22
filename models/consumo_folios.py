@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 from datetime import datetime, timedelta
 import dateutil.relativedelta as relativedelta
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTF
+from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF
 import logging
 from lxml import etree
 from lxml.etree import Element, SubElement
@@ -709,7 +710,7 @@ version="1.0">
                 recs.append(rec)
             #rec.sended = marc
         if 'pos.order' in self.env: # @TODO mejor forma de verificar si está instalado módulo POS
-            current = self.fecha_inicio.strftime(DTF) + ' 00:00:00'
+            current = self.fecha_inicio.strftime(DF) + ' 00:00:00'
             tz = pytz.timezone('America/Santiago')
             tz_current = tz.localize(datetime.strptime(current, DTF)).astimezone(pytz.utc)
             current = tz_current.strftime(DTF)
