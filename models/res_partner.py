@@ -108,11 +108,13 @@ class ResPartner(models.Model):
 
     def write(self, vals):
         result = super(ResPartner, self).write(vals)
-        if not vals.get('sync', False) and self.sync:
+        if not vals.get('sync', False):
             for k in vals.keys():
                 if k in ('name', 'dte_email', 'street', 'email', 'acteco_ids', 'website'):
                     try:
-                        self.put_remote_user_data()
+                        for r in self:
+                            if r.sync and r.sii_document_number and not r.parent_id:
+                                r.put_remote_user_data()
                     except Exception as e:
                         _logger.warning("Error en subida información %s" % str(e))
                     break
