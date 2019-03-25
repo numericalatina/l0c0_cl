@@ -303,6 +303,8 @@ class ResPartner(models.Model):
         if not self.document_number:
             self.document_number = data['rut']
         self.last_sync_update = data['actualizado']
+        if data.get('glosa_giro'):
+            self.glosa_giro = data['glosa_giro']
 
     def put_remote_user_data(self):
         ICPSudo = self.env['ir.config_parameter'].sudo()
@@ -317,6 +319,7 @@ class ResPartner(models.Model):
                                                 {
                                                     'rut': self.document_number,
                                                     'token': token,
+                                                    'glosa_giro': self.glosa_giro,
                                                     'razon_social': self.name,
                                                     'dte_email': self.dte_email,
                                                     'email': self.email,
