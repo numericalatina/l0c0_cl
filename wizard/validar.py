@@ -20,6 +20,7 @@ except:
 BC = '''-----BEGIN CERTIFICATE-----\n'''
 EC = '''\n-----END CERTIFICATE-----\n'''
 
+
 class ValidarDTEWizard(models.TransientModel):
     _name = 'sii.dte.validar.wizard'
     _description = 'SII XML from Provider'

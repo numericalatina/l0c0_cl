@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, SUPERUSER_ID
+from odoo import models, fields, api
 from odoo.tools.translate import _
 from odoo.exceptions import UserError
 import logging
@@ -356,7 +356,7 @@ class UploadXMLWizard(models.TransientModel):
             attr_type=False,
         ).decode().replace('<item>', '\n').replace('</item>', '\n')
         resp = self._RecepcionEnvio(caratula, RecepcionEnvio )
-        respuesta = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'+self.env['account.invoice'].with_context({'user_id': SUPERUSER_ID, 'company_id': company_id.id}).sign_full_xml(
+        respuesta = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'+self.env['account.invoice'].sudo().with_context({'company_id': company_id.id}).sign_full_xml(
             resp.replace('<?xml version="1.0" encoding="ISO-8859-1"?>\n', ''),
             'Odoo_resp',
             'env_resp')
