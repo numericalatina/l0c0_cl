@@ -113,7 +113,11 @@ class ResPartner(models.Model):
                 if k in ('name', 'dte_email', 'street', 'email', 'acteco_ids', 'website'):
                     try:
                         for r in self:
-                            if r.sync and r.sii_document_number and not r.parent_id:
+                            if r.sync and r.document_number \
+                                and not r.parent_id \
+                                and self.check_vat_cl(
+                                    r.document_number.replace('.', '')\
+                                    .replace('-', '')):
                                 r.put_remote_user_data()
                     except Exception as e:
                         _logger.warning("Error en subida información %s" % str(e))
@@ -297,14 +301,22 @@ class ResPartner(models.Model):
             for a in data['actecos']:
                 ac = self.env['sii.document_class'].search([('code', '=', a)])
                 self.acteco_ids += ac
+        if data.get('glosa_giro'):
+            query = [('name', '=', data.get('glosa_giro'))]
+            ad = self.env['sii.activity.description'].search(query)
+            if not ad:
+                ad = self.env['sii.activity.description'].create({
+                    'name': data.get('glosa_giro')
+                })
+            self.activity_description = ad.id
         if data.get('url'):
             self.website = data['url']
+        if data.get('logo'):
+            self.image = data['logo']
         self.sync = True
         if not self.document_number:
             self.document_number = data['rut']
         self.last_sync_update = data['actualizado']
-        if data.get('glosa_giro'):
-            self.glosa_giro = data['glosa_giro']
 
     def put_remote_user_data(self):
         ICPSudo = self.env['ir.config_parameter'].sudo()
@@ -328,12 +340,25 @@ class ResPartner(models.Model):
                                                     'telefono': self.phone,
                                                     'actectos': [ac.code for ac in self.acteco_ids],
                                                     'url': self.website,
-                                                    'origen': ICPSudo.get_param('web.base.url')
+                                                    'origen': ICPSudo.get_param('web.base.url'),
+                                                    'logo': self.image.decode() if self.image else False,
                                                 }
                                             ).encode('utf-8'),
                             headers={'Content-Type': 'application/json'})
         if resp.status != 200:
             _logger.warning("Error en conexión al sincronizar partners %s" % resp.data)
+            message = ''
+            if resp.status == 403:
+                data = json.loads(resp.data.decode('ISO-8859-1'))
+                message = data['message']
+            else:
+                message = str(resp.data)
+            self.env['bus.bus'].sendone((self._cr.dbname, 'res.partner', self.env.user.partner_id.id),{
+                'title': "Error en conexión al sincronizar partners",
+                'message': message,
+                'url': 'res_config',
+                'type': 'dte_notif',
+            })
             return
         data = json.loads(resp.data.decode('ISO-8859-1'))
 
@@ -354,6 +379,18 @@ class ResPartner(models.Model):
                             headers={'Content-Type': 'application/json'})
         if resp.status != 200:
             _logger.warning("Error en conexión al obtener partners %s" % resp.data)
+            message = ''
+            if resp.status == 403:
+                data = json.loads(resp.data.decode('ISO-8859-1'))
+                message = data['message']
+            else:
+                message = str(resp.data)
+            self.env['bus.bus'].sendone((self._cr.dbname, 'res.partner', self.env.user.partner_id.id),{
+                'title': "Error en conexión al obtener partners",
+                'message': message,
+                'url': 'res_config',
+                'type': 'dte_notif',
+            })
             return
         data = json.loads(resp.data.decode('ISO-8859-1'))
         if not process_data:
@@ -391,6 +428,18 @@ class ResPartner(models.Model):
                                     })
             if resp.status != 200:
                 _logger.warning("Error en conexión al consultar partners %s" % resp.data)
+                message = ''
+                if resp.status == 403:
+                    data = json.loads(resp.data.decode('ISO-8859-1'))
+                    message = data['message']
+                else:
+                    message = str(resp.data)
+                self.env['bus.bus'].sendone((self._cr.dbname, 'res.partner', self.env.user.partner_id.id),{
+                    'title': "Error en conexión al consultar partners",
+                    'message': message,
+                    'url': 'res_config',
+                    'type': 'dte_notif',
+                })
                 return
             data = json.loads(resp.data.decode('ISO-8859-1'))
             if data.get('result', False):

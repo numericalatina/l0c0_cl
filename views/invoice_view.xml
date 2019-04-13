@@ -12,10 +12,10 @@
               <field name="partner_id" position="after">
                 <field name="activity_description"
                         placeholder="Glosa descriptiva" options="{'no_open': True}"/>
-                <field name="sii_document_class_id"/>
+                <field name="document_class_id"/>
               </field>
               <xpath expr="//filter[@name='status']" position="after">
-                  <filter name="document_type" string="Document Type" context="{'group_by':'sii_document_class_id'}"/>
+                  <filter name="document_type" string="Document Type" context="{'group_by':'document_class_id'}"/>
               </xpath>
           </field>
       </record>
@@ -62,12 +62,12 @@
               <xpath expr="//form/sheet/h1" position="replace"> 
                 <h1 class="mt0">
                   <div attrs="{'invisible': [('state','=','draft')]}">
-                      <field name="sii_document_class_id" class="oe_inline"/> Número:<br/>
+                      <field name="document_class_id" class="oe_inline"/> Número:<br/>
                       <field name="number" readonly="1" class="oe_inline"/>
                   </div>
                   <div attrs="{'invisible': [('state','!=','draft')]}">
                       <label for="next_invoice_number" string="Siguiente" /> <br/>
-                      <field name="sii_document_class_id" class="oe_inline"/> Número:<br/>
+                      <field name="document_class_id" class="oe_inline"/> Número:<br/>
                       <field name="sequence_number_next_prefix" class="oe_inline"/>
                       <field name="sequence_number_next" class="oe_inline" readonly="True"/>
                   </div>
