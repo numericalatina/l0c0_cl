@@ -39,7 +39,7 @@
                 <notebook position="inside">
                     <page string="Documents" attrs="{'invisible': ['|',('use_documents','=',False), ('type','not in',['purchase','sale'])]}">
                         <button name="%(action_account_journal_document_config_form)d"
-                                string="Create Journal Documents" type="action"
+                                string="Create Journal Documents" type="action" class="oe_highlight"
                                 context="{'type':type}"/>
                         <group>
                             <field name="company_activity_ids" invisible="1"/>
