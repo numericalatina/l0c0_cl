@@ -23,10 +23,6 @@ try:
     import xmltodict
 except ImportError:
     _logger.warning('Cannot import xmltodict library')
-try:
-    from signxml import XMLSigner, methods
-except ImportError:
-    _logger.warning('Cannot import signxml')
 
 connection_status = {
     '0': 'Upload OK',
@@ -127,51 +123,42 @@ class SIIXMLEnvio(models.Model):
         try:
             resp = _server.service.getSeed().replace('<?xml version="1.0" encoding="UTF-8"?>','')
         except Exception as e:
-            _logger.warning(e)
-            if str(e) == "(503, 'Service Temporarily Unavailable')":
-                raise UserError(_("Conexión SII no disponible, intente otra vez"))
-            else:
-                raise UserError(str(e))
+            msg = "Error al obtener Semilla"
+            _logger.warning("%s: %s" % (msg, str(e)))
+            if e.args[0][0] == 503:
+                raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
+            raise UserError(("%s: %s" % (msg, str(e))))
         root = etree.fromstring(resp)
         semilla = root[0][0].text
         return semilla
 
-    def create_template_seed(self, seed):
-        xml = u'''<getToken>
-<item>
-<Semilla>{}</Semilla>
-</item>
-</getToken>
-'''.format(seed)
-        return xml
-
-    def sign_seed(self, message, privkey, cert):
+    def sign_seed(self, user_id, company_id):
+        seed = self.get_seed(company_id)
+        xml_seed = u'<getToken><Semilla>%s</Semilla></getToken>' \
+            % (seed)
+        signature_id = user_id.get_digital_signature(company_id)
         doc = etree.fromstring(message)
-        signed_node = XMLSigner(method=methods.enveloped, digest_algorithm='sha1').sign(
-            doc, key=privkey.encode('ascii'), cert=cert)
-        msg = etree.tostring(
-            signed_node, pretty_print=True).decode().replace('ds:', '')
-        return msg
+        return signature_id.firmar(xml_seed, type="token")
 
     def _get_token(self, seed_file, company_id):
         url = server_url[company_id.dte_service_provider] + 'GetTokenFromSeed.jws?WSDL'
         _server = Client(url)
         tree = etree.fromstring(seed_file)
         ss = etree.tostring(tree, pretty_print=True, encoding='iso-8859-1').decode()
-        resp = _server.service.getToken(ss).replace('<?xml version="1.0" encoding="UTF-8"?>','')
+        try:
+            resp = _server.service.getToken(ss).replace('<?xml version="1.0" encoding="UTF-8"?>','')
+        except Exception as e:
+            msg = "Error al obtener Token"
+            _logger.warning("%s: %s" % (msg, str(e)))
+            if e.args[0][0] == 503:
+                raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
+            raise UserError(("%s: %s" % (msg, str(e))))
         respuesta = etree.fromstring(resp)
         token = respuesta[0][0].text
         return token
 
     def get_token(self, user_id, company_id):
-        signature_id = user_id.get_digital_signature(company_id)
-        seed = self.get_seed(company_id)
-        template_string = self.create_template_seed(seed)
-        seed_firmado = self.sign_seed(
-                template_string,
-                signature_id.priv_key,
-                signature_id.cert,
-            )
+        seed_firmado = self.sign_seed(user_id, company_id)
         return self._get_token(seed_firmado, company_id)
 
     def init_params(self):
@@ -223,41 +210,56 @@ class SIIXMLEnvio(models.Model):
         params = self.init_params()
         multi = urllib3.filepost.encode_multipart_formdata(params)
         headers.update({'Content-Length': '{}'.format(len(multi[0]))})
-        response = pool.request_encode_body('POST', url+post, params, headers)
-        retorno.update({ 'sii_xml_response': response.data })
-        if response.status != 200 or not response.data or response.data == '':
-            return retorno
-        respuesta_dict = xmltodict.parse(response.data)
-        retorno = self.procesar_recepcion(retorno, respuesta_dict)
-        self.write(retorno)
+        try:
+            response = pool.request_encode_body('POST', url+post, params, headers)
+            retorno.update({ 'sii_xml_response': response.data })
+            if response.status != 200 or not response.data or response.data == '':
+                return retorno
+            respuesta_dict = xmltodict.parse(response.data)
+            retorno = self.procesar_recepcion(retorno, respuesta_dict)
+            self.write(retorno)
+        except Exception as e:
+            msg = "Error al subir DTE"
+            _logger.warning("%s: %s" % (msg, str(e)))
+            if e.args[0][0] == 503:
+                raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
+            raise UserError(("%s: %s" % (msg, str(e))))
         return retorno
 
+
     def get_send_status(self, user_id=False):
+        if not self.sii_send_ident:
+            self.state = "NoEnviado"
+            return
         user_id = user_id or self.user_id
         token = self.get_token(user_id, self.company_id)
         url = server_url[self.company_id.dte_service_provider] + 'QueryEstUp.jws?WSDL'
         _server = Client(url)
         rut = self.invoice_ids.format_vat( self.company_id.vat, con_cero=True)
-        respuesta = _server.service.getEstUp(
-                rut[:8].replace('-', ''),
-                str(rut[-1]),
-                self.sii_send_ident,
-                token,
-            )
+        try:
+            respuesta = _server.service.getEstUp(
+                    rut[:8].replace('-', ''),
+                    str(rut[-1]),
+                    self.sii_send_ident,
+                    token,
+                )
+        except Exception as e:
+            msg = "Error al obtener Estado Envío DTE"
+            _logger.warning("%s: %s" % (msg, str(e)))
+            if e.args[0][0] == 503:
+                raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
+            raise UserError(("%s: %s" % (msg, str(e))))
         result = {"sii_receipt" : respuesta}
         resp = xmltodict.parse(respuesta)
         result.update({"state": "Enviado"})
         if resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] == "-11":
             if resp['SII:RESPUESTA']['SII:RESP_HDR']['ERR_CODE'] == "2":
                 status = {'warning':{'title':_('Estado -11'), 'message': _("Estado -11: Espere a que sea aceptado por el SII, intente en 5s más")}}
-            else:
-                _logger.warning(_("Estado -11: error 1Algo a salido mal, revisar carátula"))
-                result.update({'state': 'Rechazado'})
         if resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["EPR", "LOK"]:
             result.update({"state": "Aceptado"})
             if resp['SII:RESPUESTA'].get('SII:RESP_BODY') and resp['SII:RESPUESTA']['SII:RESP_BODY']['RECHAZADOS'] == "1":
                 result.update({ "state": "Rechazado" })
-        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["RCT", "RFR", "LRH", "RCH", "RSC"]:
+        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["RCT", "RFR", "LRH", "RCH", "RSC", "LRF"]:
             result.update({"state": "Rechazado"})
             _logger.warning(resp)
         self.write(result)
