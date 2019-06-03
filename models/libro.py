@@ -934,7 +934,7 @@ version="1.0">
             if TpoDoc not in resumenesPeriodo:
                 resumenesPeriodo[TpoDoc] = {}
             if self.tipo_operacion == 'BOLETA':
-                resumen += self._get_resumen_boleta(rec)
+                resumen = self._get_resumen_boleta(rec)
                 resumenesPeriodo[TpoDoc] = self._setResumenPeriodoBoleta(resumen, resumenesPeriodo[TpoDoc])
                 del(resumen['MntNeto'])
                 del(resumen['MntIVA'])
