@@ -191,7 +191,7 @@ class SIIXMLEnvio(models.Model):
         return retorno
 
     def send_xml(self, post='/cgi_dte/UPL/DTEUpload'):
-        if self.state not in ['draft', 'NoEnviado']:
+        if self.state not in ['draft', 'NoEnviado', 'Rechazado']:
             return
         retorno = {'state': 'NoEnviado'}
         if not self.company_id.dte_service_provider:
@@ -229,6 +229,9 @@ class SIIXMLEnvio(models.Model):
             raise UserError(("%s: %s" % (msg, str(e))))
         return retorno
 
+    @api.multi
+    def do_send_xml(self):
+        return self.send_xml()
 
     def get_send_status(self, user_id=False):
         if not self.sii_send_ident:
