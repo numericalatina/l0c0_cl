@@ -366,8 +366,9 @@ class UploadXMLWizard(models.TransientModel):
                 values['default_code'] = VlrCodigo
         return values
 
-    def _create_prod(self, data, price_included=False):
-        product_id = self.env['product.product'].create(self.get_product_values(data, price_included))
+    def _create_prod(self, data, company_id, price_included=False):
+        product_id = self.env['product.product'].create(
+                    self.get_product_values(data, company_id, price_included))
         return product_id
 
     def _buscar_producto(self, document_id, line, company_id,
