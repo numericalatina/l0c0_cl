@@ -280,9 +280,9 @@ class UploadXMLWizard(models.TransientModel):
             )
         return partner
 
-    def create_partner(self, data):
+    def _create_partner(self, data):
         partner_id = False
-        partner = self._get_data_partner(data)
+        partner = self._get_partner(data)
         if partner:
             if self.type == 'compras':
                 partner.update({'supplier': True})
@@ -694,7 +694,7 @@ class UploadXMLWizard(models.TransientModel):
         type = 'purchase'
         if self.type == 'ventas':
             type = 'sale'
-        journal_id = self.env['account.journal.sii_document_class'].search(
+        journal_id = self.env['account.journal'].search(
             [
                 ('document_class_ids', '=', dc_id.id),
                 ('type', '=', type),
