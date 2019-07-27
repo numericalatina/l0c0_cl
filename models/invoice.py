@@ -1887,13 +1887,13 @@ version="1.0">
         dte[(tpo_dte + ' ID')]['TEDd'] = ''
         xml = dicttoxml.dicttoxml(
             dte, root=False, attr_type=False).decode() \
-            .replace('<item >','').replace('<item>','').replace('</item>','')\
-            .replace('<reflines>','').replace('</reflines>','')\
-            .replace('<TEDd>','').replace('</TEDd>','')\
+            .replace('<item >', '').replace('<item>', '').replace('</item>', '')\
+            .replace('<reflines>', '').replace('</reflines>', '')\
+            .replace('<TEDd>', '').replace('</TEDd>', '')\
             .replace('</'+ tpo_dte + '_ID>','\n'+ted+'\n</'+ tpo_dte + '_ID>')\
-            .replace('<drlines>','').replace('</drlines>','')\
-            .replace('<item_ret>','').replace('</item_ret>','')\
-            .replace('<item_ret_otr>','').replace('</item_ret_otr>','')
+            .replace('<drlines>', '').replace('</drlines>', '')\
+            .replace('<item_ret>', '').replace('</item_ret>', '')\
+            .replace('<item_ret_otr>', '').replace('</item_ret_otr>', '')
         return xml
 
     def _tpo_dte(self):
@@ -1910,7 +1910,7 @@ version="1.0">
         dte = collections.OrderedDict()
         dte[(tpo_dte + ' ID')] = self._dte(n_atencion)
         xml = self._dte_to_xml(dte, tpo_dte)
-        root = etree.XML( xml )
+        root = etree.XML(xml)
         xml_pret = etree.tostring(
                 root,
                 pretty_print=True
@@ -2119,7 +2119,7 @@ version="1.0">
             try:
                 self._get_dte_status()
             except Exception as e:
-                _logger.warning("Error al obtener DTE Status: %s" %str(e))
+                _logger.warning("Error al obtener DTE Status: %s" % str(e))
         self.get_sii_result()
         for r in self:
             mess = False
