@@ -1133,6 +1133,7 @@ a VAT."""))
                     inv._timbrar()
                     tiempo_pasivo = (datetime.now() + timedelta(hours=int(self.env['ir.config_parameter'].sudo().get_param('account.auto_send_dte', default=12))))
                     self.env['sii.cola_envio'].create({
+                                                'company_id': inv.company_id.id,
                                                 'doc_ids': [inv.id],
                                                 'model': 'account.invoice',
                                                 'user_id': self.env.uid,
@@ -1375,6 +1376,7 @@ version="1.0">
                 self.browse(ids).do_dte_send(n_atencion)
                 return
             self.env['sii.cola_envio'].create({
+                                    'company_id': self[0].company_id.id,
                                     'doc_ids': ids,
                                     'model': 'account.invoice',
                                     'user_id': self.env.user.id,
