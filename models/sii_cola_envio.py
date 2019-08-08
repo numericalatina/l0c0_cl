@@ -61,11 +61,11 @@ class ColaEnvio(models.Model):
 
     def _procesar_tipo_trabajo(self):
         admin = self.env.ref('base.user_admin')
+        if self.user_id.id == SUPERUSER_ID:
+            self.user_id = admin.id
         if self.user_id.id != admin.id and not self.user_id.active:
             _logger.warning("¡Usuario %s desactivado!" % self.user_id.name)
             return
-        if self.user_id.id == SUPERUSER_ID:
-            self.user_id = admin.id
         docs = self.env[self.model].with_context(
                     user=self.user_id.id,
                     company_id=self.company_id.id).browse(
