@@ -78,6 +78,11 @@ TYPE2JOURNAL = {
 class AccountInvoiceLine(models.Model):
     _inherit = 'account.invoice.line'
 
+    sequence = fields.Integer(
+            string="Sequence",
+            default=-1,
+        )
+
     @api.depends('price_unit', 'discount', 'invoice_line_tax_ids', 'quantity',
         'product_id', 'invoice_id.partner_id', 'invoice_id.currency_id', 'invoice_id.company_id')
     def _compute_price(self):
@@ -393,6 +398,14 @@ class AccountInvoice(models.Model):
         string="Recepción del Cliente",
         readonly=True,
     )
+
+    @api.onchange('invoice_line_ids')
+    def _onchange_invoice_line_ids(self):
+        lines = len(self.invoice_line_ids)
+        for l in self.invoice_line_ids:
+            if l.sequence == -1:
+                l.sequence = lines
+        return super(AccountInvoice, self)._onchange_invoice_line_ids()
 
     @api.depends('state', 'journal_id', 'date_invoice', 'document_class_id')
     def _get_sequence_prefix(self):
@@ -1742,7 +1755,6 @@ version="1.0">
         return False
 
     def _invoice_lines(self):
-        line_number = 1
         invoice_lines = []
         no_product = False
         MntExe = 0
@@ -1756,7 +1768,7 @@ version="1.0">
             if line.product_id.default_code == 'NO_PRODUCT':
                 no_product = True
             lines = collections.OrderedDict()
-            lines['NroLinDet'] = line_number
+            lines['NroLinDet'] = line.sequence
             if line.product_id.default_code and not no_product:
                 lines['CdgItem'] = collections.OrderedDict()
                 lines['CdgItem']['TpoCodigo'] = 'INT1'
@@ -1817,7 +1829,6 @@ version="1.0">
                 lines['MontoItem'] = 0
             if lines['MontoItem'] < 0:
                 raise UserError(_("No pueden ir valores negativos en las líneas de detalle"))
-            line_number += 1
             if lines.get('PrcItem', 1) == 0:
                 del(lines['PrcItem'])
             invoice_lines.extend([{'Detalle': lines}])

@@ -219,10 +219,22 @@ class UploadXMLWizard(models.TransientModel):
                     'mail.message.dte')
                 dte_email_id = self.dte_id.company_id.dte_email_id or\
                     self.env.user.company_id.dte_email_id
+                email_to = self.sudo().dte_id.mail_id.email_from
+                if envio is not None:
+                    RUT = envio.find('SetDTE/Caratula/RutEmisor').text
+                    partner_id = self.env['res.partner'].search(
+                        [
+                            ('active', '=', True),
+                            ('parent_id', '=', False),
+                            ('vat', '=', self.format_rut(RUT))
+                        ]
+                    )
+                    if partner_id.dte_email:
+                        email_to = partner_id.dte_email.email
                 values = {
                         'res_id': self.dte_id.id,
                         'email_from': dte_email_id.name_get()[0][1],
-                        'email_to': self.sudo().dte_id.mail_id.email_from,
+                        'email_to': email_to,
                         'auto_delete': False,
                         'model': "mail.message.dte",
                         'body': 'XML de Respuesta Envío, Estado: %s , Glosa: %s ' % (r['EstadoRecepEnv'], r['RecepEnvGlosa'] ),
