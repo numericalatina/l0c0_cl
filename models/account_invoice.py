@@ -2065,9 +2065,9 @@ version="1.0">
             return "Enviado"
         if resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["EPR", "MMC", "DOK", "TMC"]:
             return "Proceso"
-        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] == "1":
+        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["DNK"]:
             return "Reparo"
-        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["DNK", "FAU", "RCT", "FNA"]:
+        elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["FAU", "RCT", "FNA"]:
             return "Rechazado"
         elif resp['SII:RESPUESTA']['SII:RESP_HDR']['ESTADO'] in ["FAN", "ANC"]:
             return "Anulado" #Desde El sii o por NC
