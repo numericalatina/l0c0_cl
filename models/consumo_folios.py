@@ -26,6 +26,7 @@ except ImportError:
 
 class ConsumoFolios(models.Model):
     _name = "account.move.consumo_folios"
+    _description = 'Consumo Diario de Folios'
     order = 'fecha_inicio desc'
 
     sii_xml_request = fields.Many2one(
@@ -716,6 +717,7 @@ version="1.0">
 
 class DetalleCOnsumoFolios(models.Model):
     _name = "account.move.consumo_folios.detalles"
+    _description = 'Línea detalle Consumo de folios'
 
     cf_id = fields.Many2one('account.move.consumo_folios',
                             string="Consumo de Folios", ondelete="cascade",)
@@ -729,6 +731,7 @@ class DetalleCOnsumoFolios(models.Model):
 
 class DetalleImpuestos(models.Model):
     _name = "account.move.consumo_folios.impuestos"
+    _description = 'Línea Impuestos Consumo de folios'
 
     cf_id = fields.Many2one('account.move.consumo_folios',
                             string="Consumo de Folios", ondelete="cascade",)
@@ -749,6 +752,7 @@ class DetalleImpuestos(models.Model):
 
 class Anulaciones(models.Model):
     _name = 'account.move.consumo_folios.anulaciones'
+    _description = 'Línea anulación de folios para Consumo de folios'
 
     cf_id = fields.Many2one(
             'account.move.consumo_folios',

@@ -36,6 +36,7 @@ allowed_docs = [29, 30, 32, 33, 34, 35, 38, 39, 40,
 
 class Libro(models.Model):
     _name = "account.move.book"
+    _description = 'Libro de Compra / Venta DTE'
 
     sii_xml_request = fields.Many2one(
         'sii.xml.envio',
@@ -1069,6 +1070,7 @@ version="1.0">
 
 class Boletas(models.Model):
     _name = 'account.move.book.boletas'
+    _description = 'Línea de boletas mensuales para Libro de Ventas'
 
     currency_id = fields.Many2one('res.currency',
         string='Moneda',
@@ -1109,11 +1111,12 @@ class Boletas(models.Model):
             return
         if self.rango_final < self.rango_inicial:
             raise UserError("¡El rango Final no puede ser menor al inicial")
-        self.cantidad_boletas = self.rango_final - self.rango_inicial +1
+        self.cantidad_boletas = self.rango_final - self.rango_inicial + 1
 
 
 class ImpuestosLibro(models.Model):
-    _name="account.move.book.tax"
+    _name = "account.move.book.tax"
+    _description = 'línea de impuesto Libro CV'
 
     def get_monto(self):
         for t in self:

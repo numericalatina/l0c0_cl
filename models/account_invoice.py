@@ -110,6 +110,7 @@ class AccountInvoiceLine(models.Model):
 
 class Referencias(models.Model):
     _name = 'account.invoice.referencias'
+    _description = 'Línea de referencia de Documentos DTE'
 
     origen = fields.Char(
             string="Origin",

@@ -21,6 +21,7 @@ except ImportError:
 
 class CAF(models.Model):
     _name = 'dte.caf'
+    _description = 'CAF DTE'
 
     @api.depends('caf_file')
     def _compute_data(self):
