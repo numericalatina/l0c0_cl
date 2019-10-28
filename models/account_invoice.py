@@ -147,7 +147,7 @@ class AccountInvoice(models.Model):
     _inherit = "account.invoice"
 
     def _default_journal_document_class_id(self, default=None):
-        if self.document_class_id:
+        if not self.env.get('sii.document_class') or self.document_class_id:
             return False
         ids = self._get_available_journal_document_class()
         document_classes = self.env['account.journal.sii_document_class'].browse(ids)
@@ -1800,7 +1800,7 @@ version="1.0">
                 lines['UnmdItem'] = line.uom_id.name[:4]
                 lines['PrcItem'] = round(line.price_unit, 6)
                 for t in line.invoice_line_tax_ids:
-                    if t.sii_code in [26,27,271]:#@Agregar todos los adicionales
+                    if t.sii_code in [26, 27, 271]:#@Agregar todos los adicionales
                         lines['CodImpAdic'] = t.sii_code
                 if currency_id:
                     lines['OtrMnda'] = collections.OrderedDict()
