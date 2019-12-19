@@ -129,7 +129,6 @@ class ProcessMailsDocument(models.Model):
     def reject_document(self):
         for r in self:
             r.state = 'rejected'
-
         wiz_accept = self.env['sii.dte.validar.wizard'].create(
             {
                 'action': 'validate',
