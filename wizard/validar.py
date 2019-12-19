@@ -155,13 +155,7 @@ class ValidarDTEWizard(models.TransientModel):
                     }
             send_mail = self.env['mail.mail'].create(values)
             send_mail.send()
-            inv_obj.set_dte_claim(
-                rut_emisor = resp['RutRecibe'],
-                company_id=doc.company_id,
-                sii_document_number=doc.number,
-                document_class_id=doc.document_class_id,
-                claim='RCD',
-            )
+            doc.set_dte_claim(claim='RCD'):
 
     def do_validar_comercial(self):
         id_seq = self.env.ref('l10n_cl_fe.response_sequence')
@@ -208,11 +202,12 @@ class ValidarDTEWizard(models.TransientModel):
                     }
             send_mail = self.env['mail.mail'].create(values)
             send_mail.send()
-            inv.claim = 'ACD'
             try:
-                inv.set_dte_claim(
-                    rut_emisor=inv.format_vat(inv.partner_id.vat),
-                )
+                inv.set_dte_claim(claim='ACD')
+            except Exception as e:
+                _logger.warning("Error al setear Reclamo %s" %str(e))
+            try:
+                inv.get_dte_claim()
             except:
                 _logger.warning("@TODO crear código que encole la respuesta")
 
@@ -255,10 +250,11 @@ class ValidarDTEWizard(models.TransientModel):
                     }
             send_mail = self.env['mail.mail'].create(values)
             send_mail.send()
-            inv.claim = 'ERM'
             try:
-                inv.set_dte_claim(
-                    rut_emisor=inv.format_vat(inv.partner_id.vat),
-                )
+                inv.set_dte_claim(claim='ERM')
+            except Exception as e:
+                _logger.warning("Error al setear Reclamo %s" %str(e))
+            try:
+                inv.get_dte_claim()
             except:
                 _logger.warning("@TODO crear código que encole la respuesta")
