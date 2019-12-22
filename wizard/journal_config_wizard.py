@@ -122,8 +122,8 @@ Include unusual taxes documents, as transfer invoice, and reissue
             domain.append(('dte', '=', True))
         document_class_obj = self.env['sii.document_class']
         document_class_ids = document_class_obj.search(domain)
+        journal.document_class_ids = document_class_ids.ids
         if journal.type == 'purchase':
-            journal.document_class_ids = document_class_ids.ids
             return
         journal_document_obj = self.env['account.journal.sii_document_class']
         sequence = 10

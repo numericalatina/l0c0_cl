@@ -155,7 +155,7 @@ class ValidarDTEWizard(models.TransientModel):
                     }
             send_mail = self.env['mail.mail'].create(values)
             send_mail.send()
-            doc.set_dte_claim(claim='RCD'):
+            doc.set_dte_claim(claim='RCD')
 
     def do_validar_comercial(self):
         id_seq = self.env.ref('l10n_cl_fe.response_sequence')
