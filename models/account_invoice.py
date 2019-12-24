@@ -153,14 +153,19 @@ class AccountInvoice(models.Model):
     def get_dc_ids(self):
         for r in self:
             r.document_class_ids = []
-            dc_type = ['invoice'] if self.type in ['in_invoice', 'out_invoice'] else ['credit_note', 'debit_note']
-            jdc_ids = self.env['account.journal.sii_document_class'].search([
-                ('journal_id', '=', r.journal_id.id),
-                ('sii_document_class_id.document_type', 'in', dc_type),
-            ])
+            dc_type = ['invoice'] if r.type in ['in_invoice', 'out_invoice'] else ['credit_note', 'debit_note']
             ids = []
-            for dc in jdc_ids:
-                ids.append(dc.sii_document_class_id.id)
+            if r.type in ['in_invoice', 'in_refund']:
+                for j in r.journal_id.document_class_ids:
+                    if j.document_type in dc_type:
+                        ids.append(j.id)
+            else:
+                jdc_ids = self.env['account.journal.sii_document_class'].search([
+                    ('journal_id', '=', r.journal_id.id),
+                    ('sii_document_class_id.document_type', 'in', dc_type),
+                ])
+                for dc in jdc_ids:
+                    ids.append(dc.sii_document_class_id.id)
             r.document_class_ids = ids
 
     vat_discriminated = fields.Boolean(
