@@ -129,7 +129,9 @@ class AccountInvoice(models.Model):
             return False
         journal = self.env['account.invoice'].default_get(['journal_id'])['journal_id']
         default_type = self._context.get('type', 'out_invoice')
-        dc_type = ['invoice'] if default_type in ['in_inovice', 'out_invoice'] else ['credit_note', 'debit_note']
+        if default_type in ['in_invoice', 'in_refund']:
+            return self.env['account.journal.sii_document_class']
+        dc_type = ['invoice'] if default_type in ['in_invoice', 'out_invoice'] else ['credit_note', 'debit_note']
         jdc = self.env['account.journal.sii_document_class'].search([
             ('journal_id', '=', journal),
             ('sii_document_class_id.document_type', 'in', dc_type),
@@ -150,6 +152,7 @@ class AccountInvoice(models.Model):
                 r.sii_barcode_img = r.get_barcode_img()
 
     @api.onchange('journal_id')
+    @api.depends('journal_id')
     def get_dc_ids(self):
         for r in self:
             r.document_class_ids = []
@@ -700,22 +703,33 @@ class AccountInvoice(models.Model):
                                                              date_invoice,
                                                              date, description,
                                                              journal_id)
-        jdc = self.env['account.journal.sii_document_class'].search(
+        jdc = self.env['account.journal.sii_document_class']
+        if invoice.type in ['in_invoice', 'in_refund']:
+            dc = self.env['sii.document_class'].search(
+                [
+                    ('sii_code', '=', tipo_nota),
+                ],
+                limit=1,
+            )
+        else:
+            jdc = self.env['account.journal.sii_document_class'].search(
                 [
                     ('sii_document_class_id.sii_code', '=', tipo_nota),
                     ('journal_id', '=', invoice.journal_id.id),
                 ],
                 limit=1,
             )
-        if invoice.type == 'out_invoice' and jdc.sii_document_class_id.document_type == 'credit_note':
+            dc = jdc.sii_document_class_id
+        if invoice.type == 'out_invoice' and dc.document_type == 'credit_note':
             type = 'out_refund'
         elif invoice.type in ['out_refund', 'out_invoice']:
             type = 'out_invoice'
-        elif invoice.type == 'in_invoice' and jdc.sii_document_class_id.document_type == 'credit_note':
+        elif invoice.type == 'in_invoice' and dc.document_type == 'credit_note':
             type = 'in_refund'
         elif invoice.type in ['in_refund', 'in_invoice']:
             type = 'in_invoice'
         values.update({
+                'document_class_id': dc.id,
                 'type': type,
                 'journal_document_class_id': jdc.id,
                 'referencias':[[0, 0, {
@@ -748,23 +762,6 @@ class AccountInvoice(models.Model):
             refund_invoice.message_post(body=message)
             new_invoices += refund_invoice
         return new_invoices
-
-    def get_document_class_default(self, document_classes):
-        document_class_id = None
-        # @TODO compute from company or journal
-        #if self.turn_issuer.vat_affected not in ['SI', 'ND']:
-        #    exempt_ids = [
-        #        self.env.ref('l10n_cl_fe.dc_y_f_dtn').id,
-        #        self.env.ref('l10n_cl_fe.dc_y_f_dte').id]
-        #    for document_class in document_classes:
-        #        if document_class.sii_document_class_id.id in exempt_ids:
-        #            document_class_id = document_class.id
-        #            break
-        #        else:
-        #            document_class_id = document_classes.ids[0]
-        #else:
-        document_class_id = document_classes.ids[0]
-        return document_class_id
 
     @api.multi
     def name_get(self):
@@ -882,7 +879,7 @@ class AccountInvoice(models.Model):
 
     @api.onchange('journal_document_class_id')
     def set_document_class_id(self):
-        if self.move_id:
+        if self.move_id or self.type in ['in_invoice', 'in_refund']:
             return
         self.document_class_id = self.journal_document_class_id.sii_document_class_id.id
 
@@ -1890,6 +1887,9 @@ a VAT."""))
                                             mess)
 
     def set_dte_claim(self, claim=False):
+        if self.document_class_id.sii_code not in [33, 34, 43]:
+            self.claim = claim
+            return
         rut_emisor = self.format_vat(
                     self.partner_id.commercial_partner_id.vat)
         token = self.sii_xml_request.get_token(self.env.user, self.company_id)
@@ -1915,7 +1915,7 @@ a VAT."""))
                     raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
                 raise UserError(("%s: %s" % (msg, str(e))))
         self.claim_description = respuesta
-        if respuesta.codResp in [0, 7] or self.document_class_id.sii_code not in [33, 34, 43]:
+        if respuesta.codResp in [0, 7]:
             self.claim = claim
 
     @api.multi
@@ -1928,16 +1928,21 @@ a VAT."""))
                 'Cookie': 'TOKEN=' + token,
                 },
         )
-        rut_emisor = self.format_vat(self.company_id.vat)
-        if self.type in ['in_invoice', 'in_refund']:
-            rut_emisor = self.format_vat(self.partner_id.commercial_partner_id.vat)
-        respuesta = _server.service.listarEventosHistDoc(
-            rut_emisor[:-2],
-            rut_emisor[-1],
-            str(self.document_class_id.sii_code),
-            str(self.sii_document_number),
-        )
-        self.claim_description = respuesta
+        try:
+            rut_emisor = self.format_vat(self.company_id.vat)
+            if self.type in ['in_invoice', 'in_refund']:
+                rut_emisor = self.format_vat(self.partner_id.commercial_partner_id.vat)
+            respuesta = _server.service.listarEventosHistDoc(
+                rut_emisor[:-2],
+                rut_emisor[-1],
+                str(self.document_class_id.sii_code),
+                str(self.sii_document_number),
+            )
+            self.claim_description = respuesta
+        except Exception as e:
+            if e.args[0][0] == 503:
+                raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
+            raise UserError(("%s: %s" % (msg, str(e))))
 
     @api.multi
     def wizard_upload(self):
