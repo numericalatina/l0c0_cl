@@ -1146,6 +1146,7 @@ a VAT."""))
             ted,
             security_level=5,
             columns=columns,
+            encoding='ISO-8859-1',
         )
         image = pdf417gen.render_image(
             bc,
