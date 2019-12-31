@@ -143,7 +143,10 @@ class ProcessMailsDocument(models.Model):
             val = self.env['sii.dte.upload_xml.wizard'].create(vals)
             resp = val.confirm(ret=True)
             created.extend(resp)
-            r.get_dte_claim()
+            try:
+                r.get_dte_claim()
+            except:
+                _logger.warning("encolar")
             for i in self.env['account.invoice'].browse(resp):
                 if i.claim in ['ACD', 'ERM']:
                     r.state = 'accepted'
