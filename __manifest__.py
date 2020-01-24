@@ -2,15 +2,15 @@
 {
     "name": """Facturación Electrónica para Chile\
     """,
-    'version': '0.18.5',
+    'version': '0.18.6',
     'category': 'Localization/Chile',
     'sequence': 12,
     'author':  'Daniel Santibáñez Polanco, Cooperativa OdooCoop',
     'website': 'https://globalresponse.cl',
     'license': 'AGPL-3',
-    'summary': 'Facturación Electrónica para Chile. Mayor información en https://odoocoop.cl',
+    'summary': 'Facturación Electrónica para Chile. Mayor información en https://globalresponse.cl',
     'description': """
-Facturación Electrónica para Chile. Mayor información en https://odoocoop.cl
+Facturación Electrónica para Chile. Mayor información en https://globalresponse.cl
 """,
     'depends': [
             'base',
