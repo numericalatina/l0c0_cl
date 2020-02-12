@@ -1538,6 +1538,7 @@ a VAT."""))
                 lines['CdgItem']['TpoCodigo'] = 'INT1'
                 lines['CdgItem']['VlrCodigo'] = line.product_id.default_code
             taxInclude = False
+            lines["Impuesto"] = []
             for t in line.invoice_line_tax_ids:
                 if t.sii_code in [26, 27, 28, 35, 271]:#@Agregar todos los adicionales
                     lines['CodImpAdic'] = t.sii_code
