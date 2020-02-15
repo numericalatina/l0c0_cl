@@ -1596,15 +1596,13 @@ a VAT."""))
             if not no_product and not taxInclude:
                 price_subtotal = line.price_subtotal
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = price_subtotal
-                    price_subtotal = currency_base._convert(price_subtotal, currency_id, self.company_id, self.date_invoice)
-                lines['MontoItem'] = currency_base.round(price_subtotal)
+                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_base._convert(price_subtotal, currency_id, self.company_id, self.date_invoice)
+                lines['MontoItem'] = price_subtotal
             elif not no_product:
                 price_total = line.price_total
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = price_total
-                    price_total = currency_base._convert(price_total, currency_id, self.company_id, self.date_invoice)
-                lines['MontoItem'] = currency_base.round(price_total)
+                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_base._convert(price_total, currency_id, self.company_id, self.date_invoice)
+                lines['MontoItem'] = price_total
             if no_product:
                 lines['MontoItem'] = 0
             if lines['MontoItem'] < 0:
