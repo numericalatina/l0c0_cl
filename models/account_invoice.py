@@ -962,7 +962,7 @@ a VAT."""))
         for obj_inv in self:
             invtype = obj_inv.type
             if obj_inv.journal_document_class_id and not obj_inv.sii_document_number:
-                if invtype in ('out_invoice', 'out_refund'):
+                if invtype in ('out_invoice', 'out_refund') and obj_inv.use_documents:
                     to_write = {}
                     if not obj_inv.journal_document_class_id.sequence_id:
                         raise UserError(_(
