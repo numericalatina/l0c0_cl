@@ -147,7 +147,7 @@ class ProcessMailsDocument(models.Model):
             "firma_electronica": signature_id.parametros_firma(),
         }
 
-    def _id_doc(self, taxInclude=False, MntExe=0):
+    def _id_doc(self):
         IdDoc = {}
         IdDoc['TipoDTE'] = self.document_class_id.sii_code
         IdDoc['Folio'] = self.number

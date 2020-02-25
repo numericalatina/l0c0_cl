@@ -70,6 +70,7 @@ class ValidarDTEWizard(models.TransientModel):
     tipo = fields.Char(
         string="Model destino"
     )
+    
     @api.onchange('action')
     def marcar_reclamo(self):
         if self.action == 'receipt':
