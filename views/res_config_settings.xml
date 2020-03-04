@@ -22,7 +22,7 @@
                 <div class="o_setting_left_pane" />
                 <div class="o_setting_right_pane">
                     <strong>Requerido:</strong><div class="text-muted">0.10.6</div>
-                    <div class="text-muted" attrs="{'invisible': [('fe_version', '=', '0.10.6')]}" style="color:red !important">
+                    <div class="text-muted" attrs="{'invisible': [('fe_version', '>=', '0.10.6')]}" style="color:red !important">
                         ¡Debe Actualizar o verificar su versión instalada!
                     </div>
                 </div>
