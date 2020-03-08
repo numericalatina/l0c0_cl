@@ -297,13 +297,13 @@ class SIIXMLEnvio(models.Model):
         if estado.text in ["EPR", "LOK"]:
             result.update({"state": "Aceptado"})
             body = resp.find('RESP_BODY')
-            '''
+
             if body is not None:
                 if body.find('RECHAZADOS').text == "1":
                     result['state'] = "Rechazado"
-                if body.find('REPAROS').text == "1":
-                    result['state'] = "Reparo"
-            '''
+            #    if body.find('REPAROS').text == "1":
+            #        result['state'] = "Reparo"
+
             if body.find('GLOSA_ESTADO') is not None:
                 result['glosa'] = body.find('GLOSA_ESTADO').text
         elif estado.text in ["RCT", "RFR", "LRH", "RCH", "RSC", "FNA", "LRF", "LNC", "LRS", "106"]:
