@@ -1329,7 +1329,7 @@ a VAT."""))
         Receptor['RznSocRecep'] = self._acortar_str( commercial_partner_id.name, 100)
         if not self.partner_id or Receptor['RUTRecep'] == '66666666-6':
             return Receptor
-        if not self._es_boleta() and not self._nc_boleta():
+        if not self._es_boleta() and not self._nc_boleta() and self.type not in ['in_invoice', 'in_refund']:
             GiroRecep = self.acteco_id.name or commercial_partner_id.activity_description.name
             if not GiroRecep:
                 raise UserError(_('Seleccione giro del partner'))
@@ -1339,14 +1339,14 @@ a VAT."""))
         if (commercial_partner_id.email or commercial_partner_id.dte_email or self.partner_id.email or self.partner_id.dte_email) and not self._es_boleta():
             Receptor['CorreoRecep'] = commercial_partner_id.dte_email or self.partner_id.dte_email or commercial_partner_id.email or self.partner_id.email
         street_recep = (self.partner_id.street or commercial_partner_id.street or False)
-        if not street_recep and not self._es_boleta() and not self._nc_boleta():
+        if not street_recep and not self._es_boleta() and not self._nc_boleta() and self.type not in ['in_invoice', 'in_refund']:
         # or self.indicador_servicio in [1, 2]:
             raise UserError('Debe Ingresar dirección del cliente')
         street2_recep = (self.partner_id.street2 or commercial_partner_id.street2 or False)
         if street_recep or street2_recep:
             Receptor['DirRecep'] = self._acortar_str(street_recep + (' ' + street2_recep if street2_recep else ''), 70)
         cmna_recep = self.partner_id.city_id.name or commercial_partner_id.city_id.name
-        if not cmna_recep and not self._es_boleta() and not self._nc_boleta():
+        if not cmna_recep and not self._es_boleta() and not self._nc_boleta() and self.type not in ['in_invoice', 'in_refund']:
             raise UserError('Debe Ingresar Comuna del cliente')
         else:
             Receptor['CmnaRecep'] = cmna_recep
