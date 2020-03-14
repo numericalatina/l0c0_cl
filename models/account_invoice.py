@@ -1319,9 +1319,6 @@ a VAT."""))
         Receptor = {}
         commercial_partner_id = self.commercial_partner_id or self.partner_id.commercial_partner_id
         if not commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
-            _logger.warning("1")
-            _logger.warning(commercial_partner_id)
-            _logger.warning(commercial_partner_id.vat)
             raise UserError("Debe Ingresar RUT Receptor")
         #if self._es_boleta():
         #    Receptor['CdgIntRecep']
