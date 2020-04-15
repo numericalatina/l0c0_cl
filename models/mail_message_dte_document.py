@@ -252,6 +252,9 @@ class ProcessMailsDocument(models.Model):
                 r.get_dte_claim()
             except:
                 _logger.warning("encolar")
+            if r.company_id.dte_service_provider == 'SIICERT':
+                r.state = 'accepted'
+                continue
             for i in self.env['account.invoice'].browse(resp):
                 if i.claim in ['ACD', 'ERM']:
                     r.state = 'accepted'
