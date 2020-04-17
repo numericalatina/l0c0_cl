@@ -1731,7 +1731,6 @@ a VAT."""))
             'sii_xml_dte': result[0]['sii_xml_request'],
             'sii_barcode': result[0]['sii_barcode'],
         })
-        return
 
     def _crear_envio(self, n_atencion=None, RUTRecep="60803000-K"):
         grupos = {}
