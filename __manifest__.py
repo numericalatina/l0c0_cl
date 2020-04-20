@@ -34,7 +34,7 @@ Facturación Electrónica para Chile. Mayor información en https://globalrespon
             'io',
             'PIL',#Via Pillow
             'urllib3',
-            'PyMUPDF'
+            'fitz', #Via PyMUPDF, no instalar fitz directo
         ]
     },
     'data': [
