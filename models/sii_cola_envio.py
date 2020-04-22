@@ -132,8 +132,6 @@ class ColaEnvio(models.Model):
         if self.tipo_trabajo == 'consulta':
             try:
                 docs.ask_for_dte_status()
-                if docs[0].sii_xml_request.state in ['Aceptado']:
-                    self.unlink()
             except Exception as e:
                 _logger.warning("Error en Consulta")
                 _logger.warning(str(e))
