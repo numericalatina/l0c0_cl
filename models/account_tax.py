@@ -196,7 +196,7 @@ class SiiTax(models.Model):
         if self.mepco == 'gasolina_97':
             target = 'Gasolina Automotriz de 97 octanos\n\(en UTM\/m[\w]\)'
         elif self.mepco == 'diesel':
-            target = 'Petróleo Diésel \(en UTM\/m[\w]\)'
+            target = 'Petr[\w]leo Di[\w]sel \(en UTM\/m[\w]\)'
         elif self.mepco == 'gas_licuado':
             target = 'Gas Licuado del Petróleo de Consumo\nVehicular \(en UTM\/m[\w]\)'
         elif self.mepco == 'gas_natural':
