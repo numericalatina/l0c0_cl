@@ -12,6 +12,7 @@ import logging
 _logger = logging.getLogger(__name__)
 try:
     from facturacion_electronica import facturacion_electronica as fe
+    from facturacion_electronica.consumo_folios import ConsumoFolios as CF
 except Exception as e:
     _logger.warning("Problema al cargar Facturación electrónica: %s" % str(e))
 
