@@ -371,7 +371,7 @@ class ConsumoFolios(models.Model):
                 ('journal_id', '=', rec.journal_id.id),
                 ('state', 'not in', ['cancel', 'draft']),
             ])
-            recs.append(ref._dte())
+            recs.append(ref)
         return recs
 
     def _validar(self):
@@ -380,14 +380,22 @@ class ConsumoFolios(models.Model):
         recs = self._get_moves()
         for r in recs:
             grupos.setdefault(r.document_class_id.sii_code, [])
-            grupos[r.document_class_id.sii_code].append(r)
-        for anulaciones in self.anulaciones:
-            raise UserError("terminar código anulaciones manuales")
+            grupos[r.document_class_id.sii_code].append(r.with_context(tax_detail=True)._dte())
+        for r in self.anulaciones:
             grupos.setdefault(r.document_class_id.sii_code, [])
-            grupos[r.document_class_id.sii_code].append(r)
+            for i in range(r.rango_inicio, r.rango_final+1):
+                grupos[r.document_class_id.sii_code].append({
+                    "Encabezado": {
+                        "IdDoc": {
+                            "Folio": i,
+                            "FechaEmis": r.fecha_inicio.strftime("%d-%m-%Y"),
+                            "Anulado": True,
+                        }
+                    }
+                })
         datos['ConsumoFolios'] = {
-            "FchInicio": self.fecha_inicio,
-            "FchFinal": self.fecha_final,
+            "FchInicio": self.fecha_inicio.strftime("%d-%m-%Y"),
+            "FchFinal": self.fecha_final.strftime("%d-%m-%Y"),
             "SecEnvio": self.sec_envio,
             "Correlativo": self.correlativo,
             "Documento": [{'TipoDTE': k, 'documentos': v} for k, v in grupos.items()]
