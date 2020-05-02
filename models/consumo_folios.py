@@ -242,7 +242,7 @@ class ConsumoFolios(models.Model):
 
     @api.onchange('move_ids', 'anulaciones')
     def _resumenes(self):
-        resumenes, TpoDocs = self._get_resumenes()
+        resumenes = self._get_resumenes()
         if self.impuestos and isinstance(self.id, int):
             self._cr.execute("DELETE FROM account_move_consumo_folios_impuestos WHERE cf_id=%s", (self.id,))
             self.invalidate_cache()
@@ -260,8 +260,8 @@ class ConsumoFolios(models.Model):
             }
             detalles.append([0,0,rango])
         for r, value in resumenes.items():
-            if '%s_folios' %str(r) in value:
-                Rangos = value[ str(r)+'_folios' ]
+            if value.get('T%s' %str(r) ):
+                Rangos = value[ 'T'+str(r)]
                 if 'itemUtilizados' in Rangos:
                     for rango in Rangos['itemUtilizados']:
                         pushItem('RangoUtilizados', rango, r)
@@ -269,7 +269,7 @@ class ConsumoFolios(models.Model):
                     for rango in Rangos['itemAnulados']:
                         pushItem('RangoAnulados', rango, r)
         self.detalles = detalles
-        docs = collections.OrderedDict()
+        docs = {}
         for r, value in resumenes.items():
             if value.get('FoliosUtilizados', False):
                 docs[r] = {
@@ -335,6 +335,19 @@ class ConsumoFolios(models.Model):
         rut = value[:10] + '-' + value[10:]
         rut = rut.replace('CL0','').replace('CL','')
         return rut
+
+    @api.multi
+    def validar_consumo_folios(self):
+        self._validar()
+        consumos = self.search([
+            ('fecha_inicio', '=', self.fecha_inicio),
+            ('state', 'not in', ['draft', 'Rechazado', 'Anulado']),
+            ('company_id', '=', self.company_id.id),
+            ('id', '!=', self.id),
+            ])
+        for r in consumos:
+            r.state = "Anulado"
+        return self.write({'state': 'NoEnviado'})
 
     def _emisor(self):
         Emisor = {}
