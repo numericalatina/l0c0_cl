@@ -1669,7 +1669,7 @@ a VAT."""))
         )
         lin_ref = 1
         ref_lines = []
-        if (self.company_id.dte_service_provider == 'SIICERT' and (isinstance(n_atencion, string_types) and n_atencion != '') or self._es_boleta()):
+        if self.company_id.dte_service_provider == 'SIICERT' and ((isinstance(n_atencion, string_types) and n_atencion != '') or self._es_boleta()):
             RazonRef = "CASO"
             if isinstance(n_atencion, string_types) and n_atencion != '':
                 RazonRef += ' ' + n_atencion
