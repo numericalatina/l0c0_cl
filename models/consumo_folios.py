@@ -407,17 +407,17 @@ class ConsumoFolios(models.Model):
                         }
                     }
                 })
-        datos['ConsumoFolios'] = {
+        datos['ConsumoFolios'] = [{
             "FchInicio": self.fecha_inicio.strftime("%d-%m-%Y"),
             "FchFinal": self.fecha_final.strftime("%d-%m-%Y"),
             "SecEnvio": self.sec_envio,
             "Correlativo": self.correlativo,
             "Documento": [{'TipoDTE': k, 'documentos': v} for k, v in grupos.items()]
-        }
+        }]
         datos['test'] = True
-        result = fe.libro(datos)[0]
+        result = fe.consumo_folios(datos)[0]
         envio_dte = result['sii_xml_request']
-        doc_id = '%s_%s' % (self.tipo_operacion, self.periodo_tributario)
+        doc_id = '%s_%s' % (self.fecha_inicio, self.sec_envio)
         self.sii_xml_request = self.env['sii.xml.envio'].create({
             'xml_envio': envio_dte,
             'name': doc_id,
