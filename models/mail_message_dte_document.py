@@ -2,6 +2,7 @@
 from odoo import fields, models, api
 from odoo.tools.safe_eval import safe_eval
 from odoo.tools.translate import _
+from odoo.exceptions import UserError
 import logging
 _logger = logging.getLogger(__name__)
 try:
@@ -214,7 +215,7 @@ class ProcessMailsDocument(models.Model):
                 'filename': r.dte_id.name,
                 'pre_process': False,
                 'document_id': r.id,
-                'option': 'accept'
+                'option': 'accept',
             }
             val = self.env['sii.dte.upload_xml.wizard'].sudo().create(vals)
             resp = val.confirm(ret=True)
@@ -309,6 +310,13 @@ class ProcessMailsDocument(models.Model):
                 str(self.number),
             )
             self.claim_description = respuesta
+            if respuesta.codResp in [15]:
+                for res in respuesta.listaEventosDoc:
+                    if self.claim != "ACD":
+                        if self.claim != 'ERM':
+                            self.claim = res.codEvento
+            if self.claim in ["ACD", "ERM"]:
+                self.state = 'accepted'
         except Exception as e:
             _logger.warning("Error al obtener aceptación %s" %(str(e)))
             if self.company_id.dte_service_provider == 'SII':
