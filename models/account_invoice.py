@@ -951,7 +951,7 @@ a VAT."""))
     @api.constrains('reference', 'partner_id', 'company_id', 'type',
                     'journal_document_class_id')
     def _check_reference_in_invoice(self):
-        f self.type in ['in_invoice', 'in_refund'] and self.sii_document_number:
+        if self.type in ['in_invoice', 'in_refund'] and self.sii_document_number:
             domain = [('type', '=', self.type),
                       ('sii_document_number', '=', self.sii_document_number),
                       ('partner_id', '=', self.partner_id.id),
