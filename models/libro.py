@@ -461,7 +461,8 @@ class Libro(models.Model):
                 "TipoOperacion": self.tipo_operacion,
                 "TipoLibro": self.tipo_libro,
                 "TipoEnvio": self.tipo_envio,
-                'sii_xml_request': self.sii_xml_request
+                'sii_xml_request': self.sii_xml_request.xml_envio,
+                'ID': self.sii_xml_request.name,
             }
             result = fe.libro(datos)
         return self.sii_xml_request
