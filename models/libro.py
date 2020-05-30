@@ -455,6 +455,7 @@ class Libro(models.Model):
             self._validar()
             self.sii_xml_request.state = 'NoEnviado'
         if self.state in ['NoEnviado', 'EnCola']:
+            envio_id = self.sii_xml_request
             datos = self._get_datos_empresa(self.company_id)
             datos.update({
                 'Libro': {
@@ -463,10 +464,26 @@ class Libro(models.Model):
                     "TipoLibro": self.tipo_libro,
                     "TipoEnvio": self.tipo_envio,
                 },
-                'sii_xml_request': self.sii_xml_request.xml_envio.replace('''<?xml version="1.0" encoding="ISO-8859-1"?>\n''', ''),
-                'ID': self.sii_xml_request.name,
+                'sii_xml_request': envio_id.xml_envio.replace('''<?xml version="1.0" encoding="ISO-8859-1"?>\n''', ''),
+                'ID': envio_id.name,
             })
             result = fe.libro(datos)
+            envio = {
+                'xml_envio': result['sii_xml_request'],
+                'name': result['sii_send_filename'],
+                'company_id': self.company_id.id,
+                'user_id': self.env.uid,
+                'sii_send_ident': result.get('sii_send_ident'),
+                'sii_xml_response': result.get('sii_xml_response'),
+                'state': result.get('sii_result'),
+            }
+            if not envio_id:
+                envio_id = self.env['sii.xml.envio'].create(envio)
+                for i in self:
+                    i.sii_xml_request = envio_id.id
+                    i.state = 'Enviado'
+            else:
+                envio_id.write(envio)
         return self.sii_xml_request
 
     def _get_send_status(self):
