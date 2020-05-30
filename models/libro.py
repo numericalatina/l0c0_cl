@@ -456,14 +456,16 @@ class Libro(models.Model):
             self.sii_xml_request.state = 'NoEnviado'
         if self.state in ['NoEnviado', 'EnCola']:
             datos = self._get_datos_empresa(self.company_id)
-            datos['Libro'] = {
-                "PeriodoTributario": self.periodo_tributario,
-                "TipoOperacion": self.tipo_operacion,
-                "TipoLibro": self.tipo_libro,
-                "TipoEnvio": self.tipo_envio,
+            datos.update({
+                'Libro': {
+                    "PeriodoTributario": self.periodo_tributario,
+                    "TipoOperacion": self.tipo_operacion,
+                    "TipoLibro": self.tipo_libro,
+                    "TipoEnvio": self.tipo_envio,
+                },
                 'sii_xml_request': self.sii_xml_request.xml_envio,
                 'ID': self.sii_xml_request.name,
-            }
+            })
             result = fe.libro(datos)
         return self.sii_xml_request
 
