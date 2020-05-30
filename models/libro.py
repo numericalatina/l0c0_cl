@@ -457,6 +457,10 @@ class Libro(models.Model):
         if self.state in ['NoEnviado', 'EnCola']:
             datos = self._get_datos_empresa(self.company_id)
             datos['Libro'] = {
+                "PeriodoTributario": self.periodo_tributario,
+                "TipoOperacion": self.tipo_operacion,
+                "TipoLibro": self.tipo_libro,
+                "TipoEnvio": self.tipo_envio,
                 'sii_xml_request': self.sii_xml_request
             }
             result = fe.libro(datos)
