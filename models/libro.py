@@ -463,7 +463,7 @@ class Libro(models.Model):
                     "TipoLibro": self.tipo_libro,
                     "TipoEnvio": self.tipo_envio,
                 },
-                'sii_xml_request': self.sii_xml_request.xml_envio,
+                'sii_xml_request': self.sii_xml_request.xml_envio.replace('''<?xml version="1.0" encoding="ISO-8859-1"?>\n''', ''),
                 'ID': self.sii_xml_request.name,
             })
             result = fe.libro(datos)
