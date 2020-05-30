@@ -455,7 +455,11 @@ class Libro(models.Model):
             self._validar()
             self.sii_xml_request.state = 'NoEnviado'
         if self.state in ['NoEnviado', 'EnCola']:
-            self.sii_xml_request.send_xml()
+            datos = self._get_datos_empresa(self.company_id)
+            datos['Libro'] = {
+                'sii_xml_request': self.sii_xml_request
+            }
+            result = fe.libro(datos)
         return self.sii_xml_request
 
     def _get_send_status(self):
