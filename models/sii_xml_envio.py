@@ -258,6 +258,13 @@ class SIIXMLEnvio(models.Model):
     def do_send_xml(self):
         return self.send_xml()
 
+    def object_receipt(self):
+        return etree.XML(
+            self.sii_receipt.replace('<?xml version="1.0" encoding="UTF-8"?>', '')\
+            .replace('SII:', '')\
+            .replace(' xmlns="http://www.sii.cl/XMLSchema"', '')
+            )
+
     def get_send_status(self, user_id=False):
         if not self.sii_send_ident:
             self.state = "NoEnviado"
@@ -280,13 +287,9 @@ class SIIXMLEnvio(models.Model):
             if e.args[0][0] == 503:
                 raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
             raise UserError(("%s: %s" % (msg, str(e))))
-        result = {"sii_receipt" : respuesta}
-        resp = etree.XML(
-            respuesta.replace('<?xml version="1.0" encoding="UTF-8"?>', '')\
-            .replace('SII:', '')\
-            .replace(' xmlns="http://www.sii.cl/XMLSchema"', '')
-            )
-        result.update({"state": "Enviado"})
+        self.sii_receipt = respuesta
+        resp = self.object_receipt()
+        result = {"state": "Enviado"}
         estado = resp.find('RESP_HDR/ESTADO')
         if estado is None:
             return

@@ -1830,8 +1830,10 @@ a VAT."""))
                 r.sii_result = 'Proceso'
                 continue
             if r.sii_message:
-                r.sii_result = r.process_response_xml(r.sii_message)
-                continue
+                receipt = self.sii_xml_request.object_receipt()
+                if receipt.find('RESP_BODY') is not None:
+                    r.sii_result = r.process_response_xml(r.sii_message)
+                    continue
             if r.sii_xml_request.state == 'NoEnviado':
                 r.sii_result = 'EnCola'
                 continue
