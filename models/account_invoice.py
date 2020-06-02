@@ -2067,8 +2067,7 @@ a VAT."""))
         for l in self.invoice_line_ids:
             if not l.account_id:
                 continue
-            total = l.currency_id.round((l.quantity * l.price_unit))
-            total_discount += (total - l.discount_amount)
+            total_discount += l.discount_amount
         return self.currency_id.round(total_discount)
 
     @api.multi
