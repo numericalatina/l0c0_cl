@@ -64,7 +64,7 @@ class AccountInvoiceLine(models.Model):
         )
     discount_amount = fields.Float(
         string="Monto Descuento",
-        default=0.00
+        default=0.00,
     )
 
     @api.onchange('discount', 'price_unit', 'quantity')
@@ -1791,9 +1791,9 @@ a VAT."""))
                 'name': result['sii_send_filename'],
                 'company_id': self[0].company_id.id,
                 'user_id': self.env.uid,
-                'sii_send_ident': result['sii_send_ident'],
-                'sii_xml_response': result['sii_xml_response'],
-                'state': result['sii_result'],
+                'sii_send_ident': result.get('sii_send_ident'),
+                'sii_xml_response': result.get('sii_xml_response'),
+                'state': result.get('sii_result'),
             }
         if not envio_id:
             envio_id = self.env['sii.xml.envio'].create(envio)
