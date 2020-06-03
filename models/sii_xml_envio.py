@@ -195,10 +195,10 @@ class SIIXMLEnvio(models.Model):
         'user_signature_key' module has been installed and enable a digital \
         signature, for you or make the signer to authorize you to use his \
         signature.'''))
-        params['rutSender'] = signature_id.subject_serial_number[:8]
+        params['rutSender'] = signature_id.subject_serial_number[:-2]
         params['dvSender'] = signature_id.subject_serial_number[-1]
-        params['rutCompany'] = self.company_id.vat[2:-1]
-        params['dvCompany'] = self.company_id.vat[-1]
+        params['rutCompany'] = self.company_id.partner_id.rut()[:-2]
+        params['dvCompany'] = self.company_id.partner_id.rut()[-1]
         params['archivo'] = (self.name, self.xml_envio, "text/xml")
         return params
 
@@ -273,7 +273,7 @@ class SIIXMLEnvio(models.Model):
         token = self.get_token(user_id, self.company_id)
         url = server_url[self.company_id.dte_service_provider] + 'QueryEstUp.jws?WSDL'
         _server = Client(url)
-        rut = self.invoice_ids.format_vat( self.company_id.vat, con_cero=True)
+        rut = self.company_id.partner_id.rut()
         try:
             respuesta = _server.service.getEstUp(
                     rut[:-2],
