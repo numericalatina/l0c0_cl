@@ -1795,6 +1795,11 @@ a VAT."""))
                 'sii_xml_response': result.get('sii_xml_response'),
                 'state': result.get('sii_result'),
             }
+        if self[0].document_class_id.es_boleta() and self[0].company_id.dte_service_provider == 'SII':
+            envio.update({
+                'state': "Aceptado",
+                'sii_send_ident': 'BE'
+            })
         if not envio_id:
             envio_id = self.env['sii.xml.envio'].create(envio)
             for i in self:
