@@ -218,9 +218,9 @@ class ConsumoFolios(models.Model):
             grupos.setdefault(r.document_class_id.sii_code, [])
             grupos[r.document_class_id.sii_code].append(r.with_context(tax_detail=True)._dte())
         for r in self.anulaciones:
-            grupos.setdefault(r.document_class_id.sii_code, [])
+            grupos.setdefault(r.tpo_doc.sii_code, [])
             for i in range(r.rango_inicio, r.rango_final+1):
-                grupos[r.document_class_id.sii_code].append({
+                grupos[r.tpo_doc.sii_code].append({
                     "Encabezado": {
                         "IdDoc": {
                             "Folio": i,
@@ -388,9 +388,9 @@ class ConsumoFolios(models.Model):
             grupos.setdefault(r.document_class_id.sii_code, [])
             grupos[r.document_class_id.sii_code].append(r.with_context(tax_detail=True)._dte())
         for r in self.anulaciones:
-            grupos.setdefault(r.document_class_id.sii_code, [])
+            grupos.setdefault(r.tpo_doc.sii_code, [])
             for i in range(r.rango_inicio, r.rango_final+1):
-                grupos[r.document_class_id.sii_code].append({
+                grupos[r.tpo_doc.sii_code].append({
                     "Encabezado": {
                         "IdDoc": {
                             "Folio": i,
