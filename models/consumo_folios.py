@@ -224,7 +224,7 @@ class ConsumoFolios(models.Model):
                     "Encabezado": {
                         "IdDoc": {
                             "Folio": i,
-                            "FechaEmis": r.fecha_inicio.strftime("%d-%m-%Y"),
+                            "FechaEmis": self.fecha_inicio.strftime("%d-%m-%Y"),
                             "Anulado": True,
                         }
                     }
@@ -394,7 +394,7 @@ class ConsumoFolios(models.Model):
                     "Encabezado": {
                         "IdDoc": {
                             "Folio": i,
-                            "FechaEmis": r.fecha_inicio.strftime("%d-%m-%Y"),
+                            "FechaEmis": self.fecha_inicio.strftime("%d-%m-%Y"),
                             "Anulado": True,
                         }
                     }
