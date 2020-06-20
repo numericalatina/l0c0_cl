@@ -31,12 +31,11 @@ class IRSequence(models.Model):
         folio = int(folio)
         if cafs:
             for c in cafs:
-                if folio >= c.start_nm and folio <= c.final_nm:
-                    available += c.final_nm - folio
-                elif folio <= c.final_nm:
-                    available += (c.final_nm - c.start_nm) + 1
-                if folio > c.start_nm:
-                    available += 1
+                final = (c.final_nm +1)
+                if folio >= c.start_nm and folio < final:
+                    available += final - folio
+                elif folio < final:
+                    available += (final - c.start_nm)
         if available <= self.nivel_minimo:
             alert_msg = 'Nivel bajo de CAF para %s, quedan %s foliosself. Recuerde verificar su token apicaf.cl' % (self.sii_document_class_id.name, available)
             self.env['bus.bus'].sendone((
