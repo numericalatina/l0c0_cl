@@ -175,10 +175,10 @@ www.sii.cl'''.format(folio)
                 actual = self.number_next_actual
             if number_next +1 != actual: #Fue actualizado
                 number_next = actual
-            if self.implementation == 'no_gap':
-                self._cr.execute("SELECT number_next FROM %s WHERE id=%s FOR UPDATE NOWAIT" % (self._table, self.id))
-                self._cr.execute("UPDATE %s SET number_next=%s WHERE id=%s " % (self._table, number_next, self.id))
-                self.invalidate_cache(['number_next'], [self.id])
+                if self.implementation == 'no_gap':
+                    self._cr.execute("SELECT number_next FROM %s WHERE id=%s FOR UPDATE NOWAIT" % (self._table, self.id))
+                    self._cr.execute("UPDATE %s SET number_next=%s WHERE id=%s " % (self._table, number_next, self.id))
+                    self.invalidate_cache(['number_next'], [self.id])
             folio = self.get_next_char(number_next)
         self._qty_available()
         return folio
