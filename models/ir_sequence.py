@@ -58,7 +58,32 @@ class IRSequence(models.Model):
                                     'firma': firma.id,
                                 })
         wiz_caf.conectar_api()
-        wiz_caf.cant_doctos = self.autoreponer_cantidad
+        if not wiz_caf.id_peticion:
+            alert_msg = "Problema al conectar con apicaf.cl"
+        else:
+            cantidad = self.autoreponer_cantidad
+            if wiz_caf.api_max_autor > 0 and cantidad > wiz_caf.api_max_autor:
+                cantidad = wiz_caf.api_max_autor
+            elif wiz_caf.api_max_autor == 0:
+                self.autoreponer_caf = False
+                alert_msg = 'El SII no permite solicitar más CAFs para %s, consuma los %s folios disponibles o verifique situación tributaria en www.sii.cl' % (
+                    self.sii_document_class_id.name,
+                    wiz_caf.api_folios_disp
+                    )
+        if alert_msg:
+            _logger.warning(alert_msg)
+            self.env['bus.bus'].sendone((
+                self._cr.dbname,
+                'ir.sequence',
+                self.env.user.partner_id.id),
+                {
+                'title': "Alerta sobre Folios",
+                'message': alert_msg,
+                'url': 'res_config',
+                'type': 'dte_notif',
+                })
+            return
+        wiz_caf.cant_doctos = cantidad
         wiz_caf.obtener_caf()
 
     def _set_qty_available(self):
