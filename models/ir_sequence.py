@@ -91,7 +91,7 @@ class IRSequence(models.Model):
 
     @api.depends('dte_caf_ids', 'number_next_actual')
     def _qty_available(self):
-        for i in self:
+        for i in self.sudo():
             if i.is_dte and i.sii_document_class_id:
                 i._set_qty_available()
 
