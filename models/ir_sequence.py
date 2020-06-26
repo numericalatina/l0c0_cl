@@ -14,7 +14,7 @@ class IRSequence(models.Model):
     @api.model
     def check_cafs(self):
         self._cr.execute(
-        "SELECT id FROM ir_sequence WHERE autoreponer_caf and qty_available <= nivel_minimo")
+        "SELECT id FROM ir_sequence WHERE autoreponer_caf and qty_available < nivel_minimo")
         for r in self.env['ir.sequence'].sudo().browse([x[0] for x in self._cr.fetchall()]):
             try:
                 r.solicitar_caf()
