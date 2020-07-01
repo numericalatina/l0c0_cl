@@ -58,6 +58,7 @@ class IRSequence(models.Model):
                                     'firma': firma.id,
                                 })
         wiz_caf.conectar_api()
+        alert_msg = False
         if not wiz_caf.id_peticion:
             alert_msg = "Problema al conectar con apicaf.cl"
         else:
