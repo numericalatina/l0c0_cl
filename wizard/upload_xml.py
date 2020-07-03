@@ -384,9 +384,10 @@ class UploadXMLWizard(models.TransientModel):
                 values['default_code'] = VlrCodigo
         return values
 
-    def _create_prod(self, data, company_id, price_included=False):
+    def _create_prod(self, data, company_id, price_included=False, exenta=None):
         product_id = self.env['product.product'].create(
-                    self.get_product_values(data, company_id, price_included, exenta))
+                    self.get_product_values(data, company_id, price_included,
+                                            exenta))
         return product_id
 
     def _buscar_producto(self, document_id, line, company_id,
@@ -736,7 +737,8 @@ class UploadXMLWizard(models.TransientModel):
         lines = []
         for line in documento.findall("Detalle"):
             new_line = self._prepare_line(line, document_id, invoice_type,
-                                          company_id, fpos, price_included, exenta)
+                                          company_id, fpos, price_included,
+                                          exenta)
             if new_line:
                 lines.append(new_line)
         return lines
