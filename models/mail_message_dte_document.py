@@ -221,7 +221,8 @@ class ProcessMailsDocument(models.Model):
             except Exception as e:
                 _logger.warning("Problema al obtener claim desde accept %s" %str(e))
                 _logger.warning("encolar")
-                continue
+                if r.company_id.dte_service_provider != 'SIICERT':
+                    continue
             if r.invoice_id and r.state != 'draft':
                 continue
             vals = {
