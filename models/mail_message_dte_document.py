@@ -100,6 +100,7 @@ class ProcessMailsDocument(models.Model):
             ('ERM', ' Otorga  Recibo  de  Mercaderías  o Servicios'),
             ('RFP', 'Reclamo por Falta Parcial de Mercaderías'),
             ('RFT', 'Reclamo por Falta Total de Mercaderías'),
+            ('PAG', 'DTE Pagado al Contado'),
         ],
         string="Reclamo",
         copy=False,
@@ -234,7 +235,7 @@ class ProcessMailsDocument(models.Model):
                 r.state = 'accepted'
                 continue
             for i in self.env['account.invoice'].browse(resp):
-                if i.claim in ['ACD', 'ERM']:
+                if i.claim in ['ACD', 'ERM', 'PAG']:
                     r.state = 'accepted'
         xml_id = 'account.action_invoice_tree2'
         result = self.env.ref('%s' % (xml_id)).read()[0]
@@ -320,7 +321,7 @@ class ProcessMailsDocument(models.Model):
                     if self.claim != "ACD":
                         if self.claim != 'ERM':
                             self.claim = res.codEvento
-            if self.claim in ["ACD", "ERM"]:
+            if self.claim in ["ACD", "ERM", 'PAG']:
                 self.state = 'accepted'
         except Exception as e:
             _logger.warning("Error al obtener aceptación %s" %(str(e)))
