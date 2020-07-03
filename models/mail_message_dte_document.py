@@ -206,16 +206,24 @@ class ProcessMailsDocument(models.Model):
                 create_date + interval '8 days' < now()
                 and
                 state = 'draft'
+            limit 50
             """
         )
-        for d in self.browse([line.get('id') for line in \
-                              self.env.cr.dictfetchall()]):
-            d.accept_document()
+        self.browse([line.get('id') for line in \
+                              self.env.cr.dictfetchall()]).accept_document()
 
     @api.multi
     def accept_document(self):
         created = []
         for r in self:
+            try:
+                r.get_dte_claim()
+            except Exception as e:
+                _logger.warning("Problema al obtener claim desde accept %s" %str(e))
+                _logger.warning("encolar")
+                continue
+            if r.invoice_id and r.state != 'draft':
+                continue
             vals = {
                 'xml_file': r.xml.encode('ISO-8859-1'),
                 'filename': r.dte_id.name,
@@ -226,11 +234,6 @@ class ProcessMailsDocument(models.Model):
             val = self.env['sii.dte.upload_xml.wizard'].sudo().create(vals)
             resp = val.confirm(ret=True)
             created.extend(resp)
-            try:
-                r.get_dte_claim()
-            except Exception as e:
-                _logger.warning("Problema al obtener claim desde accept %s" %str(e))
-                _logger.warning("encolar")
             if r.company_id.dte_service_provider == 'SIICERT':
                 r.state = 'accepted'
                 continue

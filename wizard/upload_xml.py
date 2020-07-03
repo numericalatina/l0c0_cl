@@ -384,7 +384,7 @@ class UploadXMLWizard(models.TransientModel):
                 values['default_code'] = VlrCodigo
         return values
 
-    def _create_prod(self, data, company_id, price_included=False, exenta=None):
+    def _create_prod(self, data, company_id, price_included=False, exenta=False):
         product_id = self.env['product.product'].create(
                     self.get_product_values(data, company_id, price_included,
                                             exenta))
