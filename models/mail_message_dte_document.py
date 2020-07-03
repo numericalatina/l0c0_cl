@@ -195,7 +195,7 @@ class ProcessMailsDocument(models.Model):
             r.invoice_id = self.invoice_id.id
 
     @api.model
-    def auto_accept_documents(self):
+    def auto_accept_documents(self, limit=50):
         self.env.cr.execute(
             """
             select
@@ -206,8 +206,8 @@ class ProcessMailsDocument(models.Model):
                 create_date + interval '8 days' < now()
                 and
                 state = 'draft'
-            limit 50
-            """
+            limit {0}
+            """.format(limit)
         )
         self.browse([line.get('id') for line in \
                               self.env.cr.dictfetchall()]).accept_document()
