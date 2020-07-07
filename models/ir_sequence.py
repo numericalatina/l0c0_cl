@@ -159,7 +159,8 @@ www.sii.cl'''.format(folio)
         '''
         folio = folio or self._get_folio()
         if not self.dte_caf_ids:
-            raise UserError(_('''No hay CAFs disponibles para la secuencia de %s. Por favor suba un CAF o solicite uno en el SII.''' % (self.name)))
+            _logger.warning('''No hay CAFs disponibles para la secuencia de %s. Por favor suba un CAF o solicite uno en el SII.''' % (self.name))
+            return False
         cafs = self.dte_caf_ids
         cafs = sorted(cafs, key=lambda e: e.start_nm)
         result = []
