@@ -230,7 +230,7 @@ class SiiTax(models.Model):
             target = 'Gas Licuado del Petróleo de Consumo[\n ]Vehicular[\n ]\(en UTM\/m[\w]\)'
         elif self.mepco == 'gas_natural':
             target = 'Gas Natural Comprimido de Consumo Vehicular'
-        val = re.findall('%s\n[0-9.,]*\n[0-9.,]*\n([0-9.,]*)' % target, doc.loadPage(1).getText())
+        val = re.findall('%s\n[0-9.,-]*\n[0-9.,-]*\n([0-9.,-]*)' % target, doc.loadPage(1).getText())
         return val[0].replace('.', '').replace(',', '.')
 
     def _connect_sii(self, year, month):
