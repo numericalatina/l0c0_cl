@@ -470,8 +470,10 @@ class AccountInvoice(models.Model):
         gdr, gdr_exe = self.porcentaje_dr()
         if self.currency_id != company_currency:
             currency = self.currency_id
-            date = self._get_currency_rate_date() or fields.Date.context_today(self)
-            amount_diff = currency._convert(self.amount_total, company_currency, self.company_id, date)
+            date = self._get_currency_rate_date() or fields.Date.context_today(
+                self)
+            amount_diff = currency._convert(
+                self.amount_total, company_currency, self.company_id, date)
             amount_diff_currency = self.amount_total
         for line in invoice_move_lines:
             #@TODO Posibilidad de GDR a exentos
@@ -485,7 +487,8 @@ class AccountInvoice(models.Model):
                 elif line.get('tax_ids')[0][0] == 6:
                     tax_ids = line.get('tax_ids')[0][2]
                 if tax_ids:
-                    exento = self.env['account.tax'].search([('id', 'in', tax_ids), ('amount', '=', 0)])
+                    exento = self.env['account.tax'].search([
+                        ('id', 'in', tax_ids), ('amount', '=', 0)])
             if not line.get('tax_line_id') and not exento:
                 line['price'] *= gdr
             if line.get('amount_currency', False) and not line.get('tax_line_id'):
@@ -497,7 +500,8 @@ class AccountInvoice(models.Model):
                 if not (line.get('currency_id') and line.get('amount_currency')):
                     line['currency_id'] = currency.id
                     line['amount_currency'] = currency.round(line['price'])
-                    line['price'] = currency._convert(line['price'], company_currency, self.company_id, date)
+                    line['price'] = currency._convert(
+                        line['price'], company_currency, self.company_id, date)
             else:
                 line['currency_id'] = False
                 line['amount_currency'] = False
@@ -578,8 +582,12 @@ class AccountInvoice(models.Model):
         amount_untaxed_signed = self.amount_untaxed
         if self.currency_id and self.company_id and self.currency_id != self.company_id.currency_id:
             currency_id = self.currency_id
-            amount_total_company_signed = currency_id._convert(self.amount_total, self.company_id.currency_id, self.company_id, self.date_invoice or fields.Date.today())
-            amount_untaxed_signed = currency_id._convert(self.amount_untaxed, self.company_id.currency_id, self.company_id, self.date_invoice or fields.Date.today())
+            amount_total_company_signed = currency_id._convert(
+                self.amount_total, self.company_id.currency_id,
+                self.company_id, self.date_invoice or fields.Date.today())
+            amount_untaxed_signed = currency_id._convert(
+                self.amount_untaxed, self.company_id.currency_id,
+                self.company_id, self.date_invoice or fields.Date.today())
         sign = self.type in ['in_refund', 'out_refund'] and -1 or 1
         self.amount_total_company_signed = amount_total_company_signed * sign
         self.amount_total_signed = self.amount_total * sign
@@ -604,7 +612,8 @@ class AccountInvoice(models.Model):
                 if tax.amount_type == "group":
                     for child_tax in tax.children_tax_ids:
                         done_taxes.append(child_tax.id)
-                analytic_tag_ids = [(4, analytic_tag.id, None) for analytic_tag in tax_line.analytic_tag_ids]
+                analytic_tag_ids = [
+                    (4, analytic_tag.id, None) for analytic_tag in tax_line.analytic_tag_ids]
                 done_taxes.append(tax.id)
                 if tax_line.amount_total > 0:
                     res.append({
@@ -694,14 +703,18 @@ class AccountInvoice(models.Model):
                     for t in line.invoice_line_tax_ids:
                         if t not in totales:
                             totales[t] = 0
-                        amount_line = (self.currency_id.round(line.price_unit *line.quantity))
+                        amount_line = (self.currency_id.round(
+                            line.price_unit *line.quantity))
                         totales[t] += (amount_line - line.discount_amount)
                 included = True
             else:
                 included = False
             if (totales and not included) or (included and not totales):
                 raise UserError('No se puede hacer timbrado mixto, todos los impuestos en este pedido deben ser uno de estos dos:  1.- precio incluído, 2.-  precio sin incluir')
-            taxes = line.invoice_line_tax_ids.compute_all(line.price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id, discount=line.discount, uom_id=line.uom_id)['taxes']
+            taxes = line.invoice_line_tax_ids.compute_all(
+                line.price_unit, self.currency_id, line.quantity,
+                line.product_id, self.partner_id, discount=line.discount,
+                uom_id=line.uom_id)['taxes']
             tax_grouped = self._get_grouped_taxes(line, taxes, tax_grouped)
         #if totales:
         #    tax_grouped = {}
@@ -1595,31 +1608,41 @@ a VAT."""))
                 lines['PrcItem'] = round(line.price_unit, 6)
                 if currency_id:
                     lines['OtrMnda'] = {}
-                    lines['OtrMnda']['PrcOtrMon'] = round(currency_base._convert(line.price_unit, currency_id, self.company_id, self.date_invoice, round=False), 6)
-                    lines['OtrMnda']['Moneda'] = self._acortar_str(currency_id.name, 3)
+                    lines['OtrMnda']['PrcOtrMon'] = round(currency_base._convert(
+                        line.price_unit, currency_id, self.company_id,
+                        self.date_invoice, round=False), 6)
+                    lines['OtrMnda']['Moneda'] = self._acortar_str(
+                        currency_id.name, 3)
                     lines['OtrMnda']['FctConv'] = round(currency_id.rate, 4)
             if line.discount > 0:
                 lines['DescuentoPct'] = line.discount
                 DescMonto = line.discount_amount
                 lines['DescuentoMonto'] = DescMonto
                 if currency_id:
-                    lines['DescuentoMonto'] = currency_id._convert(DescMonto, currency_base, self.company_id, self.date_invoice)
+                    lines['DescuentoMonto'] = currency_base._convert(
+                        DescMonto, currency_id, self.company_id, self.date_invoice)
                     lines['OtrMnda']['DctoOtrMnda'] = DescMonto
             if line.discount < 0:
                 lines['RecargoPct'] = (line.discount *-1)
                 RecargoMonto = (line.discount_amount *-1)
                 lines['RecargoMonto'] = RecargoMonto
                 if currency_id:
-                    lines['OtrMnda']['RecargoOtrMnda'] = currency_id._convert(RecargoMonto, currency_base, self.company_id, self.date_invoice)
+                    lines['OtrMnda']['RecargoOtrMnda'] = currency_base._convert(
+                        RecargoMonto, currency_id, self.company_id,
+                        self.date_invoice)
             if not no_product and not taxInclude:
                 price_subtotal = line.price_subtotal
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_base._convert(price_subtotal, currency_id, self.company_id, self.date_invoice)
+                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_base._convert(
+                        price_subtotal, currency_id, self.company_id,
+                        self.date_invoice)
                 lines['MontoItem'] = price_subtotal
             elif not no_product:
                 price_total = line.price_total
                 if currency_id:
-                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_base._convert(price_total, currency_id, self.company_id, self.date_invoice)
+                    lines['OtrMnda']['MontoItemOtrMnda'] = currency_base._convert(
+                        price_total, currency_id, self.company_id,
+                        self.date_invoice)
                 lines['MontoItem'] = price_total
             if no_product:
                 lines['MontoItem'] = 0

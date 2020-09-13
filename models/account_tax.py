@@ -112,12 +112,15 @@ class SiiTax(models.Model):
 
         base_values = self.env.context.get('base_values')
         if not base_values:
-            base = round(price_unit * quantity, prec+2)
-            base = round(base, prec)
-            disc = currency.round(base * ((discount or 0.0) /100))
-            decimal.getcontext().rounding = decimal.ROUND_HALF_UP
-            tot_discount = int(decimal.Decimal(disc).to_integral_value())
-            base -= tot_discount
+            if prec == 0:
+                base = float_round_custom(price_unit * quantity, precision_digits=prec+2)
+                base = float_round_custom(base, precision_digits=prec)
+                disc = (base * ((discount or 0.0) /100.0))
+                tot_discount = float_round_custom(disc, precision_digits=0)
+                base -= tot_discount
+            else:
+                price_unit = price_unit * (1 - (discount or 0.0) / 100.0)
+                base = round(price_unit * quantity, prec)
             total_excluded = base
             total_included = base
         else:
