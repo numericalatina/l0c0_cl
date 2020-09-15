@@ -4,6 +4,7 @@ from odoo.tools.translate import _
 from odoo.exceptions import UserError
 from datetime import datetime, date
 import pytz
+import base64
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -150,7 +151,7 @@ www.sii.cl'''.format(folio)
                         continue
                 if decoded:
                     return caffile.decode_caf()
-                return caffile.caf_file
+                return base64.b64encode(caffile.caf_string.encode('ISO-8859-1'))
         raise UserError(_(msg))
 
     def get_caf_files(self, folio=None):
