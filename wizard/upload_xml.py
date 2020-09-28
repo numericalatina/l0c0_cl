@@ -4,7 +4,7 @@ import logging
 from facturacion_electronica import facturacion_electronica as fe
 from lxml import etree
 
-from odoo import api, fields, models
+from odoo import api, fields, models, tools
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
 
@@ -588,7 +588,8 @@ class UploadXMLWizard(models.TransientModel):
             partner_id = partner_id.id
         try:
             name = self.filename.decode("ISO-8859-1").encode("UTF-8")
-        except:
+        except Exception as ex:
+            _logger.error(tools.ustr(ex))
             name = self.filename.encode("UTF-8")
         ted_string = b""
         if documento.find("TED") is not None:
@@ -607,7 +608,7 @@ class UploadXMLWizard(models.TransientModel):
                 "date_invoice": FchEmis,
                 "partner_id": partner_id,
                 "company_id": company_id.id,
-                #'sii_xml_request': xml_envio.id,
+                # 'sii_xml_request': xml_envio.id,
                 "sii_xml_dte": "<DTE>%s</DTE>" % etree.tostring(documento),
                 "sii_barcode": ted_string.decode(),
             }
@@ -707,7 +708,7 @@ class UploadXMLWizard(models.TransientModel):
                             "price_unit": price,
                             "quantity": 1,
                             "price_subtotal": price_subtotal,
-                            #'account_id':
+                            # 'account_id':
                         },
                     ]
                 )
@@ -983,7 +984,7 @@ class UploadXMLWizard(models.TransientModel):
         purchase_vals["order_line"] = lines
         po = purchase_model.create(purchase_vals)
         po.button_confirm()
-        inv = self.env["account.invoice"].search([("purchase_id", "=", po.id)])
+        self.env["account.invoice"].search([("purchase_id", "=", po.id)])
         # inv.sii_document_class_id = dte['Encabezado']['IdDoc']['TipoDTE']
         return po
 
