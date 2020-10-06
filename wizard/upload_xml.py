@@ -262,11 +262,13 @@ class UploadXMLWizard(models.TransientModel):
             res = False
         return res
 
-    def _buscar_impuesto(self, name="Impuesto", amount=0, sii_code=0, sii_type=False, IndExe=None, company_id=False):
+    def _buscar_impuesto(self, type="purchase", name="Impuesto", amount=0,
+                         sii_code=0, sii_type=False, IndExe=None,
+                         company_id=False):
         query = [
             ("amount", "=", amount),
             ("sii_code", "=", sii_code),
-            ("type_tax_use", "=", ("purchase" if self.type == "compras" else "sale")),
+            ("type_tax_use", "=", type),
             ("activo_fijo", "=", False),
             ("company_id", "=", company_id.id),
         ]
@@ -289,7 +291,7 @@ class UploadXMLWizard(models.TransientModel):
                         "name": name,
                         "sii_code": sii_code,
                         "sii_type": sii_type,
-                        "type_tax_use": "purchase" if self.type == "compras" else "sale",
+                        "type_tax_use": type,
                         "company_id": company_id.id,
                     }
                 )
@@ -307,9 +309,18 @@ class UploadXMLWizard(models.TransientModel):
             sii_type = False
         else:
             IndExe = True
-        imp = self._buscar_impuesto(
-            amount=amount, sii_code=sii_code, sii_type=sii_type, IndExe=IndExe, company_id=company_id
-        )
+        imp = self._buscar_impuesto(amount=amount,
+                                    type="purchase",
+                                    sii_code=sii_code,
+                                    sii_type=sii_type,
+                                    IndExe=IndExe,
+                                    company_id=company_id)
+        imp_sale = self._buscar_impuesto(amount=amount,
+                                    type="sale",
+                                    sii_code=sii_code,
+                                    sii_type=sii_type,
+                                    IndExe=IndExe,
+                                    company_id=company_id)
         price = float(line.find("PrcItem").text if line.find("PrcItem") is not None else line.find("MontoItem").text)
         if price_included:
             price = imp.compute_all(price, self.env.user.company_id.currency_id, 1)["total_excluded"]
@@ -318,7 +329,7 @@ class UploadXMLWizard(models.TransientModel):
             "name": line.find("NmbItem").text,
             "lst_price": price,
             "categ_id": self._default_category(),
-            "taxes_id": [(6, 0, imp.ids)],
+            "taxes_id": [(6, 0, imp_sale.ids)],
             "supplier_taxes_id": [(6, 0, imp.ids)],
         }
         for c in line.findall("CdgItem"):
@@ -454,17 +465,17 @@ class UploadXMLWizard(models.TransientModel):
             else:
                 IndExe = True
             tax_ids += self._buscar_impuesto(
-                amount=amount, sii_code=sii_code, sii_type=sii_type, IndExe=IndExe, company_id=company_id
+                type="purchase" if self.type == "compras" else "sale",
+                amount=amount, sii_code=sii_code, sii_type=sii_type,
+                IndExe=IndExe, company_id=company_id
             )
             if line.find("CodImpAdic") is not None:
                 amount = 19
                 sii_type = False
                 tax_ids += self._buscar_impuesto(
-                    amount=amount,
-                    sii_code=line.find("CodImpAdic").text,
-                    sii_type=sii_type,
-                    IndExe=IndExe,
-                    company_id=company_id,
+                    type="purchase" if self.type == "compras" else "sale",
+                    amount=amount, sii_code=line.find("CodImpAdic").text,
+                    sii_type=sii_type, IndExe=IndExe, company_id=company_id
                 )
             if IndExe is None:
                 tax_include = False
@@ -689,7 +700,10 @@ class UploadXMLWizard(models.TransientModel):
         if Encabezado.find("Totales/ImptoReten") is not None:
             ImptoReten = Encabezado.findall("Totales/ImptoReten")
             for i in ImptoReten:
-                imp = self._buscar_impuesto(name="OtrosImps_" + i.find("TipoImp").text, sii_code=i.find("TipoImp").text)
+                imp = self._buscar_impuesto(
+                    type="purchase" if self.type == "compras" else "sale",
+                    name="OtrosImps_" + i.find("TipoImp").text,
+                    sii_code=i.find("TipoImp").text)
                 price = float(i.find("MontoImp").text)
                 price_subtotal = float(i.find("MontoImp").text)
                 if price_included:
