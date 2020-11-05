@@ -1769,8 +1769,15 @@ a VAT."""))
     @api.multi
     def do_dte_send(self, n_atencion=None):
         datos = self._crear_envio(n_atencion)
-        result = fe.timbrar_y_enviar(datos)
         envio_id = self[0].sii_xml_request
+        if not envio_id:
+            envio_id = self.env["sii.xml.envio"].create({
+                'name': 'temporal',
+                'xml_envio': 'temporal',
+                'invoice_ids': [[6,0, self.ids]],
+            })
+        datos["ID"] = "Env%s" %envio_id.id
+        result = fe.timbrar_y_enviar(datos)
         envio = {
             "xml_envio": result["sii_xml_request"],
             "name": result["sii_send_filename"],
@@ -1779,32 +1786,13 @@ a VAT."""))
             "sii_send_ident": result.get("sii_send_ident"),
             "sii_xml_response": result.get("sii_xml_response"),
             "state": result.get("status"),
+
         }
-        if not envio_id:
-            envio_id = self.env["sii.xml.envio"].create(envio)
-            for i in self:
-                i.sii_xml_request = envio_id.id
-                i.sii_result = "Enviado"
-        else:
-            envio_id.write(envio)
+        envio_id.write(envio)
         return envio_id
 
-    def get_sii_result(self):
-        for r in self:
-            if r.sii_message:
-                receipt = r.sii_xml_request.object_receipt()
-                if receipt.find("RESP_BODY") is not None:
-                    r.sii_result = util.process_response_xml(r.sii_message)
-                    continue
-                elif receipt.find("RESP_HDR") is not None:
-                    r.sii_xml_request.get_send_status(r.env.user)
-            if r.sii_xml_request.state == "NoEnviado":
-                r.sii_result = "EnCola"
-                continue
-            r.sii_result = r.sii_xml_request.state
-
     def _get_dte_status(self):
-        datos = self._get_datos_empresa(self[0].company_id)
+        datos = self[0]._get_datos_empresa(self[0].company_id)
         datos["Documento"] = []
         docs = {}
         for r in self:

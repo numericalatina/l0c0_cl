@@ -1,10 +1,9 @@
 import logging
-
 from lxml import etree
-
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
+import json
 
 _logger = logging.getLogger(__name__)
 
@@ -138,11 +137,13 @@ class SIIXMLEnvio(models.Model):
         self.send_xml()
 
     def object_receipt(self):
-        return etree.XML(
-            self.sii_receipt.replace('<?xml version="1.0" encoding="UTF-8"?>', "")
-            .replace("SII:", "")
-            .replace(' xmlns="http://www.sii.cl/XMLSchema"', "")
-        )
+        if '<?xml' in self.sii_receipt:
+            return etree.XML(
+                self.sii_receipt.replace('<?xml version="1.0" encoding="UTF-8"?>', "")
+                .replace("SII:", "")
+                .replace(' xmlns="http://www.sii.cl/XMLSchema"', "")
+            )
+        return json.loads(self.sii_receipt)
 
     def get_send_status(self, user_id=False):
         datos = self._get_datos_empresa(self.company_id)
@@ -157,3 +158,20 @@ class SIIXMLEnvio(models.Model):
     @api.multi
     def ask_for(self):
         self.get_send_status(self.user_id)
+
+    def set_childs(self, state):
+        for r in self.invoice_ids:
+            r.sii_result = state
+
+    @api.onchange('state')
+    def set_states(self):
+        state = self.state
+        if state in ['draft', 'NoEnviado']:
+            return
+        receipt = self.object_receipt()
+        if type(receipt) is dict:
+            if not receipt.get('estadistica'):
+                state = 'Enviado'
+        elif receipt.find("RESP_HDR") is not None:
+            state = "Enviado"
+        self.set_childs(state)
