@@ -23,7 +23,6 @@ class DTEClaim(models.Model):
 
     document_id = fields.Many2one("mail.message.dte.document", string="Documento", ondelete="cascade",)
     invoice_id = fields.Many2one("account.invoice", string="Documento", ondelete="cascade",)
-    order_id = fields.Many2one("pos.order", string="Documento", ondelete="cascade",)
     sequence = fields.Integer(string="Número de línea", default=1)
     claim = fields.Selection(
         [
