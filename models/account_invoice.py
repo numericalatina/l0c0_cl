@@ -1197,14 +1197,9 @@ a VAT."""))
                 inv.sii_result = "EnCola"
                 inv.sii_message = ""
                 ids.append(inv.id)
-                if not envio_boleta and (inv._es_boleta() or inv._nc_boleta()):
-                    envio_boleta = True
         if not isinstance(n_atencion, string_types):
             n_atencion = ""
         if ids:
-            if envio_boleta:
-                self.browse(ids).do_dte_send(n_atencion)
-                return
             self.env["sii.cola_envio"].create(
                 {
                     "company_id": self[0].company_id.id,
@@ -1427,7 +1422,7 @@ a VAT."""))
             if self.amount_tax > 0:
                 raise UserError("NO pueden ir productos afectos en documentos exentos")
         elif self.amount_untaxed and self.amount_untaxed != 0:
-            if not self._es_boleta() or not taxInclude or self._context.get("tax_detail"):
+            if self._es_boleta() or not taxInclude:
                 IVA = False
                 for t in self.tax_line_ids:
                     if t.tax_id.sii_code in [14, 15]:
@@ -1440,15 +1435,13 @@ a VAT."""))
             raise UserError("Debe ir almenos un producto afecto")
         if MntExe > 0:
             MntExe = MntExe
-        if not self._es_boleta() or not taxInclude or self._context.get("tax_detail"):
+        if self._es_boleta() or not taxInclude:
             if IVA:
-                if not self._es_boleta() or self._context.get("tax_detail"):
-                    TasaIVA = round(IVA.tax_id.amount, 2)
+                TasaIVA = round(IVA.tax_id.amount, 2)
                 MntIVA = IVA.amount
             if no_product:
                 MntNeto = 0
-                if not self._es_boleta() or self._context.get("tax_detail"):
-                    TasaIVA = 0
+                TasaIVA = 0
                 MntIVA = 0
         MntTotal = self.amount_total
         if no_product:
@@ -1820,13 +1813,13 @@ a VAT."""))
             docs.setdefault(r.document_class_id.sii_code, [])
             docs[r.document_class_id.sii_code].append(r._dte())
         if not docs:
-            _logger.warning("En get_get_dte_status, no docs")
+            _logger.warning("En get_dte_status, no docs")
             return
         for k, v in docs.items():
             datos["Documento"].append({"TipoDTE": k, "documentos": v})
         resultado = fe.consulta_estado_documento(datos)
         if not resultado:
-            _logger.warning("En get_get_dte_status, no resultado")
+            _logger.warning("En get_dte_status, no resultado")
             return
         for r in self:
             id = "T{}F{}".format(r.document_class_id.sii_code, r.sii_document_number)
