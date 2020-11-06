@@ -147,8 +147,11 @@ class SIIXMLEnvio(models.Model):
 
     def get_send_status(self, user_id=False):
         datos = self._get_datos_empresa(self.company_id)
+        api = "EnvioBOLETA" in self.xml_envio
+        if self._context.get("set_pruebas", False):
+            api = False
         datos.update(
-            {"codigo_envio": self.sii_send_ident, "api": "EnvioBOLETA" in self.xml_envio,}
+            {"codigo_envio": self.sii_send_ident, "api": api,}
         )
         res = fe.consulta_estado_dte(datos)
         self.write(
