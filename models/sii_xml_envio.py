@@ -157,6 +157,7 @@ class SIIXMLEnvio(models.Model):
         self.write(
             {"state": res["status"], "sii_receipt": res["xml_resp"],}
         )
+        self.set_states()
 
     @api.multi
     def ask_for(self):

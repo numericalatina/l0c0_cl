@@ -23,11 +23,6 @@ try:
     from io import BytesIO
 except ImportError:
     _logger.warning("no se ha cargado io")
-
-try:
-    from suds.client import Client
-except ImportError:
-    pass
 try:
     import pdf417gen
 except ImportError:
@@ -42,10 +37,6 @@ except ImportError:
     _logger.warning("no se ha cargado PIL")
 
 
-claim_url = {
-    "SIICERT": "https://ws2.sii.cl/WSREGISTRORECLAMODTECERT/registroreclamodteservice",
-    "SII": "https://ws1.sii.cl/WSREGISTRORECLAMODTE/registroreclamodteservice",
-}
 TYPE2JOURNAL = {
     "out_invoice": "sale",
     "in_invoice": "purchase",
@@ -1860,18 +1851,22 @@ a VAT."""))
         if self.document_class_id.sii_code not in [33, 34, 43]:
             self.claim = claim
             return
-        rut_emisor = self.partner_id.commercial_partner_id.rut()
-        token = self.sii_xml_request.get_token(self.env.user, self.company_id)
-        url = claim_url[self.company_id.dte_service_provider] + "?wsdl"
-        _server = Client(url, headers={"Cookie": "TOKEN=" + token,},)
+        tipo_dte = self.document_class_id.sii_code
+        datos = self._get_datos_empresa(doc.company_id)
+        rut_emisor = self.company_id.partner_id.rut()
+        datos["DTEClaim"] = [
+            {
+                "RUTEmisor": rut_emisor,
+                "TipoDTE": tipo_dte,
+                "Folio": str(self.sii_document_number),
+                "Claim": claim,
+            }
+        ]
         try:
-            respuesta = _server.service.ingresarAceptacionReclamoDoc(
-                rut_emisor[:-2],
-                rut_emisor[-1],
-                str(self.document_class_id.sii_code),
-                str(self.sii_document_number),
-                claim,
-            )
+            respuesta = fe.ingresar_reclamo_documento(datos)
+            key = "RUT%sT%sF%s" %(rut_emisor,
+                                  tipo_dte, str(self.sii_document_number))
+            self.claim_description = respuesta[key]
         except Exception as e:
             msg = "Error al ingresar Reclamo DTE"
             _logger.warning("{}: {}".format(msg, str(e)))
@@ -1887,17 +1882,23 @@ a VAT."""))
 
     @api.multi
     def get_dte_claim(self):
-        token = self.sii_xml_request.get_token(self.env.user, self.company_id)
-        url = claim_url[self.company_id.dte_service_provider] + "?wsdl"
-        _server = Client(url, headers={"Cookie": "TOKEN=" + token,},)
+        tipo_dte = self.document_class_id.sii_code
+        datos = self._get_datos_empresa(self.company_id)
+        rut_emisor = self.company_id.partner_id.rut()
+        if self.type in ["in_invoice", "in_refund"]:
+            rut_emisor = self.partner_id.commercial_partner_id.rut()
+        datos["DTEClaim"] = [
+            {
+                "RUTEmisor": rut_emisor,
+                "TipoDTE": tipo_dte,
+                "Folio": str(self.sii_document_number),
+            }
+        ]
         try:
-            rut_emisor = self.company_id.partner_id.rut()
-            if self.type in ["in_invoice", "in_refund"]:
-                rut_emisor = self.partner_id.commercial_partner_id.rut()
-            respuesta = _server.service.listarEventosHistDoc(
-                rut_emisor[:-2], rut_emisor[-1], str(self.document_class_id.sii_code), str(self.sii_document_number),
-            )
-            self.claim_description = respuesta
+            respuesta = fe.consulta_reclamo_documento(datos)
+            key = "RUT%sT%sF%s" %(rut_emisor,
+                                  tipo_dte, str(self.sii_document_number))
+            self.claim_description = respuesta[key]
         except Exception as e:
             if e.args[0][0] == 503:
                 raise UserError(
