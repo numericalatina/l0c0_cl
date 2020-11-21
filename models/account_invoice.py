@@ -479,7 +479,7 @@ class AccountInvoice(models.Model):
         self.amount_retencion = amount_retencion
         neto += sum(
             (
-                line.invoice_line_tax_ids.with_context(round=False).compute_all(
+                line.invoice_line_tax_ids.compute_all(
                     line.price_unit,
                     self.currency_id,
                     line.quantity,
