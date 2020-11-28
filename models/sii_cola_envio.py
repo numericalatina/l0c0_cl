@@ -25,7 +25,8 @@ class ColaEnvio(models.Model):
     )
     active = fields.Boolean(string="Active", default=True,)
     n_atencion = fields.Char(string="Número de Atención",)
-    set_pruebas = fields.Char(string="Set de pruebas", default=False)
+    set_pruebas = fields.Boolean(string="Set de pruebas", 
+                                 default=False)
     date_time = fields.Datetime(string="Auto Envío al SII",)
     send_email = fields.Boolean(string="Auto Enviar Email", default=False,)
     company_id = fields.Many2one("res.company", string="Company")
@@ -147,14 +148,28 @@ class ColaEnvio(models.Model):
 
     @api.model
     def _cron_procesar_cola(self):
-        ids = self.search([("active", "=", True), ('tipo_trabajo', 'in', ['envio', 'pasivo'])], limit=20)
+        ids = self.search([("active", "=", True), ('tipo_trabajo', '=', 'envio')], limit=20)
         if ids:
             for c in ids:
                 try:
                     c._procesar_tipo_trabajo()
                 except Exception as e:
                     _logger.warning("error al procesartipo trabajo %s"%str(e))
-        ids = self.search([("active", "=", True), ('tipo_trabajo', 'not in', ['envio', 'pasivo'])], limit=20)
+        ids = self.search([("active", "=", True), ('tipo_trabajo', '=', 'pasivo')], limit=20)
+        if ids:
+            for c in ids:
+                try:
+                    c._procesar_tipo_trabajo()
+                except Exception as e:
+                    _logger.warning("error al procesartipo trabajo %s"%str(e))
+        ids = self.search([("active", "=", True), ('tipo_trabajo', '=', 'consulta')], limit=20)
+        if ids:
+            for c in ids:
+                try:
+                    c._procesar_tipo_trabajo()
+                except Exception as e:
+                    _logger.warning("error al procesartipo trabajo %s"%str(e))
+        ids = self.search([("active", "=", True), ('tipo_trabajo', '=', 'persistencia')], limit=20)
         if ids:
             for c in ids:
                 try:
