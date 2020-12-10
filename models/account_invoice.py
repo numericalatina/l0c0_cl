@@ -1724,7 +1724,9 @@ a VAT."""))
         datos = self[0]._get_datos_empresa(self[0].company_id)
         datos["Documento"] = []
         docs = {}
+        api = False
         for r in self:
+            api = r._es_boleta()
             if r.sii_xml_request.state not in ["Aceptado", "Rechazado"]:
                 continue
             docs.setdefault(r.document_class_id.sii_code, [])
@@ -1732,6 +1734,9 @@ a VAT."""))
         if not docs:
             _logger.warning("En get_dte_status, no docs")
             return
+        if self._context.get("set_pruebas", False):
+            api = False
+        datos['api'] = api
         for k, v in docs.items():
             datos["Documento"].append({"TipoDTE": k, "documentos": v})
         resultado = fe.consulta_estado_documento(datos)
