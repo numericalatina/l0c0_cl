@@ -1788,7 +1788,7 @@ a VAT."""))
             self.claim = claim
             return
         tipo_dte = self.document_class_id.sii_code
-        datos = self._get_datos_empresa(doc.company_id)
+        datos = self._get_datos_empresa(self.company_id)
         partner_id = self.commercial_partner_id or self.partner_id.commercial_partner_id
         rut_emisor = partner_id.rut()
         datos["DTEClaim"] = [
