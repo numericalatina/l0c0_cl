@@ -117,8 +117,8 @@
                                     <strong>Fecha:</strong>
                                 </td>
                                 <td style="border-top:0px !important;padding:0px !important;">
-                                    <t t-if="'date_invoice' in o and o.date_invoice">
-                                        <span t-field="o.date_invoice" />
+                                    <t t-if="'date' in o and o.date">
+                                        <span t-field="o.date" />
                                     </t>
                                 </td>
                             </tr>
@@ -199,7 +199,7 @@
                                     <strong>Vencimiento:</strong>
                                 </td>
                                 <td style="border-top:0px !important;padding:0px !important;">
-                                    <span t-field="o.date_due" />
+                                    <span t-field="o.invoice_date_due" />
                                 </td>
                             </tr>
                         </tbody>
@@ -550,7 +550,7 @@
     <report
         string="Print Cedible"
         id="action_print_cedible"
-        model="account.invoice"
+        model="account.move"
         report_type="qweb-pdf"
         name="l10n_cl_fe.invoice_cedible"
         file="l10n_cl_fe.report_invoice_cedible"
@@ -560,7 +560,7 @@
     <report
         string="Imprimir Copia y Cedible"
         id="action_print_copy_cedible"
-        model="account.invoice"
+        model="account.move"
         report_type="qweb-pdf"
         name="l10n_cl_fe.report_invoice_and_cedible"
         file="l10n_cl_fe.report_invoice_and_cedible"
@@ -696,7 +696,7 @@
                     <div class="row">
                         <div class="col-xs-12 text-left">
                       Cajero: <span t-field="o.user_id.name" /><br />
-                      Fecha: <span t-field="o.date_invoice" /><br />
+                      Fecha: <span t-field="o.date" /><br />
                   </div>
                     </div>
                     <div class="row">
@@ -764,7 +764,7 @@
                 <line>
                     <left font='b'>Fecha: </left>
                     <right>
-                        <t t-esc="doc.date_invoice" />
+                        <t t-esc="doc.date" />
                     </right>
                 </line>
                 <line>

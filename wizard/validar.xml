@@ -33,9 +33,9 @@
                                 atts="{'readonly': [('estado_dte', '=', '0')], 'required': [('estado_dte', '!=', '0')]}"
                             />
                             <field
-                                name="invoice_ids"
+                                name="move_ids"
                                 widget="many2many_tags"
-                                attrs="{'invisible': [('tipo', '!=', 'account.invoice')]}"
+                                attrs="{'invisible': [('tipo', '!=', 'account.move')]}"
                             />
                             <field
                                 name="document_ids"
@@ -54,12 +54,10 @@
             </field>
         </record>
         <record id="action_validar_wizard" model="ir.actions.act_window">
-            <field name="type">ir.actions.act_window</field>
             <field name="name">Aceptar / Rechazar Documentos</field>
             <field name="domain">[]</field>
             <field name="res_model">sii.dte.validar.wizard</field>
             <field name="view_id" ref="l10n_cl_fe.sii_dte_validar_form" />
-            <field name="view_type">form</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>

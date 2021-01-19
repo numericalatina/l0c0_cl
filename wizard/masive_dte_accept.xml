@@ -18,6 +18,7 @@
             </form>
         </field>
     </record>
+    <!--
     <act_window
         id="action_mail_message_dte_accept"
         multi="True"
@@ -28,5 +29,5 @@
         view_mode="form"
         target="new"
         view_type="form"
-    />
+    />-->
 </odoo>

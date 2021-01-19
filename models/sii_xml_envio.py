@@ -68,15 +68,15 @@ class SIIXMLEnvio(models.Model):
         readonly=True,
         states={"draft": [("readonly", False)]},
     )
-    invoice_ids = fields.One2many(
-        "account.invoice", "sii_xml_request", string="Facturas", readonly=True, states={"draft": [("readonly", False)]},
+    move_ids = fields.One2many(
+        "account.move", "sii_xml_request", string="Facturas", readonly=True, states={"draft": [("readonly", False)]},
     )
     attachment_id = fields.Many2one("ir.attachment", string="XML Recepción", readonly=True,)
     email_respuesta = fields.Text(string="Email SII", readonly=True,)
     email_estado = fields.Selection(status_dte, string="Respuesta Envío", readonly=True,)
     email_glosa = fields.Text(string="Glosa Recepción", readonly=True,)
 
-    @api.multi
+
     def name_get(self):
         result = []
         for r in self:
@@ -84,7 +84,7 @@ class SIIXMLEnvio(models.Model):
             result.append((r.id, name))
         return result
 
-    @api.multi
+
     def unlink(self):
         for r in self:
             if r.state in ["Aceptado", "Enviado"]:
@@ -133,7 +133,7 @@ class SIIXMLEnvio(models.Model):
         )
         self.set_states()
 
-    @api.multi
+
     def do_send_xml(self):
         self.send_xml()
 
@@ -160,12 +160,12 @@ class SIIXMLEnvio(models.Model):
         )
         self.set_states()
 
-    @api.multi
+
     def ask_for(self):
         self.get_send_status(self.user_id)
 
     def set_childs(self, state):
-        for r in self.invoice_ids:
+        for r in self.move_ids:
             r.sii_result = state
 
     @api.onchange('state')

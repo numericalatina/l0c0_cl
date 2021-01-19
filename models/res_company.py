@@ -26,7 +26,10 @@ class DTECompany(models.Model):
         help="The email address associated with electronica invoice, where all emails vendors would send Exchange DTE, for automatic reception in Odoo.",
     )
     dte_service_provider = fields.Selection(
-        (("SIICERT", "SII - Certification process"), ("SII", "www.sii.cl"),),
+        [
+            ("SIICERT", "SII - Certification process"),
+            ("SII", "www.sii.cl")
+        ],
         string="DTE Service Provider",
         help="""Please select your company service \
 provider for DTE service.
@@ -42,9 +45,6 @@ stamp to be legally valid.""",
     )
     dte_resolution_date = fields.Date("SII Exempt Resolution Date",)
     sii_regional_office_id = fields.Many2one("sii.regional.offices", string="SII Regional Office",)
-    state_id = fields.Many2one(
-        related="partner_id.state_id", relation="res.country.state", string="Ubication", readonly=False,
-    )
     company_activities_ids = fields.Many2many(
         "partner.activities", related="partner_id.acteco_ids", string="Activities Names", readonly=False,
     )

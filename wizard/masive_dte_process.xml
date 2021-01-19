@@ -16,6 +16,7 @@
             </form>
         </field>
     </record>
+    <!--
     <act_window
         id="action_account_dte_process"
         multi="True"
@@ -26,5 +27,5 @@
         view_mode="form"
         target="new"
         view_type="form"
-    />
+    />-->
 </odoo>

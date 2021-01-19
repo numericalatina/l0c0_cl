@@ -284,20 +284,20 @@ class ConsumoFolios(models.Model):
             self.sec_envio = consumos + 1
         self._resumenes()
 
-    @api.multi
+    
     def copy(self, default=None):
         res = super(ConsumoFolios, self).copy(default)
         res.set_data()
         return res
 
-    @api.multi
+    
     def unlink(self):
         for libro in self:
             if libro.state not in ("draft", "cancel"):
                 raise UserError(_("You cannot delete a Validated book."))
         return super(ConsumoFolios, self).unlink()
 
-    @api.multi
+    
     def get_xml_file(self):
         return {
             "type": "ir.actions.act_url",
@@ -305,7 +305,7 @@ class ConsumoFolios(models.Model):
             "target": "self",
         }
 
-    @api.multi
+    
     def validar_consumo_folios(self):
         self._validar()
         consumos = self.search(
@@ -355,7 +355,7 @@ class ConsumoFolios(models.Model):
                 or rec.sii_document_number in [False, 0]
             ):
                 continue
-            ref = self.env["account.invoice"].search(
+            ref = self.env["account.move"].search(
                 [
                     ("sii_document_number", "=", rec.sii_document_number),
                     ("document_class_id", "=", document_class_id.id),
@@ -403,7 +403,7 @@ class ConsumoFolios(models.Model):
             .id
         )
 
-    @api.multi
+    
     def do_dte_send_consumo_folios(self):
         if self.state not in ["draft", "NoEnviado", "Rechazado"]:
             raise UserError("El Consumo de Folios ya ha sido enviado")
@@ -440,7 +440,7 @@ class ConsumoFolios(models.Model):
         else:
             self.state = self.sii_xml_request.state
 
-    @api.multi
+    
     def ask_for_dte_status(self):
         self._get_send_status()
 

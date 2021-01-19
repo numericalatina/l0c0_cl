@@ -395,14 +395,14 @@ class Libro(models.Model):
                 lines.append([0, 0, i])
             self.impuestos = lines
 
-    @api.multi
+    
     def unlink(self):
         for libro in self:
             if libro.state not in ("draft", "cancel"):
                 raise UserError(_("You cannot delete a Validated book."))
         return super(Libro, self).unlink()
 
-    @api.multi
+    
     def get_xml_file(self):
         return {
             "type": "ir.actions.act_url",
@@ -416,7 +416,7 @@ class Libro(models.Model):
         if self.periodo_tributario and self.name:
             self.name += " " + self.periodo_tributario
 
-    @api.multi
+    
     def validar_libro(self):
         self._validar()
         return self.write({"state": "NoEnviado"})
@@ -435,7 +435,7 @@ class Libro(models.Model):
                 ("journal_id", "=", rec.journal_id.id),
                 ("state", "not in", ["cancel", "draft"]),
             ]
-            ref = self.env["account.invoice"].search(query)
+            ref = self.env["account.move"].search(query)
             recs.append(ref)
         return recs
 
@@ -494,7 +494,7 @@ class Libro(models.Model):
             .id
         )
 
-    @api.multi
+    
     def do_dte_send_book(self):
         if self.state not in ["draft", "NoEnviado", "Rechazado"]:
             raise UserError("El Libro ya ha sido enviado")
@@ -561,7 +561,7 @@ class Libro(models.Model):
         else:
             self.state = self.sii_xml_request.state
 
-    @api.multi
+    
     def ask_for_dte_status(self):
         self._get_send_status()
 
