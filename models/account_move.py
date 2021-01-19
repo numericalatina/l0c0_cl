@@ -1540,10 +1540,11 @@ class AccountMove(models.Model):
         return imm
 
 
-    def currency_format(self, val, precision='Product Price'):
+    def currency_format(self, val, application='Product Price'):
         code = self._context.get('lang') or self.partner_id.lang
         lang = self.env['res.lang'].search([('code', '=', code)])
-        string_digits = '%.{}f'.format(dp.get_precision(precision)(self._cr)[1])
+        precision = self.env['decimal.precision'].precision_get(application)
+        string_digits = '%.{}f'.format(precision)
         res = lang.format(string_digits, val
                           ,grouping=True, monetary=True)
         if self.currency_id.symbol:
