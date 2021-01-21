@@ -150,5 +150,13 @@
         </p>
             </field>
         </record>
+
+        <menuitem
+            action="action_move_books"
+            id="menu_action_move_books_form"
+            parent="account.menu_finance_reports"
+            groups="account.group_account_manager"
+            sequence="3"
+        />
     </data>
 </odoo>

@@ -226,4 +226,11 @@
         <field name="target">current</field>
     </record>
     <menuitem id="menu_recept_xml" action="action_dte_process" parent="l10n_cl_fe.menu_sii_exchange" sequence="1" />
+    <menuitem
+        name="XML Recibidos"
+        action="act_xml_recept"
+        id="menu_action_xml_recept"
+        parent="l10n_cl_fe.menu_sii_exchange"
+        sequence="2"
+    />
 </odoo>

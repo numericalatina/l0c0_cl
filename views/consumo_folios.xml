@@ -170,5 +170,13 @@
         </p>
             </field>
         </record>
+
+        <menuitem
+            action="action_move_consumo_folios"
+            id="menu_action_move_consumo_folios_form"
+            parent="account.menu_finance_reports"
+            groups="account.group_account_manager"
+            sequence="3"
+        />
     </data>
 </odoo>
