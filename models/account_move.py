@@ -437,12 +437,7 @@ class AccountMove(models.Model):
                 mode=mode,
             )
             refund_invoice = self.create(values)
-            invoice_type = {
-                "out_invoice": ("customer invoices credit note"),
-                "out_refund": ("customer invoices debit note"),
-                "in_invoice": ("vendor bill credit note"),
-                "in_refund": ("vendor bill debit note"),
-            }
+            invoice_type = self.get_invoice_types()
             message = _(
                 "This %s has been created from: <a href=# data-oe-model=account.move data-oe-id=%d>%s</a><br>Reason: %s"
             ) % (invoice_type[invoice.move_type], invoice.id, invoice.number, description)
