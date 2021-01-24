@@ -354,7 +354,7 @@ class AccountMove(models.Model):
                 l.sequence = i
         return super(AccountMove, self)._onchange_invoice_line_ids()
 
-    @api.depends("state", "journal_id", "date", "document_class_id")
+    @api.depends("state", "journal_id", "invoice_date", "document_class_id")
     def _get_sequence_prefix(self):
         for invoice in self:
             if invoice.use_documents and invoice.move_type in ["out_invoice", "out_refund"]:
@@ -371,9 +371,9 @@ class AccountMove(models.Model):
                 super(AccountMove, self)._get_sequence_number_next()
 
     def _prepare_refund(
-        self, invoice, date=None, description=None, journal_id=None, tipo_nota=61, mode="1"
+        self, invoice, invoice_date=None, description=None, journal_id=None, tipo_nota=61, mode="1"
     ):
-        values = super(AccountMove, self)._prepare_refund(invoice, date, description, journal_id)
+        values = super(AccountMove, self)._prepare_refund(invoice, invoice_date, description, journal_id)
         jdc = self.env["account.journal.sii_document_class"]
         if invoice.move_type in ["in_invoice", "in_refund"]:
             dc = self.env["sii.document_class"].search([("sii_code", "=", tipo_nota),], limit=1,)
@@ -405,7 +405,7 @@ class AccountMove(models.Model):
                             "sii_referencia_TpoDocRef": invoice.document_class_id.id,
                             "sii_referencia_CodRef": mode,
                             "motivo": description,
-                            "fecha_documento": invoice.date.strftime("%Y-%m-%d"),
+                            "fecha_documento": invoice.invoice_date.strftime("%Y-%m-%d"),
                         },
                     ]
                 ],
@@ -417,20 +417,20 @@ class AccountMove(models.Model):
     def _onchange_descuentos(self):
         self._onchange_invoice_line_ids()
 
-    @api.onchange("payment_term_id", "date")
+    @api.onchange("payment_term_id", "invoice_date")
     def _onchange_payment_term_date(self):
         super(AccountMove, self)._onchange_payment_term_date()
         if self.payment_term_id and self.payment_term_id.dte_sii_code:
             self.forma_pago = self.payment_term_id.dte_sii_code
 
     @api.returns("self")
-    def refund(self, date=None, description=None, journal_id=None, tipo_nota=61, mode="1"):
+    def refund(self, invoice_date=None, description=None, journal_id=None, tipo_nota=61, mode="1"):
         new_invoices = self.browse()
         for invoice in self:
             # create the new invoice
             values = self._prepare_refund(
                 invoice,
-                date=date,
+                invoice_date=invoice_date,
                 description=description,
                 journal_id=journal_id,
                 tipo_nota=tipo_nota,
@@ -731,7 +731,7 @@ class AccountMove(models.Model):
         IdDoc = {}
         IdDoc["TipoDTE"] = self.document_class_id.sii_code
         IdDoc["Folio"] = self.get_folio()
-        IdDoc["FchEmis"] = self.date.strftime("%Y-%m-%d")
+        IdDoc["FchEmis"] = self.invoice_date.strftime("%Y-%m-%d")
         if self._es_boleta():
             IdDoc["IndServicio"] = 3  # @TODO agregar las otras opciones a la fichade producto servicio
         if self.ticket and not self._es_boleta():
@@ -849,20 +849,20 @@ class AccountMove(models.Model):
         Totales["TpoCambio"] = round(currency_id.rate, 10)
         if MntNeto > 0:
             if currency_id != self.currency_id:
-                MntNeto = currency_id._convert(MntNeto, self.currency_id, self.company_id, self.date)
+                MntNeto = currency_id._convert(MntNeto, self.currency_id, self.company_id, self.invoice_date)
             Totales["MntNetoOtrMnda"] = MntNeto
         if MntExe:
             if currency_id != self.currency_id:
-                MntExe = currency_id._convert(MntExe, self.currency_id, self.company_id, self.date)
+                MntExe = currency_id._convert(MntExe, self.currency_id, self.company_id, self.invoice_date)
             Totales["MntExeOtrMnda"] = MntExe
         if MntBase and MntBase > 0:
             Totales["MntFaeCarneOtrMnda"] = MntBase
         if TasaIVA:
             if currency_id != self.currency_id:
-                IVA = currency_id._convert(IVA, self.currency_id, self.company_id, self.date)
+                IVA = currency_id._convert(IVA, self.currency_id, self.company_id, self.invoice_date)
             Totales["IVAOtrMnda"] = IVA
         if currency_id != self.currency_id:
-            MntTotal = currency_id._convert(MntTotal, self.currency_id, self.company_id, self.date)
+            MntTotal = currency_id._convert(MntTotal, self.currency_id, self.company_id, self.invoice_date)
         Totales["MntTotOtrMnda"] = MntTotal
         # Totales['MontoNF']
         # Totales['TotalPeriodo']
@@ -874,21 +874,21 @@ class AccountMove(models.Model):
         Totales = {}
         if MntNeto > 0:
             if currency_id != self.currency_id:
-                MntNeto = currency_id._convert(MntNeto, self.currency_id, self.company_id, self.date)
+                MntNeto = currency_id._convert(MntNeto, self.currency_id, self.company_id, self.invoice_date)
             Totales["MntNeto"] = currency_id.round(MntNeto)
         if MntExe:
             if currency_id != self.currency_id:
-                MntExe = currency_id._convert(MntExe, self.currency_id, self.company_id, self.date)
+                MntExe = currency_id._convert(MntExe, self.currency_id, self.company_id, self.invoice_date)
             Totales["MntExe"] = currency_id.round(MntExe)
         if MntBase > 0:
             Totales["MntBase"] = currency_id.round(MntBase)
         if TasaIVA:
             Totales["TasaIVA"] = TasaIVA
             if currency_id != self.currency_id:
-                IVA = currency_id._convert(IVA, self.currency_id, self.company_id, self.date)
+                IVA = currency_id._convert(IVA, self.currency_id, self.company_id, self.invoice_date)
             Totales["IVA"] = currency_id.round(IVA)
         if currency_id != self.currency_id:
-            MntTotal = currency_id._convert(MntTotal, self.currency_id, self.company_id, self.date)
+            MntTotal = currency_id._convert(MntTotal, self.currency_id, self.company_id, self.invoice_date)
         Totales["MntTotal"] = currency_id.round(MntTotal)
         # Totales['MontoNF']
         # Totales['TotalPeriodo']
@@ -966,7 +966,7 @@ class AccountMove(models.Model):
         if not commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
             raise UserError(_("Fill Partner VAT"))
         timestamp = self.time_stamp()
-        invoice_date = self.date
+        invoice_date = self.invoice_date
         fecha_timbre = fields.Date.context_today(self)
         if fecha_timbre < invoice_date:
             raise UserError("La fecha de timbraje no puede ser menor a la fecha de emisión del documento")
@@ -1042,7 +1042,7 @@ class AccountMove(models.Model):
                     lines["OtrMnda"] = {}
                     lines["OtrMnda"]["PrcOtrMon"] = round(
                         currency_base._convert(
-                            line.price_unit, currency_id, self.company_id, self.date, round=False
+                            line.price_unit, currency_id, self.company_id, self.invoice_date, round=False
                         ),
                         6,
                     )
@@ -1054,7 +1054,7 @@ class AccountMove(models.Model):
                 lines["DescuentoMonto"] = DescMonto
                 if currency_id:
                     lines["DescuentoMonto"] = currency_base._convert(
-                        DescMonto, currency_id, self.company_id, self.date
+                        DescMonto, currency_id, self.company_id, self.invoice_date
                     )
                     lines["OtrMnda"]["DctoOtrMnda"] = DescMonto
             if line.discount < 0:
@@ -1063,20 +1063,20 @@ class AccountMove(models.Model):
                 lines["RecargoMonto"] = RecargoMonto
                 if currency_id:
                     lines["OtrMnda"]["RecargoOtrMnda"] = currency_base._convert(
-                        RecargoMonto, currency_id, self.company_id, self.date
+                        RecargoMonto, currency_id, self.company_id, self.invoice_date
                     )
             if not no_product and not taxInclude:
                 price_subtotal = line.price_subtotal
                 if currency_id:
                     lines["OtrMnda"]["MontoItemOtrMnda"] = currency_base._convert(
-                        price_subtotal, currency_id, self.company_id, self.date
+                        price_subtotal, currency_id, self.company_id, self.invoice_date
                     )
                 lines["MontoItem"] = price_subtotal
             elif not no_product:
                 price_total = line.price_total
                 if currency_id:
                     lines["OtrMnda"]["MontoItemOtrMnda"] = currency_base._convert(
-                        price_total, currency_id, self.company_id, self.date
+                        price_total, currency_id, self.company_id, self.invoice_date
                     )
                 lines["MontoItem"] = price_total
             if no_product:
@@ -1113,7 +1113,7 @@ class AccountMove(models.Model):
             if self.currency_id != currency_base:
                 currency_id = self.currency_id
                 dr_line["ValorDROtrMnda"] = currency_base._convert(
-                    dr.valor, currency_id, self.company_id, self.date
+                    dr.valor, currency_id, self.company_id, self.invoice_date
                 )
             if self.document_class_id.sii_code in [34] and (
                 self.referencias and self.referencias[0].sii_referencia_TpoDocRef.sii_code == "34"
