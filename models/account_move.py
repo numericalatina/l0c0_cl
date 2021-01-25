@@ -417,9 +417,8 @@ class AccountMove(models.Model):
     def _onchange_descuentos(self):
         self._onchange_invoice_line_ids()
 
-    @api.onchange("payment_term_id", "invoice_date")
-    def _onchange_payment_term_date(self):
-        super(AccountMove, self)._onchange_payment_term_date()
+    @api.onchange("payment_term_id")
+    def _onchange_payment_term(self):
         if self.payment_term_id and self.payment_term_id.dte_sii_code:
             self.forma_pago = self.payment_term_id.dte_sii_code
 
