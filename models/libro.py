@@ -311,8 +311,7 @@ class Libro(models.Model):
                         0,
                         0,
                         {
-                            "tax_id": self.env["account.tax"]
-                            .search(
+                            "tax_id": self.env["account.tax"].search(
                                 [
                                     ("sii_code", "=", 14),
                                     ("type_tax_use", "=", "sale"),
@@ -329,8 +328,7 @@ class Libro(models.Model):
                         0,
                         0,
                         {
-                            "tax_id": self.env["account.tax"]
-                            .search(
+                            "tax_id": self.env["account.tax"].search(
                                 [
                                     ("sii_code", "=", 0),
                                     ("type_tax_use", "=", "sale"),

@@ -271,16 +271,14 @@ class ConsumoFolios(models.Model):
             raise UserError("No puede hacer Consumo de Folios de días futuros")
         self.name = self.fecha_inicio
         self.fecha_final = self.fecha_inicio
-        self.move_ids = self.env["account.move"]
-            .search(
+        self.move_ids = self.env["account.move"].search(
                 [
                     ("document_class_id.sii_code", "in", [39, 41]),
                     ("invoice_date", "=", self.fecha_inicio),
                     ("company_id", "=", self.company_id.id),
                     ("sii_document_number", 'not in', [0, False]),
                 ]
-            )
-            .filtered(lambda a: a.is_invoice())
+            ).filtered(lambda a: a.is_invoice())
         consumos = self.search_count(
             [
                 ("fecha_inicio", "=", self.fecha_inicio),
