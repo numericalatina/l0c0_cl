@@ -331,8 +331,8 @@ class ConsumoFolios(models.Model):
         Emisor["ValorIva"] = 19
         return Emisor
 
-    def _get_datos_empresa(self, company_id):
-        signature_id = self.env.user.get_digital_signature(company_id)
+    def _get_datos_empresa(self):
+        signature_id = self.env.user.get_digital_signature(self.company_id)
         if not signature_id:
             raise UserError(
                 _(
