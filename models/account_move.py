@@ -1009,8 +1009,7 @@ class AccountMove(models.Model):
             details = line.get_tax_detail()
             lines["Impuesto"] = details['impuestos']
             MntExe += details['MntExe']
-            if not taxInclude:
-                taxInclude = details['taxInclude']
+            taxInclude = details['taxInclude']
             if details.get('cod_imp_adic'):
                 lines['CodImpAdic'] = details['cod_imp_adic']
             if details.get('IndExe'):
@@ -1036,12 +1035,13 @@ class AccountMove(models.Model):
             if not no_product:
                 uom_name = line.product_uom_id.with_context(exportacion=self.document_class_id.es_exportacion()).name_get()
                 lines["UnmdItem"] = uom_name[0][1][:4]
-                lines["PrcItem"] = round(line.price_unit, 6)
+                price_unit = details['price_unit']
+                lines["PrcItem"] = round(price_unit, 6)
                 if currency_id:
                     lines["OtrMnda"] = {}
                     lines["OtrMnda"]["PrcOtrMon"] = round(
                         currency_base._convert(
-                            line.price_unit, currency_id, self.company_id, self.invoice_date, round=False
+                            price_unit, currency_id, self.company_id, self.invoice_date, round=False
                         ),
                         6,
                     )

@@ -83,14 +83,15 @@ class AccountInvoiceLine(models.Model):
         details = dict(
             impuestos=[],
             taxInclude=False,
-            MntExe=0
+            MntExe=0,
+            price_unit=self.price_unit,
         )
         currency_base = self.move_id.currency_base()
         for t in self.tax_ids:
             if not boleta and not nc_boleta:
                 if t.sii_code in [26, 27, 28, 35, 271]:#@Agregar todos los adicionales
                     details['cod_imp_adic'] = t.sii_code
-            details['taxInclude'] = t.price_include or ( (boleta or nc_boleta) and not t.sii_detailed )
+            details['taxInclude'] = t.price_include
             if t.amount == 0 or t.sii_code in [0]:#@TODO mejor manera de identificar exento de afecto
                 details['IndExe'] = 1#line.product_id.ind_exe or 1
                 details['MntExe'] += currency_base.round(self.price_subtotal)
@@ -110,8 +111,21 @@ class AccountInvoiceLine(models.Model):
             details['impuestos'].append({
                     'name': t.description,
                     "CodImp": t.sii_code,
-                    'price_include': details['taxInclude'],
+                    'price_include': boleta or nc_boleta or details['taxInclude'],
                     'TasaImp': amount,
                 }
             )
+            if not details['taxInclude'] and (boleta or nc_boleta):
+                taxes_res = self._get_price_total_and_subtotal_model(
+                    self.price_unit,
+                    1,
+                    self.discount,
+                    self.move_id.currency_id,
+                    self.product_id,
+                    self.move_id.partner_id,
+                    self.tax_ids,
+                    self.move_id.move_type)
+                details['price_unit'] = taxes_res.get('price_total', 0.0)
+        if boleta or nc_boleta:
+             details['taxInclude'] = True
         return details

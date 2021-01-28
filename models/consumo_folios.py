@@ -349,7 +349,7 @@ class ConsumoFolios(models.Model):
         if not self.impuestos:
             self._resumenes()
         datos = self._get_datos_empresa()
-        datos["ConsumoFolios"] = self._get_datos()
+        datos["ConsumoFolios"] = [self._get_datos()]
         datos["test"] = True
         result = fe.consumo_folios(datos)[0]
         envio_dte = result["sii_xml_request"]
