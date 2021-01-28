@@ -896,6 +896,10 @@ class AccountMove(models.Model):
         )
 
     def _totales(self, MntExe=0, no_product=False, taxInclude=False):
+        if self.move_type == 'entry' or self.is_outbound():
+            sign = 1
+        else:
+            sign = -1
         MntNeto = 0
         IVA = False
         TasaIVA = False
@@ -931,7 +935,7 @@ class AccountMove(models.Model):
         MntTotal = self.amount_total
         if no_product:
             MntTotal = 0
-        return MntExe, MntNeto, MntIVA, TasaIVA, MntTotal, MntBase
+        return MntExe, (sign * (MntNeto)), (sign * (MntIVA)), TasaIVA, MntTotal, (sign * (MntBase))
 
     def currency_base(self):
         return self.env.ref("base.CLP")
