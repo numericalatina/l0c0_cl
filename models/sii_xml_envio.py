@@ -133,7 +133,6 @@ class SIIXMLEnvio(models.Model):
         )
         self.set_states()
 
-
     def do_send_xml(self):
         self.send_xml()
 
@@ -159,7 +158,6 @@ class SIIXMLEnvio(models.Model):
             {"state": res["status"], "sii_receipt": res.get("xml_resp", False),}
         )
         self.set_states()
-
 
     def ask_for(self):
         self.get_send_status(self.user_id)

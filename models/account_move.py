@@ -909,20 +909,21 @@ class AccountMove(models.Model):
                 raise UserError("NO pueden ir productos afectos en documentos exentos")
         elif self.amount_untaxed and self.amount_untaxed != 0:
             IVA = False
-            for t in self.tax_line_ids:
-                if t.tax_id.sii_code in [14, 15]:
+            for t in self.line_ids:
+                if t.tax_line_id.sii_code in [14, 15]:
                     IVA = t
-                if t.tax_id.sii_code in [14, 15]:
-                    MntNeto += t.base
-                if t.tax_id.sii_code in [17]:
-                    MntBase += IVA.base  # @TODO Buscar forma de calcular la base para faenamiento
+                for tl in t.tax_ids:
+                    if tl.sii_code in [14, 15]:
+                        MntNeto += t.balance
+                    if tl.sii_code in [17]:
+                        MntBase += t.balance  # @TODO Buscar forma de calcular la base para faenamiento
         if self.amount_tax == 0 and MntExe > 0 and not self._es_exento():
             raise UserError("Debe ir almenos un producto afecto")
         if MntExe > 0:
             MntExe = MntExe
         if IVA:
-            TasaIVA = round(IVA.tax_id.amount, 2)
-            MntIVA = IVA.amount
+            TasaIVA = round(IVA.tax_line_id.amount, 2)
+            MntIVA = IVA.balance
         if no_product:
             MntNeto = 0
             TasaIVA = 0
@@ -1198,7 +1199,6 @@ class AccountMove(models.Model):
         result = fe.timbrar(datos)
         if result[0].get("error"):
             raise UserError(result[0].get("error"))
-        _logger.warning(result)
         bci = self.get_barcode_img(xml=result[0]["sii_barcode"])
         self.write(
             {
