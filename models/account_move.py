@@ -88,6 +88,13 @@ class AccountMove(models.Model):
         data = barcodefile.getvalue()
         return base64.b64encode(data)
 
+    def _get_barcode_img(self):
+        for r in self:
+            sii_barcode_img = False
+            if r.sii_barcode:
+                sii_barcode_img = r.get_barcode_img()
+            r.sii_barcode_img = sii_barcode_img
+
     @api.onchange("journal_id")
     @api.depends("journal_id")
     def get_dc_ids(self):
@@ -138,6 +145,7 @@ class AccountMove(models.Model):
     )
     sii_barcode_img = fields.Binary(
         string=_("SII Barcode Image"), help="SII Barcode Image in PDF417 format",
+        compute="_get_barcode_img"
     )
     sii_message = fields.Text(string="SII Message", copy=False,)
     sii_xml_dte = fields.Text(string="SII XML DTE", copy=False, readonly=True, states={"draft": [("readonly", False)]},)

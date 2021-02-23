@@ -30,7 +30,7 @@ class SIIResumenBoletaVoucher(models.Model):
     _name = 'account.move.boleta_voucher'
     _description = "Resumen Mensual Boletas Electronica con pagos Electronico"
 
-    
+
     def get_barcode_img(self, columns=13, ratio=3):
         barcodefile = BytesIO()
         image = self.pdf417bc(self.sii_barcode, columns, ratio)
@@ -40,8 +40,10 @@ class SIIResumenBoletaVoucher(models.Model):
 
     def _get_barcode_img(self):
         for r in self:
+            sii_barcode_img = False
             if r.sii_barcode:
-                r.sii_barcode_img = r.get_barcode_img()
+                sii_barcode_img = r.get_barcode_img()
+            r.sii_barcode_img = sii_barcode_img
 
     sii_document_number = fields.Integer(
         string="Folio del Documento",
