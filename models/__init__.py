@@ -14,6 +14,7 @@ from . import export
 from . import global_descuento_recargo
 from . import honorarios
 from . import ir_module_module
+from . import ir_report
 from . import ir_sequence
 from . import libro
 from . import mail
