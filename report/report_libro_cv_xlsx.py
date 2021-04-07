@@ -2,7 +2,7 @@ from odoo import models
 
 
 class LibroXlsx(models.AbstractModel):
-    _name = "report.account.move.book.xlsx"
+    _name = "report.l10n_cl_fe.libro_cv.xlsx"
     _inherit = "report.l10n_cl_fe.abstract"
 
     def generate_xlsx_report(self, workbook, data, libro):
