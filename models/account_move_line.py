@@ -31,6 +31,7 @@ class AccountInvoiceLine(models.Model):
         "move_id.date",
     )
     def _compute_price(self):
+        super(AccountInvoiceLine, self)._compute_price()
         for line in self:
             line.set_discount_amount()
             continue
