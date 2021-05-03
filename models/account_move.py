@@ -267,6 +267,18 @@ class AccountMove(models.Model):
         string="Factor proporcionalidad", default=0.00, readonly=True, states={"draft": [("readonly", False)]},
     )
 
+
+    @api.depends('posted_before', 'state', 'journal_id', 'date', 'document_class_id', 'sii_document_number')
+    def _compute_name(self):
+        not_dcs = self.env['account.move']
+        for r in self:
+            if not r.document_class_id or r.state == 'draft':
+                not_dcs += r
+                continue
+            r.name = '%s%s' % (r.document_class_id.doc_code_prefix, r.sii_document_number)
+
+        super(AccountMove, not_dcs)._compute_name()
+
     def _post(self, soft=True):
         to_post = super(AccountMove, self)._post(soft=soft)
         for inv in to_post:
@@ -279,9 +291,7 @@ class AccountMove(models.Model):
                 continue
             inv._validaciones_uso_dte()
             inv.sii_result = "NoEnviado"
-            prefix = inv.document_class_id.doc_code_prefix or ""
             sii_document_number = inv.journal_document_class_id.sequence_id.next_by_id()
-            move_name = (prefix + str(sii_document_number)).replace(" ", "")
             inv.sii_document_number = int(sii_document_number)
             if inv.journal_id.restore_mode:
                 inv.sii_result = "Proceso"
@@ -447,7 +457,7 @@ class AccountMove(models.Model):
             invoice_type = self.get_invoice_types()
             message = _(
                 "This %s has been created from: <a href=# data-oe-model=account.move data-oe-id=%d>%s</a><br>Reason: %s"
-            ) % (invoice_type[invoice.move_type], invoice.id, invoice.number, description)
+            ) % (invoice_type[invoice.move_type], invoice.id, invoice.name, description)
             refund_invoice.message_post(body=message)
             new_invoices += refund_invoice
         return new_invoices
@@ -491,11 +501,6 @@ class AccountMove(models.Model):
                     u"Ya existe otro documento con el numero: %s para el proveedor: %s"
                     % (self.sii_document_number, self.partner_id.display_name)
                 )
-
-    @api.onchange("sii_document_number")
-    def set_reference(self):
-        if self.move_type in ["in_invoice", "in_refund"] and self.sii_document_number:
-            self.reference = "{} {}".format(self.document_class_id.doc_code_prefix, self.sii_document_number)
 
     @api.onchange("journal_document_class_id")
     def set_document_class_id(self):
@@ -584,7 +589,7 @@ class AccountMove(models.Model):
 
     def _create_attachment(self,):
         url_path = "/download/xml/invoice/%s" % (self.id)
-        filename = ("%s.xml" % self.number).replace(" ", "_")
+        filename = ("%s.xml" % self.name).replace(" ", "_")
         att = self.env["ir.attachment"].search(
             [("name", "=", filename), ("res_id", "=", self.id), ("res_model", "=", "account.move")], limit=1,
         )
@@ -1456,8 +1461,8 @@ class AccountMove(models.Model):
         att = self._create_attachment()
         if commercial_partner_id.es_mipyme:
             return
-        body = "XML de Intercambio DTE: %s" % (self.number)
-        subject = "XML de Intercambio DTE: %s" % (self.number)
+        body = "XML de Intercambio DTE: %s" % (self.name)
+        subject = "XML de Intercambio DTE: %s" % (self.name)
         dte_email_id = self.company_id.dte_email_id or self.env.user.company_id.dte_email_id
         dte_receptors = commercial_partner_id.child_ids + commercial_partner_id
         email_to = commercial_partner_id.dte_email or ""
