@@ -433,7 +433,7 @@ class AccountMove(models.Model):
 
     @api.onchange("global_descuentos_recargos")
     def _onchange_descuentos(self):
-        self._onchange_invoice_line_ids()
+        self._recompute_dynamic_lines()
 
     @api.onchange("payment_term_id")
     def _onchange_payment_term(self):
@@ -576,6 +576,107 @@ class AccountMove(models.Model):
             ("company_id", "=", company_id),
         ]
         return self.env["account.journal"].search(domain, limit=1, order="sequence asc")
+
+    def _recompute_global_gdr_lines(self):
+        self.ensure_one()
+        in_draft_mode = self != self._origin
+
+        def _compute_global_gdr(self, others_lines, gdr):
+            signo = -1 if gdr.type=='D' else 1
+            if gdr.gdr_type == 'amount':
+                return signo*gdr.valor, signo*gdr.valor
+            total_currency = total = 0
+            if gdr.impuesto == "afectos":
+                for line in others_lines:
+                    for t in (line.tax_ids or line.tax_line_id):
+                        if t.amount > 0:
+                            total += line.balance
+                            total_currency += line.amount_currency
+                            break
+                return signo *total * (gdr.valor /100.0), signo *total_currency * (gdr.valor /100.0)
+            for line in others_lines:
+                for t in (line.tax_ids or line.tax_line_id):
+                    if t.amount == 0:
+                        total += line.balance
+                        total_currency += line.amount_currency
+                        break
+            return signo * total * (gdr.valor /100.0), signo *total_currency * (gdr.valor /100.0)
+
+        def _apply_global_gdr(self, amount, amount_currency, global_gdr_line, gdr, taxes):
+            gdr_line_vals = {
+                'debit': amount > 0.0 and amount or 0.0,
+                'credit': amount < 0.0 and -amount or 0.0,
+                'quantity': 1.0,
+                'amount_currency': amount_currency,
+                'partner_id': self.partner_id.id,
+                'move_id': self.id,
+                'currency_id': self.currency_id,
+                'company_id': self.company_id.id,
+                'company_currency_id': self.company_id.currency_id.id,
+                'is_gd_line': gdr.type=='D',
+                'is_gr_line': gdr.type=='R',
+                'sequence': 9999,
+                'tax_ids': [(6,0, taxes.ids)]
+            }
+            gdr_line_vals.update({
+                'name': gdr.name,
+                'account_id': gdr.account_id.id,
+            })
+
+            # Create or update the global gdr line.
+            if global_gdr_line:
+                global_gdr_line.update({
+                    'amount_currency': gdr_line_vals['amount_currency'],
+                    'debit': gdr_line_vals['debit'],
+                    'credit': gdr_line_vals['credit'],
+                    'account_id': gdr_line_vals['account_id'],
+                })
+            else:
+                create_method = in_draft_mode and self.env['account.move.line'].new or self.env['account.move.line'].create
+                global_gdr_line = create_method(gdr_line_vals)
+
+            if in_draft_mode:
+                global_gdr_line.update(global_gdr_line._get_fields_onchange_balance(force_computation=True))
+        for gdr in self.global_descuentos_recargos:
+            gds = self.line_ids.filtered(lambda line: line.is_gd_line )
+            grs = self.line_ids.filtered(lambda line: line.is_gr_line )
+            others_lines = self.line_ids.filtered(lambda line: line.account_id.user_type_id.type not in ('receivable', 'payable'))
+            others_lines -= gds - grs
+            gd = False
+            taxes = self.env['account.tax']
+            for line in others_lines:
+                for t in (line.tax_ids or line.tax_line_id):
+                    if gdr.impuesto == "afectos" and t.amount > 0:
+                        taxes += (line.tax_ids or line.tax_line_id)
+                    else:
+                        taxes += (line.tax_ids or line.tax_line_id)
+            for line in gds:
+                if line.name == gdr.name:
+                    gd = line
+            if gdr.type=="D":
+                if not gd:
+                    gd = self.env['account.move.line']
+                _logger.warning("gd")
+                gdr_amount , gdr_amount_currency = _compute_global_gdr(self, others_lines, gdr)
+                _apply_global_gdr(self, gdr_amount, gdr_amount_currency, gd, gdr, taxes)
+            gr = False
+            for line in grs:
+                if line.name == gdr.name:
+                    gr = line
+            if gdr.type=="R":
+                if not gr:
+                    gr = self.env['account.move.line']
+                gdr_amount , gdr_amount_currency = _compute_global_gdr(self, others_lines, gdr)
+                _apply_global_gdr(self, gdr_amount, gdr_amount_currency, gr, gdr, taxes)
+
+    def _recompute_dynamic_lines(self, recompute_all_taxes=False, recompute_tax_base_amount=False):
+        for invoice in self:
+            if invoice.is_invoice(include_receipts=True):
+                # Compute cash rounding.
+                _logger.warning('is invoice')
+                invoice._recompute_global_gdr_lines()
+
+        super(AccountMove, self)._recompute_dynamic_lines(recompute_all_taxes, recompute_tax_base_amount)
 
     def time_stamp(self, formato="%Y-%m-%dT%H:%M:%S"):
         tz = pytz.timezone("America/Santiago")

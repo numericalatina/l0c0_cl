@@ -10,6 +10,12 @@ class AccountInvoiceLine(models.Model):
 
     sequence = fields.Integer(string="Sequence", default=-1,)
     discount_amount = fields.Float(string="Monto Descuento", default=0.00,)
+    is_gd_line = fields.Boolean(
+        string="Es Línea descuento Global"
+    )
+    is_gr_line = fields.Boolean(
+        string="Es Línea Recargo Global"
+    )
 
     @api.onchange("discount", "price_unit", "quantity")
     def set_discount_amount(self):
