@@ -422,9 +422,9 @@ class Libro(models.Model):
 
     def _get_moves(self):
         recs = self.with_context(lang="es_CL").move_ids.filtered(
-            lambda a: a.is_invoice() and not a.document_class_id and\
-            not (a.document_class_id.es_boleta() or (self.tipo_libro == 'BOLETA' and a.document_class_id.es_boleta())) \
-            and a.sii_document_number not in [False, 0])
+            lambda a: a.is_invoice() and a.sii_document_number and\
+            (not a.document_class_id.es_boleta() or (self.tipo_libro == 'BOLETA' and a.document_class_id.es_boleta()))
+        )
         return recs
 
     def _emisor(self):
