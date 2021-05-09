@@ -228,10 +228,14 @@ class AccountMove(models.Model):
         "sii.activity.description", string="Giro", related="commercial_partner_id.activity_description", readonly=True,
     )
     amount_untaxed_global_discount = fields.Float(
-        string="Global Discount Amount", store=True, default=0.00, compute="_compute_amount",
+        string="Global Discount Amount", default=0.00,
+        readonly=True,
+        states={"draft": [("readonly", False)]},
     )
     amount_untaxed_global_recargo = fields.Float(
-        string="Global Recargo Amount", store=True, default=0.00, compute="_compute_amount",
+        string="Global Recargo Amount", default=0.00,
+        readonly=True,
+        states={"draft": [("readonly", False)]},
     )
     global_descuentos_recargos = fields.One2many(
         "account.move.gdr",
@@ -279,11 +283,28 @@ class AccountMove(models.Model):
 
         super(AccountMove, not_dcs)._compute_name()
 
+    def _get_invoice_computed_reference(self):
+        if self.document_class_id:
+            return '%s%s' % (self.document_class_id.doc_code_prefix, self.sii_document_number)
+        return super(AccountMove, self)._get_invoice_computed_reference()
+
     def _post(self, soft=True):
-        to_post = super(AccountMove, self)._post(soft=soft)
+        if soft:
+            future_moves = self.filtered(lambda move: move.date > fields.Date.context_today(self))
+            future_moves.auto_post = True
+            for move in future_moves:
+                msg = _('This move will be posted at the accounting date: %(date)s', date=format_date(self.env, move.date))
+                move.message_post(body=msg)
+            to_post = self - future_moves
+        else:
+            to_post = self
         for inv in to_post:
-            if not inv.is_invoice():
+            if not inv.is_invoice() or not inv.journal_document_class_id:
                 continue
+            sii_document_number = inv.journal_document_class_id.sequence_id.next_by_id()
+            inv.sii_document_number = int(sii_document_number)
+        super(AccountMove, self)._post(soft=soft)
+        for inv in to_post:
             if inv.purchase_to_done:
                 for ptd in inv.purchase_to_done:
                     ptd.write({"state": "done"})
@@ -291,8 +312,6 @@ class AccountMove(models.Model):
                 continue
             inv._validaciones_uso_dte()
             inv.sii_result = "NoEnviado"
-            sii_document_number = inv.journal_document_class_id.sequence_id.next_by_id()
-            inv.sii_document_number = int(sii_document_number)
             if inv.journal_id.restore_mode:
                 inv.sii_result = "Proceso"
             else:
@@ -317,8 +336,6 @@ class AccountMove(models.Model):
                     }
                 )
         return to_post
-
-
 
     def _get_move_imps(self):
         imps = {}
@@ -433,6 +450,12 @@ class AccountMove(models.Model):
 
     @api.onchange("global_descuentos_recargos")
     def _onchange_descuentos(self):
+        gdrs = self.line_ids.filtered(lambda line: line.is_gd_line or line.is_gr_line)
+        for r in self.global_descuentos_recargos:
+            for l in gdrs:
+                if r.name == l.name:
+                    gdrs -= l
+        gdrs.unlink()
         self._recompute_dynamic_lines()
 
     @api.onchange("payment_term_id")
@@ -582,30 +605,33 @@ class AccountMove(models.Model):
         in_draft_mode = self != self._origin
 
         def _compute_global_gdr(self, others_lines, gdr):
-            signo = -1 if gdr.type=='D' else 1
             if gdr.gdr_type == 'amount':
-                return signo*gdr.valor, signo*gdr.valor
-            total_currency = total = 0
+                return gdr.valor, gdr.valor
+            total_currency = 0
+            total = 0
             if gdr.impuesto == "afectos":
                 for line in others_lines:
-                    for t in (line.tax_ids or line.tax_line_id):
+                    for t in line.tax_ids:
                         if t.amount > 0:
-                            total += line.balance
+                            total += line.price_subtotal
                             total_currency += line.amount_currency
                             break
-                return signo *total * (gdr.valor /100.0), signo *total_currency * (gdr.valor /100.0)
+                return total * (gdr.valor /100.0), total_currency * (gdr.valor /100.0)
             for line in others_lines:
-                for t in (line.tax_ids or line.tax_line_id):
+                for t in line.tax_ids:
                     if t.amount == 0:
-                        total += line.balance
+                        total += line.price_subtotal
                         total_currency += line.amount_currency
                         break
-            return signo * total * (gdr.valor /100.0), signo *total_currency * (gdr.valor /100.0)
+            return total * (gdr.valor /100.0), total_currency * (gdr.valor /100.0)
 
         def _apply_global_gdr(self, amount, amount_currency, global_gdr_line, gdr, taxes):
+            if gdr.type == 'D':
+                amount *= (-1)
+                amount_currency *= (-1)
             gdr_line_vals = {
-                'debit': amount > 0.0 and amount or 0.0,
-                'credit': amount < 0.0 and -amount or 0.0,
+                'debit': amount < 0.0 and -amount or 0.0,
+                'credit': amount > 0.0 and amount or 0.0,
                 'quantity': 1.0,
                 'amount_currency': amount_currency,
                 'partner_id': self.partner_id.id,
@@ -616,13 +642,10 @@ class AccountMove(models.Model):
                 'is_gd_line': gdr.type=='D',
                 'is_gr_line': gdr.type=='R',
                 'sequence': 9999,
-                'tax_ids': [(6,0, taxes.ids)]
-            }
-            gdr_line_vals.update({
                 'name': gdr.name,
                 'account_id': gdr.account_id.id,
-            })
-
+                'tax_ids': [(6,0, taxes.ids)],
+            }
             # Create or update the global gdr line.
             if global_gdr_line:
                 global_gdr_line.update({
@@ -634,9 +657,12 @@ class AccountMove(models.Model):
             else:
                 create_method = in_draft_mode and self.env['account.move.line'].new or self.env['account.move.line'].create
                 global_gdr_line = create_method(gdr_line_vals)
-
             if in_draft_mode:
                 global_gdr_line.update(global_gdr_line._get_fields_onchange_balance(force_computation=True))
+            if gdr.impuesto == 'afectos':
+                self._recompute_tax_lines()
+        total_gd = 0
+        total_gr = 0
         for gdr in self.global_descuentos_recargos:
             gds = self.line_ids.filtered(lambda line: line.is_gd_line )
             grs = self.line_ids.filtered(lambda line: line.is_gr_line )
@@ -645,19 +671,19 @@ class AccountMove(models.Model):
             gd = False
             taxes = self.env['account.tax']
             for line in others_lines:
-                for t in (line.tax_ids or line.tax_line_id):
-                    if gdr.impuesto == "afectos" and t.amount > 0:
-                        taxes += (line.tax_ids or line.tax_line_id)
-                    else:
-                        taxes += (line.tax_ids or line.tax_line_id)
+                for t in line.tax_ids:
+                    if gdr.impuesto == "afectos" and t.amount > 0 and t not in taxes:
+                        taxes += t
+                    elif gdr.impuesto != "afectos" and t not in taxes:
+                        taxes += t
             for line in gds:
                 if line.name == gdr.name:
                     gd = line
             if gdr.type=="D":
                 if not gd:
                     gd = self.env['account.move.line']
-                _logger.warning("gd")
-                gdr_amount , gdr_amount_currency = _compute_global_gdr(self, others_lines, gdr)
+                gdr_amount, gdr_amount_currency = _compute_global_gdr(self, others_lines, gdr)
+                total_gd += gdr_amount
                 _apply_global_gdr(self, gdr_amount, gdr_amount_currency, gd, gdr, taxes)
             gr = False
             for line in grs:
@@ -667,13 +693,13 @@ class AccountMove(models.Model):
                 if not gr:
                     gr = self.env['account.move.line']
                 gdr_amount , gdr_amount_currency = _compute_global_gdr(self, others_lines, gdr)
+                total_gr += gdr_amount
                 _apply_global_gdr(self, gdr_amount, gdr_amount_currency, gr, gdr, taxes)
-
+        self.amount_untaxed_global_discount = total_gd
+        self.amount_untaxed_global_recargo = total_gr
     def _recompute_dynamic_lines(self, recompute_all_taxes=False, recompute_tax_base_amount=False):
         for invoice in self:
             if invoice.is_invoice(include_receipts=True):
-                # Compute cash rounding.
-                _logger.warning('is invoice')
                 invoice._recompute_global_gdr_lines()
 
         super(AccountMove, self)._recompute_dynamic_lines(recompute_all_taxes, recompute_tax_base_amount)
@@ -1110,7 +1136,7 @@ class AccountMove(models.Model):
         ):
             self._onchange_invoice_line_ids()
         for line in self.with_context(lang="es_CL").invoice_line_ids:
-            if not line.account_id:
+            if not line.account_id or not line.product_id:
                 continue
             if line.product_id.default_code == "NO_PRODUCT":
                 no_product = True

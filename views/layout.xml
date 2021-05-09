@@ -276,7 +276,7 @@
                         </thead>
                         <tbody class="invoice_tbody">
                             <tr
-                                t-foreach="o.invoice_line_ids.filtered('account_id')"
+                                t-foreach="o.invoice_line_ids.filtered('account_id', 'product_id')"
                                 t-as="l"
                                 style="max-height:8px;line-height:10px !important; font-size:12px !important;"
                             >
@@ -285,7 +285,7 @@
                                 </td>
                                 <td style="max-height:8px; line-height:10px !important;">
                                     <span t-field="l.quantity" />
-                                    <span t-field="l.uom_id" groups="uom.group_uom" />
+                                    <span t-field="l.product_uom_id" groups="uom.group_uom" />
                                 </td>
                                 <td style="max-height:8px; line-height:10px !important;">
                                     <span t-field="l.product_id.default_code" />
@@ -365,7 +365,7 @@
                                         </td>
                                         <td class="text-right">
                                             <span
-                                                t-esc="gdr.valor if gdr.gdr_move_type=='amount' else gdr.amount_untaxed_global_dr"
+                                                t-esc="gdr.valor if gdr.gdr_type=='amount' else gdr.amount_untaxed_global_dr"
                                                 t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"
                                             />
                                         </td>
