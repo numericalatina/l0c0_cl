@@ -156,14 +156,15 @@ class AccountMove(models.Model):
             ("NoEnviado", "No Enviado"),
             ("EnCola", "En cola de envío"),
             ("Enviado", "Enviado"),
+            ("EnProceso", "En Proceso"),
             ("Aceptado", "Aceptado"),
             ("Rechazado", "Rechazado"),
             ("Reparo", "Reparo"),
             ("Proceso", "Procesado"),
             ("Anulado", "Anulado"),
         ],
-        string="Resultado",
-        help="SII request result",
+        string="Estado SII",
+        help="Resultado del envío y Proceso del documento nn el SII",
         copy=False,
     )
     canceled = fields.Boolean(string="Canceled?", readonly=True, states={"draft": [("readonly", False)]},)
