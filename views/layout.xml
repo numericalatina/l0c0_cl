@@ -276,7 +276,7 @@
                         </thead>
                         <tbody class="invoice_tbody">
                             <tr
-                                t-foreach="o.invoice_line_ids.filtered('account_id', 'product_id')"
+                                t-foreach="o.invoice_line_ids.filtered(lambda line: line.account_id and line.product_id)"
                                 t-as="l"
                                 style="max-height:8px;line-height:10px !important; font-size:12px !important;"
                             >
