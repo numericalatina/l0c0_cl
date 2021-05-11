@@ -730,7 +730,6 @@ class AccountMove(models.Model):
         data = base64.b64encode(xml_intercambio)
         values = dict(
             name=filename,
-            datas_fname=filename,
             url=url_path,
             res_model="account.move",
             res_id=self.id,
