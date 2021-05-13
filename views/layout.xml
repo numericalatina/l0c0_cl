@@ -565,7 +565,7 @@
         name="l10n_cl_fe.invoice_cedible"
         file="l10n_cl_fe.report_invoice_cedible"
         attachment_use="True"
-        attachment="(object.state in ('open','paid')) and ('CED_'+(object.name or '').replace('/','')+'.pdf')"
+        attachment="(object.state == 'posted') and ('CED_'+(object.name or '').replace('/','')+'.pdf')"
     />
     <report
         string="Imprimir Copia y Cedible"
@@ -575,7 +575,7 @@
         name="l10n_cl_fe.report_invoice_and_cedible"
         file="l10n_cl_fe.report_invoice_and_cedible"
         attachment_use="True"
-        attachment="(object.state in ('open','paid')) and ('FyC_'+(object.name or '').replace('/','')+'.pdf')"
+        attachment="(object.state == 'posted') and ('FyC_'+(object.name or '').replace('/','')+'.pdf')"
     />
     <template id="report_ticket">
         <t t-call="web.basic_layout">
