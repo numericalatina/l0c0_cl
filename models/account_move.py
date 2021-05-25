@@ -114,6 +114,11 @@ class AccountMove(models.Model):
             r.journal_document_class_id = r._default_journal_document_class_id()
             r.use_documents = r.move_type in ["out_refund", "out_invoice"] and len(r.journal_id.journal_document_class_ids) > 0
 
+    def _default_use_documents(self):
+        if self._default_journal_document_class_id():
+            return True
+        return False
+
     document_class_ids = fields.Many2many(
         "sii.document_class", compute="get_dc_ids", string="Available Document Classes",
     )
@@ -181,7 +186,7 @@ class AccountMove(models.Model):
         readonly=True,
         states={"draft": [("readonly", False)]},
     )  # @TODO select 1 automático si es emisor 2Categoría
-    use_documents = fields.Boolean(string="Use Documents?", default=lambda self: len(self.journal_id.journal_document_class_ids) > 0,
+    use_documents = fields.Boolean(string="Use Documents?", default=lambda self: self._default_use_documents(),
                                    readonly=True,
                                    states={"draft": [("readonly", False)]},)
     referencias = fields.One2many(
