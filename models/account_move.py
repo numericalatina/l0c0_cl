@@ -282,6 +282,12 @@ class AccountMove(models.Model):
         compute='_compute_amount',
         inverse='_inverse_amount_total'
     )
+    sequence_number_next = fields.Integer(
+        compute='_get_sequence_number_next'
+    )
+    sequence_number_next_prefix = fields.Integer(
+        compute='_get_sequence_prefix'
+    )
 
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
@@ -710,6 +716,7 @@ class AccountMove(models.Model):
     @api.depends("state", "journal_id", "invoice_date", "document_class_id")
     def _get_sequence_prefix(self):
         for invoice in self:
+            invoice.sequence_number_next_prefix = ''
             if invoice.move_type in ['in_invoice']:
                 invoice.use_documents = False
                 invoice.journal_document_class_id = False
@@ -719,16 +726,13 @@ class AccountMove(models.Model):
                         invoice.journal_document_class_id = jdc
             if invoice.journal_document_class_id:
                 invoice.sequence_number_next_prefix = invoice.document_class_id.doc_code_prefix or ""
-            else:
-                super(AccountMove, self)._get_sequence_prefix()
 
     @api.depends("state", "journal_id", "document_class_id")
     def _get_sequence_number_next(self):
         for invoice in self:
+            invoice.sequence_number_next = 0
             if invoice.journal_document_class_id:
                 invoice.sequence_number_next = invoice.journal_document_class_id.sequence_id.number_next_actual
-            else:
-                super(AccountMove, self)._get_sequence_number_next()
 
     def _prepare_refund(
         self, invoice, invoice_date=None, description=None, journal_id=None, tipo_nota=61, mode="1"
