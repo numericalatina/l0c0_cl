@@ -701,7 +701,7 @@ class AccountMove(models.Model):
                 imps["exento"] += i["credit"] or i["debit"]
             else:
                 imps["otros_imps"] += i["credit"] or i["debit"]
-        imps["neto"] = self.amount - imps["otros_imps"] - imps["exento"] - imps["iva"]
+        imps["neto"] = self.amount_total - imps["otros_imps"] - imps["exento"] - imps["iva"]
         return imps
 
     @api.onchange("invoice_line_ids")
