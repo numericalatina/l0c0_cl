@@ -229,8 +229,10 @@ class UploadXMLWizard(models.TransientModel):
             "city": ciudad.text if ciudad is not None else city_id.name,
             "company_type": "company",
             "city_id": city_id.id,
+            "country_id": self.env.ref('base.cl').id,
+            "es_mipyme": False,
         }
-        if data.find("CorreoEmisor") is not None or data.find("CorreRecep") is not None:
+        if data.find("CorreoEmisor") is not None or data.find("CorreoRecep") is not None:
             partner.update(
                 {
                     "email": data.find("CorreoEmisor").text
@@ -241,6 +243,9 @@ class UploadXMLWizard(models.TransientModel):
                     else data.find("CorreoRecep").text,
                 }
             )
+            if '@sii.cl' in partner['dte_email'].lowe():
+                del partner['dte_email']
+                partner['es_mipyme'] = True
         return partner
 
     def _create_partner(self, data):
@@ -602,7 +607,7 @@ class UploadXMLWizard(models.TransientModel):
         )
         if not document:
             invoice.update({
-                "sii_xml_dte": "<DTE>%s</DTE>" % etree.tostring(documento),
+                "sii_xml_dte": "<DTE>%s</DTE>" % etree.tostring(documento).decode('ISO-8859-1'),
                 "invoice_origin": "XML Envío: " + name.decode(),
                 "sii_barcode": ted_string.decode(),
                 "invoice_date": FchEmis,
