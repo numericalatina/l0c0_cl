@@ -1845,7 +1845,7 @@ class AccountMove(models.Model):
             }
         ]
         try:
-            respuesta = fe.ingresar_reclamo_documento(datos)
+            respuesta = fe.ingreso_reclamo_documento(datos)
             key = "RUT%sT%sF%s" %(rut_emisor,
                                   tipo_dte, str(self.sii_document_number))
             self.claim_description = respuesta[key]
