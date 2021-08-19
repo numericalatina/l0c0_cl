@@ -73,7 +73,7 @@ class AccountMove(models.Model):
         if not self.env["ir.model"].search([("model", "=", "sii.document_class")]) or self.document_class_id:
             return False
         journal = self.env["account.move"].default_get(["journal_id"])["journal_id"]
-        default_type = self._context.get("move_type", "")
+        default_type = self._context.get("default_move_type", "")
         if not self.check_invoice_type(default_type) or default_type in ["in_invoice", "in_refund"]:
             return self.env["account.journal.sii_document_class"]
         dc_type = ["invoice"] if default_type in ["in_invoice", "out_invoice"] else ["credit_note", "debit_note"]
@@ -928,7 +928,7 @@ class AccountMove(models.Model):
             return self.env["account.journal"].browse(self._context.get("default_journal_id"))
         company_id = self._context.get("company_id", self.company_id.id or self.env.user.company_id.id)
         if self._context.get("honorarios", False):
-            inv_type = self._context.get("move_type", "out_invoice")
+            inv_type = self._context.get("default_move_type", "out_invoice")
             inv_types = inv_type if isinstance(inv_type, list) else [inv_type]
             domain = [
                 ("journal_document_class_ids.sii_document_class_id.document_letter_id.name", "=", "M"),
@@ -938,7 +938,7 @@ class AccountMove(models.Model):
             ]
             journal_id = self.env["account.journal"].search(domain, limit=1)
             return journal_id
-        inv_type = self._context.get("move_type", "out_invoice")
+        inv_type = self._context.get("default_move_type", "out_invoice")
         inv_types = inv_type if isinstance(inv_type, list) else [inv_type]
         domain = [
             ("move_type", "in", [TYPE2JOURNAL[ty] for ty in inv_types if ty in TYPE2JOURNAL]),
