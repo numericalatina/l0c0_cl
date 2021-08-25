@@ -7,7 +7,6 @@ from six import string_types
 from odoo import api, fields, models, tools
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
-from odoo.addons import decimal_precision as dp
 
 from .bigint import BigInt
 
