@@ -2,7 +2,7 @@
 <odoo>
     <data>
         <record id="electronic_consumo_folios_tree" model="ir.ui.view">
-            <field name="name">l10n_cl.libro_compra_venta.tree</field>
+            <field name="name">l10n_cl_fe.libro_compra_venta.tree</field>
             <field name="model">account.move.consumo_folios</field>
             <field name="arch" type="xml">
                 <tree decoration-info="state == 'draft'" decoration-muted="state == 'cancel'">
@@ -29,23 +29,24 @@
                 <search string="Buscar Consumo de Folios">
                     <field name="name" />
                     <field name="fecha_inicio" />
-                    <filter name="filter_by_process" string="Procesado" domain="[('state','=','Proceso')]" />
-                    <filter name="filter_by_rejected" string="Rechazado" domain="[('state','=', 'Rechazado')]" />
-                    <filter name="filter_by_cancel" string="Anulado" domain="[('state','=','Anulado')]" />
-                    <filter name="filter_by_done" string="Posted" domain="[('state','=','done')]" />
+                    <field name="state" />
+                    <filter name="filter_by_process" string="Procesado" domain="[('state', '=','Proceso')]" />
+                    <filter name="filter_by_rejected" string="Rechazado" domain="[('state', '=', 'Rechazado')]" />
+                    <filter name="filter_by_cancel" string="Anulado" domain="[('state', '=', 'Anulado')]" />
+                    <filter name="filter_by_done" string="Posted" domain="[('state', '=', 'done')]" />
                     <group expand="0" string="Group By">
                         <filter
                             name="group_by_fecha"
                             string="Consumos Mensuales Válidos"
                             domain="[('state', '=', 'Proceso')]"
-                            context="{'group_by':'fecha_inicio'}"
+                            context="{'group_by': 'fecha_inicio'}"
                         />
                     </group>
                 </search>
             </field>
         </record>
         <record id="view_electronic_consumo_folios_form" model="ir.ui.view">
-            <field name="name">l10n_cl.consumo_folios.form</field>
+            <field name="name">l10n_cl_fe.consumo_folios.form</field>
             <field name="model">account.move.consumo_folios</field>
             <field name="arch" type="xml">
                 <form>
@@ -154,20 +155,17 @@
             <field name="res_model">account.move.consumo_folios</field>
             <field name="view_mode">tree,form</field>
             <field name="view_id" ref="electronic_consumo_folios_tree" />
+            <field name="search_view_id" ref="view_cf_filter" />
             <field name="help" type="html">
-                <p class="oe_view_nocontent_create">
-          Click to create a journal entry.
-        </p>
-                <p>
-          A journal entry consists of several journal items, each of
-          which is either a debit or a credit transaction.
-        </p>
-                <p>
-          Odoo automatically creates one journal entry per accounting
-          document: invoice, refund, vendor payment, bank statements,
-          etc. So, you should record journal entries manually only/mainly
-          for miscellaneous operations.
-        </p>
+              <p class="oe_view_nocontent_create">
+                Click para Crear un Consumo de Folios.
+              </p>
+              <p>
+                El Consumo de Folios concentra los documentos de tipo 39, 41, y NC boletas para el día seleccionado
+              </p>
+              <p>
+                Los documentos son seleccionados automáticamente una vez seleccionado el día de inicio y final
+              </p>
             </field>
         </record>
 

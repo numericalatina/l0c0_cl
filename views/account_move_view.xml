@@ -2,7 +2,7 @@
 <odoo>
     <data>
         <record id="view_account_invoice_filter" model="ir.ui.view">
-            <field name="name">l10n_cl.invoice.search</field>
+            <field name="name">l10n_cl_fe.invoice.search</field>
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_account_invoice_filter" />
             <field name="arch" type="xml">
@@ -21,7 +21,7 @@
             </field>
         </record>
         <record id="invoice_tree" model="ir.ui.view">
-            <field name="name">l10n_cl.invoice.tree</field>
+            <field name="name">l10n_cl_fe.invoice.tree</field>
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_invoice_tree" />
             <field name="arch" type="xml">

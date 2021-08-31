@@ -2,7 +2,7 @@
 <odoo>
     <data>
         <record id="electronic_boleta_voucher_tree" model="ir.ui.view">
-            <field name="name">l10n_cl.reporte.boletas.con.voucher.tree</field>
+            <field name="name">l10n_cl_fe.reporte.boletas.con.voucher.tree</field>
             <field name="model">account.move.boleta_voucher</field>
             <field name="arch" type="xml">
               <tree decoration-info="state == 'draft'" decoration-muted="state == 'cancel'">
@@ -22,7 +22,7 @@
             </field>
         </record>
 
-        <record id="view_cf_filter" model="ir.ui.view">
+        <record id="view_boleta_filter" model="ir.ui.view">
           <field name="name">account.move.boleta_voucher.list.select</field>
           <field name="model">account.move.boleta_voucher</field>
           <field name="arch" type="xml">
@@ -37,7 +37,7 @@
         </record>
 
         <record id="view_electronic_boleta_voucher_form" model="ir.ui.view">
-            <field name="name">l10n_cl.boleta_voucher.form</field>
+            <field name="name">l10n_cl_fe.boleta_voucher.form</field>
             <field name="model">account.move.boleta_voucher</field>
             <field name="arch" type="xml">
               <form>
