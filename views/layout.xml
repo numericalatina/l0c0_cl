@@ -417,7 +417,7 @@
                                         />
                                     </td>
                                 </tr>
-                                <t t-foreach="o.line_ids.filtered(lambda line: line.tax_line_id)" t-as="t">
+                                <t t-foreach="o.line_ids.filtered(lambda line: line.tax_line_id and line.name[:6] != 'RET - ')" t-as="t">
                                     <tr
                                         t-if="not o._es_boleta() or (o._es_boleta() and t.tax_line_id.sii_code in [14, 15, 17]) "
                                         style="max-height:11px; font-size:12px !important;"
@@ -435,7 +435,7 @@
                                     <t t-if="t.tax_line_id.credec" t-set="credec" t-value="True" />
                                 </t>
 
-                                <tr t-if="o.amount_retencion" class="border-black" style="max-height:12px; font-size:12px !important;">
+                                <tr t-if="o.amount_retencion" style="max-height:12px; font-size:12px !important;">
                                     <td>
                                         <strong t-esc="'Crédito Empresa Constructora' if credec else 'Monto Retención'" />
                                     </td>
