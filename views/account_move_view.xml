@@ -141,6 +141,10 @@
                         attrs="{'invisible':[('amount_untaxed_global_recargo','=',0)]}"
                     />
                 </field>
+                <field name="amount_by_group" position="after">
+                  <field name="amount_retencion"
+                    attrs="{'invisible': [('amount_retencion', '&lt;=', 0)]}"/>
+                </field>
                 <field name="narration" position="after">
                     <field
                         name="global_descuentos_recargos"

@@ -3,10 +3,11 @@ import logging
 from datetime import date, datetime, timedelta
 import pytz
 from six import string_types
-
+from collections import defaultdict
 from odoo import api, fields, models, tools
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
+from odoo.tools.misc import formatLang, format_date, get_lang
 
 from .bigint import BigInt
 
@@ -336,9 +337,8 @@ class AccountMove(models.Model):
             total = 0.0
             total_currency = 0.0
             currencies = set()
-            amount_retencion = 0
-            amount_retencion_currency = 0
-
+            total_retencion = 0
+            total_retencion_currency = 0
             for line in move.line_ids:
                 if line.currency_id and line in move._get_lines_onchange_currency():
                     currencies.add(line.currency_id)
@@ -356,15 +356,11 @@ class AccountMove(models.Model):
                         # Tax amount.
                         total_tax += line.balance
                         total_tax_currency += line.amount_currency
-                        if line.tax_line_id.sii_type in ['R', 'RH']:
-                            amount_retencion += line.balance
-                            amount_retencion_currency += line.amount_currency
-                            if line.tax_line_id.sii_type in ['RH']:
-                                total -= line.balance
-                                total_currency -= line.amount_currency
-                        else:
-                            total += line.balance
-                            total_currency += line.amount_currency
+                        total += line.balance
+                        total_currency += line.amount_currency
+                        if line.name[:6] == 'RET - ':
+                            total_retencion += (-line.balance if line.balance > 0 else line.balance)
+                            total_retencion_currency += (-line.amount_currency if line.amount_currency > 0 else line.amount_currency)
                     elif line.account_id.user_type_id.type in ('receivable', 'payable'):
                         # Residual amount.
                         total_to_pay += line.balance
@@ -382,7 +378,7 @@ class AccountMove(models.Model):
                 sign = -1
             move.amount_untaxed = sign * (total_untaxed_currency if len(currencies) == 1 else total_untaxed)
             move.amount_tax = sign * (total_tax_currency if len(currencies) == 1 else total_tax)
-            #move.amount_retencion = sign * (amount_retencion_currency if len(currencies) == 1 else amount_retencion)
+            move.amount_retencion = sign * (total_retencion_currency if len(currencies) == 1 else total_retencion)
             move.amount_total = sign * (total_currency if len(currencies) == 1 else total)
             move.amount_residual = -sign * (total_residual_currency if len(currencies) == 1 else total_residual)
             move.amount_untaxed_signed = -total_untaxed
@@ -487,6 +483,8 @@ class AccountMove(models.Model):
         for line in self.line_ids.filtered('tax_repartition_line_id'):
             grouping_dict = self._get_tax_grouping_key_from_tax_line(line)
             grouping_key = _serialize_tax_grouping_key(grouping_dict)
+            if 'RET - ' == line.name[:6]:
+                grouping_key = 'ret-' + grouping_key
             if grouping_key in taxes_map:
                 # A line with the same key does already exist, we only need one
                 # to modify it; we have to drop this one.
@@ -497,7 +495,6 @@ class AccountMove(models.Model):
                     'amount': 0.0,
                     'tax_base_amount': 0.0,
                     'grouping_dict': False,
-                    'amount_retencion': 0.0,
                 }
         if not recompute_tax_base_amount:
             self.line_ids -= to_remove
@@ -532,18 +529,25 @@ class AccountMove(models.Model):
                     'amount': 0.0,
                     'tax_base_amount': 0.0,
                     'grouping_dict': False,
-                    'amount_retencion': 0.0,
                 })
                 taxes_map_entry['amount'] += tax_vals['amount']
-                taxes_map_entry['amount_retencion']  += tax_vals['retencion']
                 taxes_map_entry['tax_base_amount'] += self._get_base_amount_to_display(tax_vals['base'], tax_repartition_line, tax_vals['group'])
                 taxes_map_entry['grouping_dict'] = grouping_dict
+                if tax_vals['retencion']:
+                    taxes_map_entry_ret =taxes_map.setdefault('ret-' + grouping_key, {
+                        'tax_line': None,
+                        'amount': 0.0,
+                        'tax_base_amount': 0.0,
+                        'grouping_dict': False,
+                        'retencion': True
+                    })
+                    taxes_map_entry_ret['amount'] += -tax_vals['retencion']
+                    taxes_map_entry_ret['tax_base_amount'] = taxes_map_entry['tax_base_amount']
+                    taxes_map_entry_ret['grouping_dict'] = grouping_dict
             if not recompute_tax_base_amount:
                 line.tax_exigible = tax_exigible
-        amount_retencion = 0
         # ==== Process taxes_map ====
         for taxes_map_entry in taxes_map.values():
-            amount_retencion += taxes_map_entry['amount_retencion']
             # The tax line is no longer used in any base lines, drop it.
             if taxes_map_entry['tax_line'] and not taxes_map_entry['grouping_dict']:
                 if not recompute_tax_base_amount:
@@ -591,7 +595,7 @@ class AccountMove(models.Model):
                 tax = tax_repartition_line.invoice_tax_id or tax_repartition_line.refund_tax_id
                 taxes_map_entry['tax_line'] = create_method({
                     **to_write_on_line,
-                    'name': tax.name,
+                    'name': ("RET - " + tax.name if taxes_map_entry.get('retencion') else tax.name),
                     'move_id': self.id,
                     'partner_id': line.partner_id.id,
                     'company_id': line.company_id.id,
@@ -605,7 +609,61 @@ class AccountMove(models.Model):
             if in_draft_mode:
                 taxes_map_entry['tax_line'].update(taxes_map_entry['tax_line']._get_fields_onchange_balance(force_computation=True))
 
-        self.amount_retencion = amount_retencion
+    @api.depends('line_ids.price_subtotal', 'line_ids.tax_base_amount', 'line_ids.tax_line_id', 'partner_id', 'currency_id')
+    def _compute_invoice_taxes_by_group(self):
+        for move in self:
+
+            # Not working on something else than invoices.
+            if not move.is_invoice(include_receipts=True):
+                move.amount_by_group = []
+                continue
+
+            lang_env = move.with_context(lang=move.partner_id.lang).env
+            balance_multiplicator = -1 if move.is_inbound() else 1
+
+            tax_lines = move.line_ids.filtered(lambda m: m.tax_line_id and m.name[:6] != 'RET - ')
+            base_lines = move.line_ids.filtered('tax_ids')
+
+            tax_group_mapping = defaultdict(lambda: {
+                'base_lines': set(),
+                'base_amount': 0.0,
+                'tax_amount': 0.0,
+            })
+
+            # Compute base amounts.
+            for base_line in base_lines:
+                base_amount = balance_multiplicator * (base_line.amount_currency if base_line.currency_id else base_line.balance)
+
+                for tax in base_line.tax_ids.flatten_taxes_hierarchy():
+
+                    if base_line.tax_line_id.tax_group_id == tax.tax_group_id:
+                        continue
+
+                    tax_group_vals = tax_group_mapping[tax.tax_group_id]
+                    if base_line not in tax_group_vals['base_lines']:
+                        tax_group_vals['base_amount'] += base_amount
+                        tax_group_vals['base_lines'].add(base_line)
+
+            # Compute tax amounts.
+            for tax_line in tax_lines:
+                tax_amount = balance_multiplicator * (tax_line.amount_currency if tax_line.currency_id else tax_line.balance)
+                tax_group_vals = tax_group_mapping[tax_line.tax_line_id.tax_group_id]
+                tax_group_vals['tax_amount'] += tax_amount
+
+            tax_groups = sorted(tax_group_mapping.keys(), key=lambda x: x.sequence)
+            amount_by_group = []
+            for tax_group in tax_groups:
+                tax_group_vals = tax_group_mapping[tax_group]
+                amount_by_group.append((
+                    tax_group.name,
+                    tax_group_vals['tax_amount'],
+                    tax_group_vals['base_amount'],
+                    formatLang(lang_env, tax_group_vals['tax_amount'], currency_obj=move.currency_id),
+                    formatLang(lang_env, tax_group_vals['base_amount'], currency_obj=move.currency_id),
+                    len(tax_group_mapping),
+                    tax_group.id
+                ))
+            move.amount_by_group = amount_by_group
 
     @api.depends('posted_before', 'state', 'journal_id', 'date', 'document_class_id', 'sii_document_number')
     def _compute_name(self):
@@ -1350,7 +1408,7 @@ class AccountMove(models.Model):
         # Totales['VlrPagar']
         return Totales
 
-    def _totales_normal(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, MntTotal=0, MntBase=0):
+    def _totales_normal(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, MntTotal=0, MntBase=0, Credec=0):
         Totales = {}
         if MntNeto > 0:
             if currency_id != self.currency_id:
@@ -1367,6 +1425,8 @@ class AccountMove(models.Model):
             if currency_id != self.currency_id:
                 IVA = currency_id._convert(IVA, self.currency_id, self.company_id, self.invoice_date)
             Totales["IVA"] = currency_id.round(IVA)
+            if Credec:
+                Totales["CredEC"] = currency_id.round(Credec)
         if currency_id != self.currency_id:
             MntTotal = currency_id._convert(MntTotal, self.currency_id, self.company_id, self.invoice_date)
         Totales["MntTotal"] = currency_id.round(MntTotal)
@@ -1400,17 +1460,15 @@ class AccountMove(models.Model):
         elif self.amount_untaxed and self.amount_untaxed != 0:
             IVA = False
             for t in self.line_ids:
-                if t.tax_line_id.sii_code in [14, 15]:
+                if t.tax_line_id.sii_code in [14, 15] and t.name[:6] != 'RET - ':
                     IVA = t
                 for tl in t.tax_ids:
                     if tl.sii_code in [14, 15]:
                         MntNeto += t.balance
                     if tl.sii_code in [17]:
                         MntBase += t.balance  # @TODO Buscar forma de calcular la base para faenamiento
-        if self.amount_tax == 0 and MntExe > 0 and not self._es_exento():
+        if self.amount_tax == 0 and MntExe > 0 and not self._es_exento() and self.document_class_id.sii_code not in [60, 61, 55, 56]:
             raise UserError("Debe ir almenos un producto afecto")
-        if MntExe > 0:
-            MntExe = MntExe
         if IVA:
             TasaIVA = round(IVA.tax_line_id.amount, 2)
             MntIVA = IVA.balance
@@ -1421,7 +1479,7 @@ class AccountMove(models.Model):
         MntTotal = self.amount_total
         if no_product:
             MntTotal = 0
-        return MntExe, (sign * (MntNeto)), (sign * (MntIVA)), TasaIVA, MntTotal, (sign * (MntBase))
+        return MntExe, (sign * (MntNeto)), (sign * (MntIVA)), TasaIVA, MntTotal, (sign * (MntBase)), self.amount_retencion
 
     def currency_base(self):
         return self.env.ref("base.CLP")
@@ -1438,8 +1496,8 @@ class AccountMove(models.Model):
         Encabezado["Receptor"] = self._receptor()
         currency_base = self.currency_base()
         another_currency_id = self.currency_target()
-        MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase = self._totales(MntExe, no_product, taxInclude)
-        Encabezado["Totales"] = self._totales_normal(currency_base, MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase)
+        MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase, CredEC = self._totales(MntExe, no_product, taxInclude)
+        Encabezado["Totales"] = self._totales_normal(currency_base, MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase, CredEC)
         if another_currency_id:
             Encabezado["OtraMoneda"] = self._totales_otra_moneda(
                 another_currency_id, MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase

@@ -432,7 +432,20 @@
                                             />
                                         </td>
                                     </tr>
+                                    <t t-if="t.tax_line_id.credec" t-set="credec" t-value="True" />
                                 </t>
+
+                                <tr t-if="o.amount_retencion" class="border-black" style="max-height:12px; font-size:12px !important;">
+                                    <td>
+                                        <strong t-esc="'Crédito Empresa Constructora' if credec else 'Monto Retención'" />
+                                    </td>
+                                    <td class="text-right">
+                                        <span
+                                            t-field="o.amount_retencion"
+                                            t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"
+                                        />
+                                    </td>
+                                </tr>
 
                                 <tr class="border-black" style="max-height:12px; font-size:12px !important;">
                                     <td>
