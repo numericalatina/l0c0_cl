@@ -25,7 +25,7 @@
                 <t t-set="partner_id" t-value="company.partner_id" />
                 <t t-set="commercial_partner_id" t-value="company.partner_id" />
                 <t t-set="company" t-value="o.partner_id" />
-                <t t-set="logo" t-value="o.partner_id.image" />
+                <t t-set="logo" t-value="o.partner_id.image_1920" />
             </t>
             <div class="header">
                 <div class="row">
