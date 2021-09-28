@@ -85,7 +85,7 @@ class AccountInvoiceLine(models.Model):
 
     def get_tax_detail(self):
         boleta = self.move_id.document_class_id.es_boleta()
-        nc_boleta = self.move_id._nc_boleta()
+        nc_boleta = self.move_id.es_nc_boleta()
         amount_total = 0
         details = dict(
             impuestos=[],

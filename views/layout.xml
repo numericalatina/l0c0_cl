@@ -336,8 +336,8 @@
                                 <br />
                                 Resolución <t t-esc="o.company_id.dte_resolution_number" /> de <t
                                             t-esc="o.company_id.dte_resolution_date.year"
-                                        /> Verifique documento en: www.sii.cl <t t-if="not o._es_boleta()">o en </t><t
-                                            t-if="o._es_boleta()"
+                                        /> Verifique documento en: www.sii.cl <t t-if="not o.es_boleta()">o en </t><t
+                                            t-if="o.es_boleta()"
                                             t-esc="'%s/boleta/%s' % (o.company_id.website, o.sii_document_number)"
                                         />
                               </p>
@@ -419,7 +419,7 @@
                                 </tr>
                                 <t t-foreach="o.line_ids.filtered(lambda line: line.tax_line_id and line.name[:6] != 'RET - ')" t-as="t">
                                     <tr
-                                        t-if="not o._es_boleta() or (o._es_boleta() and t.tax_line_id.sii_code in [14, 15, 17]) "
+                                        t-if="not o.es_boleta() or (o.es_boleta() and t.tax_line_id.sii_code in [14, 15, 17]) "
                                         style="max-height:11px; font-size:12px !important;"
                                     >
                                         <td>
@@ -668,7 +668,7 @@
                                 <t t-foreach="o.tax_line_ids" t-as="t">
                                     <tr
                                         class="border-black"
-                                        t-if="not o._es_boleta() or (o._es_boleta() and ( t.tax_id.amount == 0 or t.tax_id.sii_code in [14, 15, 17]))"
+                                        t-if="not o.es_boleta() or (o.es_boleta() and ( t.tax_id.amount == 0 or t.tax_id.sii_code in [14, 15, 17]))"
                                     >
                                         <td>
                                             <t t-esc="t.tax_id.description" />
@@ -732,8 +732,8 @@
                         <br />
                         Resolución <t t-esc='o.company_id.dte_resolution_number' /> de <t
                                     t-esc='o.company_id.dte_resolution_date.year'
-                                /> Verifique documento en: www.sii.cl <t t-if="not o._es_boleta()">o en </t><t
-                                    t-if="o._es_boleta()"
+                                /> Verifique documento en: www.sii.cl <t t-if="not o.es_boleta()">o en </t><t
+                                    t-if="o.es_boleta()"
                                     t-esc="'%s/boleta/%s' % (o.company_id.website, o.sii_document_number)"
                                 />
                       </p>
@@ -948,7 +948,7 @@
                             </value></right>
                     </t>
                 </line>
-                <line t-if="doc.amount_untaxed and not doc._es_boleta()" class='total'>
+                <line t-if="doc.amount_untaxed and not doc.es_boleta()" class='total'>
                     <left>
                         <pre>        SubTotal</pre>
                     </left>
@@ -962,7 +962,7 @@
                     </left>
                     <t t-foreach="doc.tax_line_ids" t-as="tl">
                         <t
-                            t-if="not doc._es_boleta() or (doc._es_boleta() and ( tl.tax_id.amount == 0 or tl.tax_id.sii_code in [14, 15, 17]))"
+                            t-if="not doc.es_boleta() or (doc.es_boleta() and ( tl.tax_id.amount == 0 or tl.tax_id.sii_code in [14, 15, 17]))"
                         >
                             <right><t t-esc="tl.tax_id.description" />: $ <value value-decimals='0'>
                                     <t t-esc='tl.amount' />
@@ -986,8 +986,8 @@
                     <br />
                     Resolución <t t-esc="doc.company_id.dte_resolution_number" /> de <t
                                 t-esc="doc.company_id.dte_resolution_date.year"
-                            /> Verifique documento en: www.sii.cl <t t-if="not doc._es_boleta()">o en </t><t
-                                t-if="doc._es_boleta()"
+                            /> Verifique documento en: www.sii.cl <t t-if="not doc.es_boleta()">o en </t><t
+                                t-if="doc.es_boleta()"
                                 t-esc="'%s/boleta/%s' % (doc.company_id.website, doc.sii_document_number)"
                             />
                   </p>

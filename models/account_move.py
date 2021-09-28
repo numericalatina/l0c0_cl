@@ -1246,16 +1246,14 @@ class AccountMove(models.Model):
             )
 
 
-    def _es_boleta(self):
+    def es_boleta(self):
         return self.document_class_id.es_boleta()
 
 
-    def _nc_boleta(self):
+    def es_nc_boleta(self):
         if not self.referencias or self.move_type != "out_refund":
             return False
-        for r in self.referencias:
-            return r.sii_referencia_TpoDocRef.es_nc_boleta()
-        return False
+        return any(r.sii_referencia_TpoDocRef.es_boleta() for r in self.referencias)
 
     def _actecos_emisor(self):
         actecos = []
@@ -1270,31 +1268,31 @@ class AccountMove(models.Model):
         IdDoc["TipoDTE"] = self.document_class_id.sii_code
         IdDoc["Folio"] = self.get_folio()
         IdDoc["FchEmis"] = self.invoice_date.strftime("%Y-%m-%d")
-        if self._es_boleta():
+        if self.es_boleta():
             IdDoc["IndServicio"] = 3  # @TODO agregar las otras opciones a la fichade producto servicio
-        if self.ticket and not self._es_boleta():
+        if self.ticket and not self.es_boleta():
             IdDoc["TpoImpresion"] = "T"
         if self.ind_servicio:
             IdDoc["IndServicio"] = self.ind_servicio
         # todo: forma de pago y fecha de vencimiento - opcional
-        if taxInclude and MntExe == 0 and not self._es_boleta():
+        if taxInclude and MntExe == 0 and not self.es_boleta():
             IdDoc["MntBruto"] = 1
-        if not self._es_boleta():
+        if not self.es_boleta():
             IdDoc["FmaPago"] = self.forma_pago or 1
-        if not taxInclude and self._es_boleta():
+        if not taxInclude and self.es_boleta():
             IdDoc["IndMntNeto"] = 2
-        # if self._es_boleta():
+        # if self.es_boleta():
         # Servicios periódicos
         #    IdDoc['PeriodoDesde'] =
         #    IdDoc['PeriodoHasta'] =
-        if not self._es_boleta() and self.invoice_date_due:
+        if not self.es_boleta() and self.invoice_date_due:
             IdDoc["FchVenc"] = self.invoice_date_due.strftime("%Y-%m-%d") or datetime.strftime(datetime.now(), "%Y-%m-%d")
         return IdDoc
 
     def _emisor(self):
         Emisor = {}
         Emisor["RUTEmisor"] = self.company_id.partner_id.rut()
-        if self._es_boleta():
+        if self.es_boleta():
             Emisor["RznSocEmisor"] = self._acortar_str(self.company_id.partner_id.name, 100)
             Emisor["GiroEmisor"] = self._acortar_str(self.company_id.activity_description.name, 80)
         else:
@@ -1325,15 +1323,15 @@ class AccountMove(models.Model):
     def _receptor(self):
         Receptor = {}
         commercial_partner_id = self.commercial_partner_id or self.partner_id.commercial_partner_id
-        if not commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
+        if not commercial_partner_id.vat and not self.es_boleta() and not self.es_nc_boleta():
             raise UserError("Debe Ingresar RUT Receptor")
-        # if self._es_boleta():
+        # if self.es_boleta():
         #    Receptor['CdgIntRecep']
         Receptor["RUTRecep"] = commercial_partner_id.rut()
         Receptor["RznSocRecep"] = self._acortar_str(commercial_partner_id.name, 100)
         if not self.partner_id or Receptor["RUTRecep"] == "66666666-6":
             return Receptor
-        if not self._es_boleta() and not self._nc_boleta() and self.move_type not in ["in_invoice", "in_refund"]:
+        if not self.es_boleta() and not self.es_nc_boleta() and self.move_type not in ["in_invoice", "in_refund"]:
             GiroRecep = self.acteco_id.name or commercial_partner_id.activity_description.name
             if not GiroRecep:
                 raise UserError(_("Seleccione giro del partner"))
@@ -1347,7 +1345,7 @@ class AccountMove(models.Model):
             or commercial_partner_id.dte_email
             or self.partner_id.email
             or self.partner_id.dte_email
-        ) and not self._es_boleta():
+        ) and not self.es_boleta():
             Receptor["CorreoRecep"] = (
                 commercial_partner_id.dte_email
                 or self.partner_id.dte_email
@@ -1357,8 +1355,8 @@ class AccountMove(models.Model):
         street_recep = self.partner_id.street or commercial_partner_id.street or False
         if (
             not street_recep
-            and not self._es_boleta()
-            and not self._nc_boleta()
+            and not self.es_boleta()
+            and not self.es_nc_boleta()
             and self.move_type not in ["in_invoice", "in_refund"]
         ):
             # or self.indicador_servicio in [1, 2]:
@@ -1369,8 +1367,8 @@ class AccountMove(models.Model):
         cmna_recep = self.partner_id.city_id.name or commercial_partner_id.city_id.name
         if (
             not cmna_recep
-            and not self._es_boleta()
-            and not self._nc_boleta()
+            and not self.es_boleta()
+            and not self.es_nc_boleta()
             and self.move_type not in ["in_invoice", "in_refund"]
         ):
             raise UserError("Debe Ingresar Comuna del cliente")
@@ -1506,7 +1504,7 @@ class AccountMove(models.Model):
 
     def _validaciones_caf(self, caf):
         commercial_partner_id = self.commercial_partner_id or self.partner_id.commercial_partner_id
-        if not commercial_partner_id.vat and not self._es_boleta() and not self._nc_boleta():
+        if not commercial_partner_id.vat and not self.es_boleta() and not self.es_nc_boleta():
             raise UserError(_("Fill Partner VAT"))
         timestamp = self.time_stamp()
         invoice_date = self.invoice_date
@@ -1522,7 +1520,7 @@ class AccountMove(models.Model):
         if not self.invoice_line_ids or not self.invoice_line_ids[0].tax_ids:
             return False
         tax = self.invoice_line_ids[0].tax_ids[0]
-        if tax.price_include or (not tax.sii_detailed and (self._es_boleta() or self._nc_boleta())):
+        if tax.price_include or (not tax.sii_detailed and (self.es_boleta() or self.es_nc_boleta())):
             return True
         return False
 
@@ -1560,7 +1558,7 @@ class AccountMove(models.Model):
                 lines['IndExe'] = details['IndExe']
             # if line.product_id.move_type == 'events':
             #   lines['ItemEspectaculo'] =
-            #            if self._es_boleta():
+            #            if self.es_boleta():
             #                lines['RUTMandante']
             lines["NmbItem"] = self._acortar_str(line.product_id.name, 80)  #
             lines["DscItem"] = self._acortar_str(line.name, 1000)  # descripción más extenza
@@ -1677,12 +1675,12 @@ class AccountMove(models.Model):
         ref_lines = []
         if self._context.get("set_pruebas", False):
             RazonRef = "CASO"
-            if not self._es_boleta() and n_atencion:
+            if not self.es_boleta() and n_atencion:
                 RazonRef += " " + n_atencion
             RazonRef += "-" + str(self.sii_batch_number)
             ref_line = {}
             ref_line["NroLinRef"] = lin_ref
-            if self._es_boleta():
+            if self.es_boleta():
                 ref_line["CodRef"] = "SET"
             else:
                 ref_line["TpoDocRef"] = "SET"
@@ -1695,7 +1693,7 @@ class AccountMove(models.Model):
             for ref in self.referencias:
                 ref_line = {}
                 ref_line["NroLinRef"] = lin_ref
-                if not self._es_boleta():
+                if not self.es_boleta():
                     if ref.sii_referencia_TpoDocRef:
                         ref_line["TpoDocRef"] = (
                             self._acortar_str(ref.sii_referencia_TpoDocRef.doc_code_prefix, 3)
@@ -1707,7 +1705,7 @@ class AccountMove(models.Model):
                 if ref.sii_referencia_CodRef not in ["", "none", False]:
                     ref_line["CodRef"] = ref.sii_referencia_CodRef
                 ref_line["RazonRef"] = ref.motivo
-                if self._es_boleta():
+                if self.es_boleta():
                     ref_line['CodVndor'] = self.user_id.id
                     ref_lines["CodCaja"] = self.journal_id.point_of_sale_id.name
                 ref_lines.append(ref_line)
@@ -1767,9 +1765,9 @@ class AccountMove(models.Model):
             # será recahazada la guía porque debe estar declarada la factura primero
             if not r.sii_batch_number or r.sii_batch_number == 0:
                 r.sii_batch_number = batch
-            if r._es_boleta():
+            if r.es_boleta():
                 api = True
-            if r.sii_batch_number != 0 and r._es_boleta():
+            if r.sii_batch_number != 0 and r.es_boleta():
                 for i in grupos.keys():
                     if i not in [39, 41]:
                         raise UserError(
@@ -1835,7 +1833,7 @@ class AccountMove(models.Model):
         docs = {}
         api = False
         for r in self:
-            api = r._es_boleta()
+            api = r.es_boleta()
             if r.sii_xml_request.state not in ["Aceptado", "Rechazado"]:
                 continue
             docs.setdefault(r.document_class_id.sii_code, [])
