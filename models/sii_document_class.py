@@ -37,11 +37,6 @@ class SIIDocumentClass(models.Model):
             return True
         return False
 
-    def es_nc_boleta(self):
-        if self.sii_code in [35, 38, 39, 41, 70, 71]:
-            return True
-        return False
-
     def es_nc_exportacion(self):
         return self.sii_code in [111, 112]
 
