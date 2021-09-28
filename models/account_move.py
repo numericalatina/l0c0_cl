@@ -1245,10 +1245,8 @@ class AccountMove(models.Model):
                 }
             )
 
-
     def es_boleta(self):
         return self.document_class_id.es_boleta()
-
 
     def es_nc_boleta(self):
         if not self.referencias or self.move_type != "out_refund":

@@ -272,12 +272,12 @@ class ConsumoFolios(models.Model):
         self.fecha_final = self.fecha_inicio
         self.move_ids = self.env["account.move"].search(
                 [
-                    ("document_class_id.sii_code", "in", [39, 41]),
+                    ("document_class_id.sii_code", "in", [39, 41, 61]),
                     ("invoice_date", "=", self.fecha_inicio),
                     ("company_id", "=", self.company_id.id),
                     ("sii_document_number", 'not in', [0, False]),
                 ]
-            ).filtered(lambda a: a.is_invoice())
+            ).filtered(lambda a: a.is_invoice() and (a.es_boleta() or a.es_nc_boleta()))
         consumos = self.search_count(
             [
                 ("fecha_inicio", "=", self.fecha_inicio),
