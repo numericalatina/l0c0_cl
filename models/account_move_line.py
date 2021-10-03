@@ -16,6 +16,9 @@ class AccountInvoiceLine(models.Model):
     is_gr_line = fields.Boolean(
         string="Es Línea Recargo Global"
     )
+    is_retention = fields.Boolean(
+        string="ES Retención"
+    )
 
     @api.onchange("discount", "price_unit", "quantity")
     def set_discount_amount(self):

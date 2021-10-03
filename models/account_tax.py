@@ -287,10 +287,6 @@ class SiiTax(models.Model):
             # the right total
             subsequent_taxes = self.env['account.tax']
             subsequent_tags = self.env['account.account.tag']
-            tax_amount_retencion = 0
-            if tax.sii_type in ["R", "RH"]:
-                tax_amount_retencion = tax._compute_amount_ret(base, price_unit, quantity, product, partner, uom_id)
-                tax_amount_retencion = round(tax_amount_retencion, precision_rounding=prec)
             if tax.include_base_amount:
                 subsequent_taxes = taxes[i+1:]
                 subsequent_tags = subsequent_taxes.get_tax_tags(is_refund, 'base')
@@ -307,18 +303,20 @@ class SiiTax(models.Model):
             total_rounding_error = round(factorized_tax_amount - sum(repartition_line_amounts), precision_rounding=prec)
             nber_rounding_steps = int(abs(total_rounding_error / currency.rounding))
             rounding_error = round(nber_rounding_steps and total_rounding_error / nber_rounding_steps or 0.0, precision_rounding=prec)
-
+            tax_amount_retencion = 0
             for repartition_line, line_amount in zip(tax_repartition_lines, repartition_line_amounts):
 
                 if nber_rounding_steps:
                     line_amount += rounding_error
                     nber_rounding_steps -= 1
-
+                es_retencion = repartition_line.sii_type in ['R']
+                if es_retencion:
+                    tax_amount_retencion += (sign * line_amount)
                 taxes_vals.append({
                     'id': tax.id,
                     'name': partner and tax.with_context(lang=partner.lang).name or tax.name,
                     'amount': sign * line_amount,
-                    'retencion': sign * tax_amount_retencion,
+                    'is_retention': es_retencion,
                     'base': round(sign * base, precision_rounding=prec),
                     'sequence': tax.sequence,
                     'account_id': tax.cash_basis_transition_account_id.id if tax.tax_exigibility == 'on_payment' else repartition_line.account_id.id,

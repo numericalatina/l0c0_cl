@@ -358,9 +358,14 @@ class AccountMove(models.Model):
                         total_tax_currency += line.amount_currency
                         total += line.balance
                         total_currency += line.amount_currency
-                        if line.name[:6] == 'RET - ':
-                            total_retencion += (-line.balance if line.balance > 0 else line.balance)
-                            total_retencion_currency += (-line.amount_currency if line.amount_currency > 0 else line.amount_currency)
+                        if line.is_retention:
+                            total_retencion += line.balance
+                            total_retencion_currency += line.amount_currency
+                            if line.tax_line_id.credec:
+                                total_tax -= line.balance
+                                total_tax_currency -= line.amount_currency
+                            total -= line.balance
+                            total_currency -= line.amount_currency
                     elif line.account_id.user_type_id.type in ('receivable', 'payable'):
                         # Residual amount.
                         total_to_pay += line.balance
@@ -413,9 +418,23 @@ class AccountMove(models.Model):
 
             move.payment_state = new_pmt_state
 
+    def _preprocess_taxes_map(self, taxes_map):
+        """ Useful in case we want to pre-process taxes_map """
+        return taxes_map
+
+    def _tax_tags_need_inversion(self, move, is_refund, tax_type):
+        """ Tells whether the tax tags need to be inverted for a given move.
+        :param move: the move for which we want to check inversion
+        :param is_refund: whether or not the operation we want the inversion value for is a refund
+        :param tax_type: the tax type of the operation we want the inversion value for
+        :return: True if the tags need to be inverted
+        """
+        if move.move_type == 'entry':
+            return (tax_type == 'sale' and not is_refund) or (tax_type == 'purchase' and is_refund)
+        return False
+
     def _recompute_tax_lines(self, recompute_tax_base_amount=False):
         ''' Compute the dynamic tax lines of the journal entry.
-
         :param lines_map: The line_ids dispatched by type containing:
             * base_lines: The lines having a tax_ids set.
             * tax_lines: The lines having a tax_line_id set.
@@ -452,7 +471,7 @@ class AccountMove(models.Model):
                 quantity = 1.0
                 tax_type = base_line.tax_ids[0].type_tax_use if base_line.tax_ids else None
                 is_refund = (tax_type == 'sale' and base_line.debit) or (tax_type == 'purchase' and base_line.credit)
-                price_unit_wo_discount = base_line.balance
+                price_unit_wo_discount = base_line.amount_currency
 
             balance_taxes_res = base_line.tax_ids._origin.with_context(force_sign=move._get_tax_force_sign()).compute_all(
                 price_unit_wo_discount,
@@ -468,7 +487,7 @@ class AccountMove(models.Model):
             if move.move_type == 'entry':
                 repartition_field = is_refund and 'refund_repartition_line_ids' or 'invoice_repartition_line_ids'
                 repartition_tags = base_line.tax_ids.flatten_taxes_hierarchy().mapped(repartition_field).filtered(lambda x: x.repartition_type == 'base').tag_ids
-                tags_need_inversion = (tax_type == 'sale' and not is_refund) or (tax_type == 'purchase' and is_refund)
+                tags_need_inversion = self._tax_tags_need_inversion(move, is_refund, tax_type)
                 if tags_need_inversion:
                     balance_taxes_res['base_tags'] = base_line._revert_signed_tags(repartition_tags).ids
                     for tax_res in balance_taxes_res['taxes']:
@@ -483,8 +502,6 @@ class AccountMove(models.Model):
         for line in self.line_ids.filtered('tax_repartition_line_id'):
             grouping_dict = self._get_tax_grouping_key_from_tax_line(line)
             grouping_key = _serialize_tax_grouping_key(grouping_dict)
-            if 'RET - ' == line.name[:6]:
-                grouping_key = 'ret-' + grouping_key
             if grouping_key in taxes_map:
                 # A line with the same key does already exist, we only need one
                 # to modify it; we have to drop this one.
@@ -533,19 +550,12 @@ class AccountMove(models.Model):
                 taxes_map_entry['amount'] += tax_vals['amount']
                 taxes_map_entry['tax_base_amount'] += self._get_base_amount_to_display(tax_vals['base'], tax_repartition_line, tax_vals['group'])
                 taxes_map_entry['grouping_dict'] = grouping_dict
-                if tax_vals['retencion']:
-                    taxes_map_entry_ret =taxes_map.setdefault('ret-' + grouping_key, {
-                        'tax_line': None,
-                        'amount': 0.0,
-                        'tax_base_amount': 0.0,
-                        'grouping_dict': False,
-                        'retencion': True
-                    })
-                    taxes_map_entry_ret['amount'] += -tax_vals['retencion']
-                    taxes_map_entry_ret['tax_base_amount'] = taxes_map_entry['tax_base_amount']
-                    taxes_map_entry_ret['grouping_dict'] = grouping_dict
             if not recompute_tax_base_amount:
                 line.tax_exigible = tax_exigible
+
+        # ==== Pre-process taxes_map ====
+        taxes_map = self._preprocess_taxes_map(taxes_map)
+
         # ==== Process taxes_map ====
         for taxes_map_entry in taxes_map.values():
             # The tax line is no longer used in any base lines, drop it.
@@ -573,8 +583,8 @@ class AccountMove(models.Model):
 
             balance = currency._convert(
                 taxes_map_entry['amount'],
-                self.journal_id.company_id.currency_id,
-                self.journal_id.company_id,
+                self.company_currency_id,
+                self.company_id,
                 self.date or fields.Date.context_today(self),
             )
             to_write_on_line = {
@@ -595,7 +605,7 @@ class AccountMove(models.Model):
                 tax = tax_repartition_line.invoice_tax_id or tax_repartition_line.refund_tax_id
                 taxes_map_entry['tax_line'] = create_method({
                     **to_write_on_line,
-                    'name': ("RET - " + tax.name if taxes_map_entry.get('retencion') else tax.name),
+                    'name': tax.name,
                     'move_id': self.id,
                     'partner_id': line.partner_id.id,
                     'company_id': line.company_id.id,
@@ -604,66 +614,11 @@ class AccountMove(models.Model):
                     'exclude_from_invoice_tab': True,
                     'tax_exigible': tax.tax_exigibility == 'on_invoice',
                     **taxes_map_entry['grouping_dict'],
+                    'is_retention': tax_repartition_line.sii_type in ['R'],
                 })
 
             if in_draft_mode:
                 taxes_map_entry['tax_line'].update(taxes_map_entry['tax_line']._get_fields_onchange_balance(force_computation=True))
-
-    @api.depends('line_ids.price_subtotal', 'line_ids.tax_base_amount', 'line_ids.tax_line_id', 'partner_id', 'currency_id')
-    def _compute_invoice_taxes_by_group(self):
-        for move in self:
-
-            # Not working on something else than invoices.
-            if not move.is_invoice(include_receipts=True):
-                move.amount_by_group = []
-                continue
-
-            lang_env = move.with_context(lang=move.partner_id.lang).env
-            balance_multiplicator = -1 if move.is_inbound() else 1
-
-            tax_lines = move.line_ids.filtered(lambda m: m.tax_line_id and m.name[:6] != 'RET - ')
-            base_lines = move.line_ids.filtered('tax_ids')
-
-            tax_group_mapping = defaultdict(lambda: {
-                'base_lines': set(),
-                'base_amount': 0.0,
-                'tax_amount': 0.0,
-            })
-
-            # Compute base amounts.
-            for base_line in base_lines:
-                base_amount = balance_multiplicator * (base_line.amount_currency if base_line.currency_id else base_line.balance)
-
-                for tax in base_line.tax_ids.flatten_taxes_hierarchy():
-
-                    if base_line.tax_line_id.tax_group_id == tax.tax_group_id:
-                        continue
-
-                    tax_group_vals = tax_group_mapping[tax.tax_group_id]
-                    if base_line not in tax_group_vals['base_lines']:
-                        tax_group_vals['base_amount'] += base_amount
-                        tax_group_vals['base_lines'].add(base_line)
-
-            # Compute tax amounts.
-            for tax_line in tax_lines:
-                tax_amount = balance_multiplicator * (tax_line.amount_currency if tax_line.currency_id else tax_line.balance)
-                tax_group_vals = tax_group_mapping[tax_line.tax_line_id.tax_group_id]
-                tax_group_vals['tax_amount'] += tax_amount
-
-            tax_groups = sorted(tax_group_mapping.keys(), key=lambda x: x.sequence)
-            amount_by_group = []
-            for tax_group in tax_groups:
-                tax_group_vals = tax_group_mapping[tax_group]
-                amount_by_group.append((
-                    tax_group.name,
-                    tax_group_vals['tax_amount'],
-                    tax_group_vals['base_amount'],
-                    formatLang(lang_env, tax_group_vals['tax_amount'], currency_obj=move.currency_id),
-                    formatLang(lang_env, tax_group_vals['base_amount'], currency_obj=move.currency_id),
-                    len(tax_group_mapping),
-                    tax_group.id
-                ))
-            move.amount_by_group = amount_by_group
 
     @api.depends('posted_before', 'state', 'journal_id', 'date', 'document_class_id', 'sii_document_number')
     def _compute_name(self):
@@ -1456,7 +1411,7 @@ class AccountMove(models.Model):
         elif self.amount_untaxed and self.amount_untaxed != 0:
             IVA = False
             for t in self.line_ids:
-                if t.tax_line_id.sii_code in [14, 15] and t.name[:6] != 'RET - ':
+                if t.tax_line_id.sii_code in [14, 15] and t.is_retention:
                     IVA = t
                 for tl in t.tax_ids:
                     if tl.sii_code in [14, 15]:

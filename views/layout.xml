@@ -417,13 +417,13 @@
                                         />
                                     </td>
                                 </tr>
-                                <t t-foreach="o.line_ids.filtered(lambda line: line.tax_line_id and line.name[:6] != 'RET - ')" t-as="t">
+                                <t t-foreach="o.line_ids.filtered(lambda line: line.tax_line_id)" t-as="t">
                                     <tr
                                         t-if="not o.es_boleta() or (o.es_boleta() and t.tax_line_id.sii_code in [14, 15, 17]) "
                                         style="max-height:11px; font-size:12px !important;"
                                     >
                                         <td>
-                                            <span t-field="t.tax_line_id.description" />
+                                            <span t-esc="t.tax_line_id.description if not t.is_retention else t.tax_line_id.name" />
                                         </td>
                                         <td class="text-right">
                                             <span
@@ -432,20 +432,7 @@
                                             />
                                         </td>
                                     </tr>
-                                    <t t-if="t.tax_line_id.credec" t-set="credec" t-value="True" />
                                 </t>
-
-                                <tr t-if="o.amount_retencion" style="max-height:12px; font-size:12px !important;">
-                                    <td>
-                                        <strong t-esc="'Crédito Empresa Constructora' if credec else 'Monto Retención'" />
-                                    </td>
-                                    <td class="text-right">
-                                        <span
-                                            t-field="o.amount_retencion"
-                                            t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"
-                                        />
-                                    </td>
-                                </tr>
 
                                 <tr class="border-black" style="max-height:12px; font-size:12px !important;">
                                     <td>
