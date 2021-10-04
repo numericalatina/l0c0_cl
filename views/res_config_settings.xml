@@ -120,8 +120,8 @@
                                 <div class="o_setting_left_pane" />
                                 <div class="o_setting_right_pane" name="caf_files_right_pane">
                                     <div class="text-muted">
-                       Listado de todos los archivos CAF Subidos (Modo avanzado)
-                    </div>
+                                       Listado de todos los archivos CAF Subidos (Modo avanzado)  
+                                    </div>
                                     <button
                                         name="%(l10n_cl_fe.action_caf_files)d"
                                         icon="fa-arrow-right"

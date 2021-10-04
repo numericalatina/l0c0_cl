@@ -103,7 +103,7 @@
             <field name="name">CAF</field>
             <field name="model">dte.caf</field>
             <field name="arch" type="xml">
-                <tree string="CAF Files">
+                <tree string="CAF Files" create="false">
                     <field name="name" />
                     <field name="sii_document_class" />
                     <field name="start_nm" />
