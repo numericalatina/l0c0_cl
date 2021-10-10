@@ -14,7 +14,8 @@
                     options="{'no_open': True, 'no_create': True}"
                 />
             </field>
-            <group name="technical" position="after">
+            <page name="other_information" position="after">
+              <page string="Referencias DTE">
                 <field name="referencia_ids" mode="tree">
                     <tree editable="bottom">
                         <field name="fecha_documento" />
@@ -23,7 +24,8 @@
                         <field name="motivo" />
                     </tree>
                 </field>
-            </group>
+              </page>
+            </page>
         </field>
     </record>
 </odoo>
