@@ -361,7 +361,7 @@ class UploadXMLWizard(models.TransientModel):
             )
             if line_id:
                 if line_id.product_id:
-                    return line_id.product_id.id
+                    return line_id.product_id
         query = False
         product_id = False
         if CdgItem is not None:
@@ -425,7 +425,7 @@ class UploadXMLWizard(models.TransientModel):
     def _prepare_line(self, line, document_id, type, company_id, fpos_id, price_included=False, exenta=False, document=False):
         data = {}
         product_id = self._buscar_producto(document_id, line, company_id, price_included, exenta)
-        if isinstance(product_id, int):
+        if not isinstance(product_id, str):
             data.update(
                 {"product_id": product_id.id,}
             )
@@ -455,9 +455,6 @@ class UploadXMLWizard(models.TransientModel):
                 {"new_product": product_id, "product_description": DscItem.text if DscItem is not None else "",}
             )
         else:
-            #product_id = self.env["product.product"].browse(product_id)
-            #fpos = self.env["account.fiscal.position"].browse(fpos_id)
-            #account = self.env["account.move.line"].get_invoice_line_account(type, product_id, fpos, company_id)
             IndExe = line.find("IndExe")
             amount = 0
             sii_code = 0
