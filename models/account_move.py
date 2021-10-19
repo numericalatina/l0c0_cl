@@ -1411,7 +1411,7 @@ class AccountMove(models.Model):
         elif self.amount_untaxed and self.amount_untaxed != 0:
             IVA = False
             for t in self.line_ids:
-                if t.tax_line_id.sii_code in [14, 15] and t.is_retention:
+                if t.tax_line_id.sii_code in [14, 15] and not t.is_retention:
                     IVA = t
                 for tl in t.tax_ids:
                     if tl.sii_code in [14, 15]:
