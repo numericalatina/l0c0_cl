@@ -396,12 +396,12 @@ class ResPartner(models.Model):
 
     @api.model
     def _check_need_update(self):
-        url = company.url_remote_partners
-        token = company.token_remote_partners
-        if not url or not token:
-            return
         for r in self.search([("document_number", "not in", [False, 0]), ("parent_id", "=", False)]):
             company = r.company_id or self.env.company
+            url = company.url_remote_partners
+            token = company.token_remote_partners
+            if not url or not token:
+                continue
             if company.sync_remote_partners:
                 r.put_remote_user_data()
             try:
