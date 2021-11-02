@@ -503,7 +503,7 @@ class UploadXMLWizard(models.TransientModel):
             data.update(
                 {
                     "tax_ids": [(6, 0, tax_ids.ids)],
-                    #"product_uom_id": product_id.uom_id.id,
+                    "product_uom_id": product_id.uom_id.id,
                     "price_unit": price,
                     "price_subtotal": price_subtotal,
                 }
