@@ -273,6 +273,7 @@ class UploadXMLWizard(models.TransientModel):
             ("type_tax_use", "=", type),
             ("activo_fijo", "=", False),
             ("company_id", "=", company_id.id),
+            ("credec", '=', False),
         ]
         if IndExe is not None:
             query.append(("sii_type", "=", False))
