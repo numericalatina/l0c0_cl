@@ -1948,7 +1948,7 @@ class AccountMove(models.Model):
         subject = "XML de Intercambio DTE: %s" % (self.name)
         dte_email_id = self.company_id.dte_email_id or self.env.user.company_id.dte_email_id
         dte_receptors = commercial_partner_id.child_ids + commercial_partner_id
-        email_to = commercial_partner_id.dte_email or ""
+        email_to = commercial_partner_id.dte_email + "," or ""
         for dte_email in dte_receptors:
             if not dte_email.send_dte or not dte_email.email:
                 continue
