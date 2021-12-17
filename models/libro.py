@@ -86,7 +86,7 @@ class Libro(models.Model):
             ("Aceptado", "Aceptado"),
             ("Rechazado", "Rechazado"),
             ("Reparo", "Reparo"),
-            ("Proceso", "Proceso"),
+            ("Proceso", "Procesado"),
             ("Reenviar", "Reenviar"),
             ("Anulado", "Anulado"),
         ],
