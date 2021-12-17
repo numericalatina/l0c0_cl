@@ -315,7 +315,7 @@ class ResPartner(models.Model):
                         "actectos": [ac.code for ac in self.acteco_ids],
                         "url": self.website,
                         "origen": self.env['ir.config_parameter'].sudo().get_param('web.base.url'),
-                        "logo": self.image.decode() if self.image else False,
+                        "logo": self.image.decode() if self.image_128 else False,
                     }
                 ).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
@@ -414,6 +414,7 @@ class ResPartner(models.Model):
                     if resp.status == 403:
                         data = json.loads(resp.data.decode("ISO-8859-1"))
                         message = data["message"]
+                        return
                     else:
                         message = str(resp.data)
                     self.env["bus.bus"].sendone(
