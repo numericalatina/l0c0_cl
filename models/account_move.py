@@ -1412,8 +1412,9 @@ class AccountMove(models.Model):
             IVA = False
             for t in self.line_ids:
                 sii_code = t.tax_line_id.sii_code
-                if (sii_code == 14 and not t.is_retention) or sii_code == 15:
+                if sii_code in [14, 15]:
                     IVA = t
+                    MntIVA += t.balance
                 for tl in t.tax_ids:
                     if tl.sii_code in [14, 15]:
                         MntNeto += t.balance
@@ -1423,7 +1424,6 @@ class AccountMove(models.Model):
             raise UserError("Debe ir almenos un producto afecto")
         if IVA:
             TasaIVA = round(IVA.tax_line_id.amount, 2)
-            MntIVA = IVA.balance
         if no_product:
             MntNeto = 0
             TasaIVA = 0
