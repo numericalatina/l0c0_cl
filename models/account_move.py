@@ -758,48 +758,197 @@ class AccountMove(models.Model):
             if invoice.journal_document_class_id:
                 invoice.sequence_number_next = invoice.journal_document_class_id.sequence_id.number_next_actual
 
-    def _prepare_refund(
-        self, invoice, invoice_date=None, description=None, journal_id=None, tipo_nota=61, mode="1"
-    ):
-        values = super(AccountMove, self)._prepare_refund(invoice, invoice_date, description, journal_id)
-        jdc = self.env["account.journal.sii_document_class"]
-        if invoice.move_type in ["in_invoice", "in_refund"]:
-            dc = self.env["sii.document_class"].search([("sii_code", "=", tipo_nota),], limit=1,)
-        else:
-            jdc = self.env["account.journal.sii_document_class"].search(
-                [("sii_document_class_id.sii_code", "=", tipo_nota), ("journal_id", "=", invoice.journal_id.id),],
-                limit=1,
-            )
-            dc = jdc.sii_document_class_id
-        if invoice.move_type == "out_invoice" and dc.document_type == "credit_note":
-            type = "out_refund"
-        elif invoice.move_type in ["out_refund", "out_invoice"]:
-            type = "out_invoice"
-        elif invoice.move_type == "in_invoice" and dc.document_type == "credit_note":
-            type = "in_refund"
-        elif invoice.move_type in ["in_refund", "in_invoice"]:
-            type = "in_invoice"
-        values.update(
-            {
-                "document_class_id": dc.id,
-                "move_type": type,
-                "journal_document_class_id": jdc.id,
-                "referencias": [
+
+    def _reverse_move_vals(self, default_values, cancel=True):
+        ''' Reverse values passed as parameter being the copied values of the original journal entry.
+        For example, debit / credit must be switched. The tax lines must be edited in case of refunds.
+
+        :param default_values:  A copy_date of the original journal entry.
+        :param cancel:          A flag indicating the reverse is made to cancel the original journal entry.
+        :return:                The updated default_values.
+        '''
+        self.ensure_one()
+
+        def compute_tax_repartition_lines_mapping(move_vals):
+            ''' Computes and returns a mapping between the current repartition lines to the new expected one.
+            :param move_vals:   The newly created invoice as a python dictionary to be passed to the 'create' method.
+            :return:            A map invoice_repartition_line => refund_repartition_line.
+            '''
+            # invoice_repartition_line => refund_repartition_line
+            mapping = {}
+
+            # Do nothing if the move is not a credit note.
+            if move_vals['move_type'] not in ('out_refund', 'out_invoice', 'in_refund', 'in_invoice'):
+                return mapping
+
+            for line_command in move_vals.get('line_ids', []):
+                line_vals = line_command[2]  # (0, 0, {...})
+
+                if line_vals.get('tax_line_id'):
+                    # Tax line.
+                    tax_ids = [line_vals['tax_line_id']]
+                elif line_vals.get('tax_ids') and line_vals['tax_ids'][0][2]:
+                    # Base line.
+                    tax_ids = line_vals['tax_ids'][0][2]
+                else:
+                    continue
+
+                for tax in self.env['account.tax'].browse(tax_ids).flatten_taxes_hierarchy():
+                    for inv_rep_line, ref_rep_line in zip(tax.invoice_repartition_line_ids, tax.refund_repartition_line_ids):
+                        mapping[inv_rep_line] = ref_rep_line
+            return mapping
+
+        move_vals = self.with_context(include_business_fields=True).copy_data(default=default_values)[0]
+        if default_values.get('referencias'):
+            if default_values["referencias"][0][2].get('sii_referencia_CodRef') == '2':
+                del move_vals['line_ids']
+                prod = self.env['product.product'].search(
+                        [
+                                ('product_tmpl_id', '=', self.env.ref('l10n_cl_fe.no_product').id),
+                        ]
+                    )
+                move_vals['invoice_line_ids'] = [
                     [
                         0,
                         0,
                         {
-                            "origen": invoice.sii_document_number,
-                            "sii_referencia_TpoDocRef": invoice.document_class_id.id,
-                            "sii_referencia_CodRef": mode,
-                            "motivo": description,
-                            "fecha_documento": invoice.invoice_date.strftime("%Y-%m-%d"),
-                        },
+                            'product_id': prod.id,
+                            'name': prod.name,
+                            'quantity': 1,
+                            'price_unit': 0
+                        }
                     ]
-                ],
-            }
-        )
-        return values
+                ]
+
+        tax_repartition_lines_mapping = compute_tax_repartition_lines_mapping(move_vals)
+
+        for line_command in move_vals.get('line_ids', []):
+            line_vals = line_command[2]  # (0, 0, {...})
+
+            # ==== Inverse debit / credit / amount_currency ====
+            if move_vals['move_type'] in ('out_refund', 'in_refund'):
+                amount_currency = -line_vals.get('amount_currency', 0.0)
+                balance = line_vals['credit'] - line_vals['debit']
+            elif move_vals['move_type'] in ('out_invoice', 'in_invoice'):
+                amount_currency = line_vals.get('amount_currency', 0.0)
+                balance = line_vals['debit'] - line_vals['credit']
+
+            line_vals.update({
+                'amount_currency': amount_currency,
+                'debit': balance > 0.0 and balance or 0.0,
+                'credit': balance < 0.0 and -balance or 0.0,
+            })
+
+            if move_vals['move_type'] not in ('out_refund', 'our_invoice', 'in_refund', 'in_invoice'):
+                continue
+
+            # ==== Map tax repartition lines ====
+            if line_vals.get('tax_repartition_line_id'):
+                # Tax line.
+                invoice_repartition_line = self.env['account.tax.repartition.line'].browse(line_vals['tax_repartition_line_id'])
+                if invoice_repartition_line not in tax_repartition_lines_mapping:
+                    raise UserError(_("It seems that the taxes have been modified since the creation of the journal entry. You should create the credit note manually instead."))
+                refund_repartition_line = tax_repartition_lines_mapping[invoice_repartition_line]
+
+                # Find the right account.
+                account_id = self.env['account.move.line']._get_default_tax_account(refund_repartition_line).id
+                if not account_id:
+                    if not invoice_repartition_line.account_id:
+                        # Keep the current account as the current one comes from the base line.
+                        account_id = line_vals['account_id']
+                    else:
+                        tax = invoice_repartition_line.invoice_tax_id
+                        base_line = self.line_ids.filtered(lambda line: tax in line.tax_ids.flatten_taxes_hierarchy())[0]
+                        account_id = base_line.account_id.id
+
+                line_vals.update({
+                    'tax_repartition_line_id': refund_repartition_line.id,
+                    'account_id': account_id,
+                    'tax_tag_ids': [(6, 0, refund_repartition_line.tag_ids.ids)],
+                })
+            elif line_vals.get('tax_ids') and line_vals['tax_ids'][0][2]:
+                # Base line.
+                taxes = self.env['account.tax'].browse(line_vals['tax_ids'][0][2]).flatten_taxes_hierarchy()
+                invoice_repartition_lines = taxes\
+                    .mapped('invoice_repartition_line_ids')\
+                    .filtered(lambda line: line.repartition_type == 'base')
+                refund_repartition_lines = invoice_repartition_lines\
+                    .mapped(lambda line: tax_repartition_lines_mapping[line])
+
+                line_vals['tax_tag_ids'] = [(6, 0, refund_repartition_lines.mapped('tag_ids').ids)]
+        return move_vals
+
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        ''' Reverse a recordset of account.move.
+        If cancel parameter is true, the reconcilable or liquidity lines
+        of each original move will be reconciled with its reverse's.
+
+        :param default_values_list: A list of default values to consider per move.
+                                    ('type' & 'reversed_entry_id' are computed in the method).
+        :return:                    An account.move recordset, reverse of the current self.
+        '''
+        if not default_values_list:
+            default_values_list = [{} for move in self]
+
+        if cancel:
+            lines = self.mapped('line_ids')
+            # Avoid maximum recursion depth.
+            if lines:
+                lines.remove_move_reconcile()
+
+        reverse_type_map = {
+            'entry': 'entry',
+            'out_invoice': 'out_refund',
+            'out_refund': 'entry',
+            'in_invoice': 'in_refund',
+            'in_refund': 'entry',
+            'out_receipt': 'entry',
+            'in_receipt': 'entry',
+        }
+
+        move_vals_list = []
+        for move, default_values in zip(self, default_values_list):
+            type = move.move_type
+            refund_type = reverse_type_map[type]
+            if move.document_class_id:
+                dc = self.env['sii.document_class'].sudo().browse(default_values['document_class_id'])
+                if type == 'out_invoice' and dc.document_type == "credit_note":
+                    refund_type = 'out_refund'
+                elif type in ['out_invoice', 'out_refund']:
+                    refund_type = 'out_invoice'
+                elif type == 'in_invoice' and dc.document_type == "credit_note":
+                    refund_type = 'in_refund'
+                else:
+                    refund_type = 'in_invoice'
+            default_values.update({
+                'move_type': refund_type,
+                'reversed_entry_id': move.id,
+            })
+            move_vals_list.append(move.with_context(move_reverse_cancel=cancel)._reverse_move_vals(default_values, cancel=cancel))
+
+        reverse_moves = self.env['account.move'].create(move_vals_list)
+        for move, reverse_move in zip(self, reverse_moves.with_context(check_move_validity=False)):
+            # Update amount_currency if the date has changed.
+            if move.date != reverse_move.date:
+                for line in reverse_move.line_ids:
+                    if line.currency_id:
+                        line._onchange_currency()
+            reverse_move._recompute_dynamic_lines(recompute_all_taxes=False)
+        reverse_moves._check_balanced()
+
+        # Reconcile moves together to cancel the previous one.
+        if cancel:
+            reverse_moves.with_context(move_reverse_cancel=cancel)._post(soft=False)
+            for move, reverse_move in zip(self, reverse_moves):
+                accounts = move.mapped('line_ids.account_id') \
+                    .filtered(lambda account: account.reconcile or account.internal_type == 'liquidity')
+                for account in accounts:
+                    (move.line_ids + reverse_move.line_ids)\
+                        .filtered(lambda line: line.account_id == account and not line.reconciled)\
+                        .with_context(move_reverse_cancel=cancel)\
+                        .reconcile()
+
+        return reverse_moves
 
     @api.onchange("global_descuentos_recargos")
     def _onchange_descuentos(self):

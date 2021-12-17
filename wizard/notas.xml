@@ -1,67 +1,54 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
     <data>
-        <record id="view_account_invoice_notas" model="ir.ui.view">
-            <field name="name">account.move.refun.form</field>
-            <field name="model">account.move.refund</field>
-            <field name="inherit_id" ref="account.view_account_invoice_refund" />
+        <record id="view_account_move_reversal" model="ir.ui.view">
+            <field name="name">account.move.reversal.form</field>
+            <field name="model">account.move.reversal</field>
+            <field name="inherit_id" ref="account.view_account_move_reversal" />
             <field name="arch" type="xml">
                 <form position="replace">
-                    <form string="Nota de Crédito / Débito">
-                        <group>
+                    <form string="Reverse Journal Entry">
+                        <field name="residual" invisible="1"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="move_ids" invisible="1"/>
+                        <field name="move_type" invisible="1"/>
+                        <group attrs="{'invisible': [('refund_method', '!=', 'cl_refund')]}">
                             <field name="tipo_nota" widget="radio" />
                         </group>
+                        <group attrs="{'invisible': [('refund_method', '!=', 'cl_refund')]}">
+                          <field name="cl_refund" widget="radio"/>
+                        </group>
+                        <group attrs="{'invisible': [('refund_method', '=', 'cl_refund')]}">
+                             <group attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'in_invoice'))]}">
+                                <field name="refund_method" widget="radio" attrs="{'readonly': [('residual', '=', 0)]}"/>
+                             </group>
+                             <group attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'in_invoice', 'some_invoice'))]}">
+                                <div attrs="{'invisible':[('refund_method', '!=', 'refund')]}" class="oe_grey" colspan="4">
+                                   The credit note is created in draft and can be edited before being issued.
+                                </div>
+                                <div attrs="{'invisible':[('refund_method', '!=', 'cancel')]}" class="oe_grey" colspan="4">
+                                   The credit note is auto-validated and reconciled with the invoice.
+                                </div>
+                                <div attrs="{'invisible':[('refund_method', '!=', 'modify')]}" class="oe_grey" colspan="4">
+                                   The credit note is auto-validated and reconciled with the invoice.
+                                   The original invoice is duplicated as a new draft.
+                                </div>
+                             </group>
+                        </group>
                         <group>
-                            <group>
-                                <field name="refund_only" invisible="1" />
-                                <field
-                                    name="filter_refund"
-                                    attrs="{'invisible': [('refund_only','=',True)]}"
-                                    widget="radio"
-                                />
-                            </group>
-                            <group>
-                                <div
-                                    attrs="{'invisible':['|',('refund_only','=',True),('filter_refund','&lt;&gt;','refund')]}"
-                                    class="oe_grey"
-                                    colspan="4"
-                                >
-                              You will be able to edit and validate this
-                              credit note directly or keep it draft,
-                              waiting for the document to be issued by
-                              your supplier/customer.
-                           </div>
-                                <div
-                                    attrs="{'invisible':['|',('refund_only','=',True),('filter_refund','&lt;&gt;','cancel')]}"
-                                    class="oe_grey"
-                                    colspan="4"
-                                >
-                              Use this option if you want to cancel an invoice you should not
-                              have issued. The credit note will be created, validated and reconciled
-                              with the invoice. You will not be able to modify the credit note.
-                           </div>
-                                <div
-                                    attrs="{'invisible':['|',('refund_only','=',True),('filter_refund','&lt;&gt;','modify')]}"
-                                    class="oe_grey"
-                                    colspan="4"
-                                >
-                              Use this option if you want to cancel an invoice and create a new
-                              one. The credit note will be created, validated and reconciled
-                              with the current invoice. A new, draft, invoice will be created
-                              so that you can edit it.
-                           </div>
-                            </group>
-                            <group>
-                                <field name="description" />
-                            </group>
-                            <group>
-                                <field name="date" />
-                                <field name="date" groups="base.group_no_one" />
-                            </group>
+                             <group>
+                                 <field name="reason" attrs="{'invisible': [('move_type', '==', 'entry')], 'reason': [('move_type', '==', 'entry')]}"/>
+                                 <field name="date_mode" string="Reversal Date" widget="radio"/>
+                             </group>
+                             <group>
+                                <field name="journal_id"/>
+                                <field name="date" string="Refund Date" attrs="{'invisible': ['|', ('move_type', 'not in', ('out_invoice', 'in_invoice')), ('date_mode', '!=', 'custom')], 'required':[('date_mode', '=', 'custom')]}"/>
+                                <field name="date" attrs="{'invisible': ['|', ('move_type', 'in', ('out_invoice', 'in_invoice')), ('date_mode', '!=', 'custom')], 'required':[('date_mode', '=', 'custom')]}"/>
+                             </group>
                         </group>
                         <footer>
-                            <button string='Crear Nota' name="invoice_refund" type="object" class="btn-primary" />
-                            <button string="Cancelar" class="btn-default" special="cancel" />
+                            <button string='Reverse' name="reverse_moves" type="object" class="btn-primary"/>
+                            <button string="Cancel" class="btn-secondary" special="cancel"/>
                         </footer>
                     </form>
                 </form>
