@@ -27,10 +27,10 @@
                                 <div class="o_setting_left_pane" />
                                 <div class="o_setting_right_pane">
                                     <strong>Requerido:</strong>
-                                    <div class="text-muted">0.13.4</div>
+                                    <div class="text-muted">0.15.0</div>
                                     <div
                                         class="text-muted"
-                                        attrs="{'invisible': [('fe_version', '>=', '0.13.4')]}"
+                                        attrs="{'invisible': [('fe_version', '>=', '0.15.0')]}"
                                         style="color:red !important"
                                     >
                         ¡Debe Actualizar o verificar su versión instalada!
@@ -120,7 +120,7 @@
                                 <div class="o_setting_left_pane" />
                                 <div class="o_setting_right_pane" name="caf_files_right_pane">
                                     <div class="text-muted">
-                                       Listado de todos los archivos CAF Subidos (Modo avanzado)  
+                                       Listado de todos los archivos CAF Subidos (Modo avanzado)
                                     </div>
                                     <button
                                         name="%(l10n_cl_fe.action_caf_files)d"

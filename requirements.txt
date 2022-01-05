@@ -1,5 +1,4 @@
-facturacion_electronica>=0.12.0
-suds-jurko
+facturacion_electronica>=0.15.0
 num2words
 xlsxwriter
 pillow
