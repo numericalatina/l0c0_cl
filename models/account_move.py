@@ -459,13 +459,14 @@ class AccountMove(models.Model):
             :return:            The result of the compute_all method.
             '''
             move = base_line.move_id
-
+            discount = 0
             if move.is_invoice(include_receipts=True):
                 handle_price_include = True
                 sign = -1 if move.is_inbound() else 1
                 quantity = base_line.quantity
                 is_refund = move.move_type in ('out_refund', 'in_refund')
-                price_unit_wo_discount = sign * base_line.price_unit * (1 - (base_line.discount / 100.0))
+                price_unit_wo_discount = sign * base_line.price_unit
+                discount = base_line.discount
             else:
                 handle_price_include = False
                 quantity = 1.0
@@ -481,6 +482,7 @@ class AccountMove(models.Model):
                 partner=base_line.partner_id,
                 is_refund=is_refund,
                 handle_price_include=handle_price_include,
+                discount=discount,
                 uom_id=base_line.product_uom_id,
             )
 

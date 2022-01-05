@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
 from odoo.exceptions import UserError
-import decimal
+from .currency import float_round_custom
 
 
 
@@ -23,68 +23,49 @@ class AccountInvoiceLine(models.Model):
     @api.onchange("discount", "price_unit", "quantity")
     def set_discount_amount(self):
         total = self.currency_id.round(self.quantity * self.price_unit)
-        decimal.getcontext().rounding = decimal.ROUND_HALF_UP
-        self.discount_amount = int(decimal.Decimal(total * ((self.discount or 0.0) / 100.0)).to_integral_value())
+        self.discount_amount = float_round_custom(total * ((self.discount or 0.0) / 100.0), precision_digits=0)
 
+    @api.model
+    def _get_price_total_and_subtotal_model(self, price_unit, quantity, discount, currency, product, partner, taxes, move_type, uom_id=False):
+        ''' This method is used to compute 'price_total' & 'price_subtotal'.
 
-    @api.depends(
-        "price_unit",
-        "discount",
-        "tax_ids",
-        "quantity",
-        "product_id",
-        "move_id.partner_id",
-        "move_id.currency_id",
-        "move_id.company_id",
-        "move_id.date",
-        "move_id.date",
-    )
-    def _compute_price(self):
-        super(AccountInvoiceLine, self)._compute_price()
-        for line in self:
-            line.set_discount_amount()
-            continue
-            currency = line.move_id and line.move_id.currency_id or None
-            taxes = False
-            total = 0
-            included = False
-            #@dar soporte a mepco con nueva estructura
-            #for t in line.tax_ids:
-            #    if t.product_uom_id and t.product_uom_id.category_id != line.product_uom_id.category_id:
-            #        raise UserError("Con este tipo de impuesto, solamente deben ir unidades de medida de la categoría %s" %t.product_uom_id.category_id.name)
-            #    if t.mepco:
-            #        t.verify_mepco(line.move_id.date, line.move_id.currency_id)
-            #    if taxes and (t.price_include != included):
-            #        raise UserError('No se puede hacer timbrado mixto, todos los impuestos en este pedido deben ser uno de estos dos:  1.- precio incluído, 2.-  precio sin incluir')
-            #    included = t.price_include
-            #    taxes = True
-            taxes = line.tax_ids.compute_all(
-                line.price_unit,
-                currency,
-                line.quantity,
-                product=line.product_id,
-                partner=line.move_id.partner_id,
-                discount=line.discount, uom_id=line.product_uom_id)
-            if taxes:
-                line.price_subtotal = price_subtotal_signed = taxes['total_excluded']
-            else:
-                total = line.currency_id.round((line.quantity * line.price_unit))
-                decimal.getcontext().rounding = decimal.ROUND_HALF_UP
-                total = line.currency_id.round((line.quantity * line.price_unit)) - line.discount_amount
-                line.price_subtotal = price_subtotal_signed = int(decimal.Decimal(total).to_integral_value())
-            if self.move_id.currency_id and self.move_id.currency_id != self.move_id.company_id.currency_id:
-                currency = self.move_id.currency_id
-                date = self.move_id._get_currency_rate_date()
-                price_subtotal_signed = currency._convert(
-                    price_subtotal_signed,
-                    self.move_id.company_id.currency_id,
-                    self.company_id or self.env.user.company_id,
-                    date or fields.Date.today(),
-                )
-            sign = line.move_id.type in ["in_refund", "out_refund"] and -1 or 1
-            line.price_subtotal_signed = price_subtotal_signed * sign
-            line.price_total = taxes["total_included"] if (taxes and taxes["total_included"] > total) else total
+        :param price_unit:  The current price unit.
+        :param quantity:    The current quantity.
+        :param discount:    The current discount.
+        :param currency:    The line's currency.
+        :param product:     The line's product.
+        :param partner:     The line's partner.
+        :param taxes:       The applied taxes.
+        :param move_type:   The type of the move.
+        :return:            A dictionary containing 'price_subtotal' & 'price_total'.
+        '''
+        res = {}
 
+        # Compute 'price_subtotal'.
+        if taxes and any(bool(t.sii_code) for t in taxes):
+            line_discount_price_unit = price_unit
+            total = currency.round(quantity * price_unit)
+            discount_amount = float_round_custom(total * ((discount or 0.0) / 100.0), precision_digits=0)
+            subtotal = quantity * line_discount_price_unit - discount_amount
+        else:
+            line_discount_price_unit = price_unit * (1 - (discount / 100.0))
+            subtotal = quantity * line_discount_price_unit
+
+        # Compute 'price_total'.
+        if taxes:
+            force_sign = -1 if move_type in ('out_invoice', 'in_refund', 'out_receipt') else 1
+            taxes_res = taxes._origin.with_context(force_sign=force_sign).compute_all(line_discount_price_unit,
+                quantity=quantity, currency=currency, product=product, partner=partner, is_refund=move_type in ('out_refund', 'in_refund'),
+                discount=discount,
+                uom_id=uom_id)
+            res['price_subtotal'] = taxes_res['total_excluded']
+            res['price_total'] = taxes_res['total_included']
+        else:
+            res['price_total'] = res['price_subtotal'] = subtotal
+        #In case of multi currency, round before it's use for computing debit credit
+        if currency:
+            res = {k: currency.round(v) for k, v in res.items()}
+        return res
 
     def get_tax_detail(self):
         boleta = self.move_id.document_class_id.es_boleta()

@@ -195,7 +195,17 @@ class SiiTax(models.Model):
         #   Line 2: sum(taxes) = 10920 - 2176 = 8744
         #   amount_tax = 4311 + 8744 = 13055
         #   amount_total = 31865 + 13055 = 37920
-        base = currency.round(price_unit * quantity)
+        if prec == 1e-5:
+            base = float_round_custom(price_unit * quantity, precision_digits=2)
+            base = float_round_custom(base, precision_digits=0)
+            if discount:
+                disc =  float_round_custom((base * ((discount or 0.0) /100.0)),
+                                           precision_digits=0)
+                base -= disc
+        else:
+            if discount:
+                price_unit *= (1 - (discount / 100.0))
+            base = currency.round(price_unit * quantity)
 
         # For the computation of move lines, we could have a negative base value.
         # In this case, compute all with positive values and negate them at the end.
