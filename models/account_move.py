@@ -647,7 +647,7 @@ class AccountMove(models.Model):
         else:
             to_post = self
         for inv in to_post:
-            if not inv.is_invoice() or not inv.journal_document_class_id  or not inv.use_documents:
+            if not inv.is_invoice() or not inv.journal_document_class_id  or not inv.use_documents or inv.sii_document_number:
                 continue
             sii_document_number = inv.journal_document_class_id.sequence_id.next_by_id()
             inv.sii_document_number = int(sii_document_number)
