@@ -324,6 +324,7 @@ class UploadXMLWizard(models.TransientModel):
                                     sii_type=sii_type,
                                     IndExe=IndExe,
                                     company_id=company_id)
+        uom = 'UnmdItem'
         price = float(line.find("PrcItem").text if line.find("PrcItem") is not None else line.find("MontoItem").text)
         if price_included:
             price = imp.compute_all(price, self.env.user.company_id.currency_id, 1)["total_excluded"]
