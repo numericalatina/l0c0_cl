@@ -112,10 +112,9 @@
                     <field name="acteco_ids" invisible="1" />
                     <field
                         name="acteco_id"
-                        attrs="{'invisible': [('acteco_ids', '=', [])]}"
+                        attrs="{'invisible': ['|', ('acteco_ids', '=', []), ('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}"
                         domain="[('id', 'in', acteco_ids)]"
                         options="{'no_open': True, 'no_create': True}"
-                        attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}"
                     />
                 </field>
                 <label for="journal_id" position="before">
