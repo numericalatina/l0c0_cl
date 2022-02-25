@@ -101,33 +101,34 @@
                           />
                       </div>
                       <field name="name" readonly="1" invisible="1" class="oe_inline" />
-                      <div attrs="{'invisible': [('state', '!=', 'draft')]}">
+                      <div attrs="{'invisible': ['|', ('state', '!=', 'draft'),('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}">
                         <span class="o_form_label">Emitir Documentos</span>
                         <field name="use_documents"/>
                       </div>
                   </h1>
                 </xpath>
                 <field name='partner_id' position="after">
-                    <field name="activity_description" placeholder="Glosa descriptiva" options="{'no_open': True}" />
+                    <field name="activity_description" placeholder="Glosa descriptiva" options="{'no_open': True}" attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}"/>
                     <field name="acteco_ids" invisible="1" />
                     <field
                         name="acteco_id"
                         attrs="{'invisible': [('acteco_ids', '=', [])]}"
                         domain="[('id', 'in', acteco_ids)]"
                         options="{'no_open': True, 'no_create': True}"
+                        attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}"
                     />
                 </field>
                 <label for="journal_id" position="before">
                   <label for="forma_pago"
                          groups="account.group_account_readonly"
-                         invisible="context.get('default_journal_id') and context.get('move_type', 'entry') != 'entry'"/>
-                  <div name="forma_pago_div" class="d-flex" invisible="context.get('move_type', 'entry') != 'entry'">
+                         attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}"/>
+                  <div name="forma_pago_div" class="d-flex" attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}">
                     <field name="forma_pago" />
                   </div>
                   <label for="contact_id"
                          groups="account.group_account_readonly"
-                         invisible="context.get('default_journal_id') and context.get('move_type', 'entry') != 'entry'"/>
-                  <div name="contact_id_div" class="d-flex" invisible="context.get('move_type', 'entry') != 'entry'">
+                         attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}"/>
+                  <div name="contact_id_div" class="d-flex" attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}">
                     <field name="contact_id" domain="[('parent_id','=',partner_id)]" />
                   </div>
 
