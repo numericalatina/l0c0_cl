@@ -908,8 +908,12 @@ class UploadXMLWizard(models.TransientModel):
                     continue
                 raise UserError("no se pudo cuadrar la factura")
             except Exception as e:
-                _logger.warning("Error en crear 1 factura con error:  %s" % str(e))
-        if created and self.option not in [False, "upload"] and self.type == "compras":
+                msg = "Error en crear 1 factura con error:  %s" % str(e)
+                _logger.warning(msg)
+                if self.document_id:
+                    self.document_id.message_post(body=msg)
+
+        if created and self.option not in [False, "upload"] and self.type == "compras"  and not self.env.context.get('create_only', False):
             datos = {
                 "move_ids": [(6, 0, created)],
                 "action": "ambas",
