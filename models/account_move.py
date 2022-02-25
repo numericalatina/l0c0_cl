@@ -102,9 +102,9 @@ class AccountMove(models.Model):
     @api.depends("journal_id")
     def get_dc_ids(self):
         for r in self:
+            r.document_class_ids = []
             if not r.check_invoice_type(r.move_type):
                 continue
-            r.document_class_ids = []
             dc_type = ["invoice"] if r.move_type in ["in_invoice", "out_invoice"] else ["credit_note", "debit_note"]
             if r.move_type in ["in_invoice", "in_refund"]:
                 for dc in r.journal_id.document_class_ids:
@@ -626,6 +626,7 @@ class AccountMove(models.Model):
         super(AccountMove, not_dcs)._compute_name()
 
     def _get_invoice_computed_reference(self):
+        self.ensure_one()
         if self.document_class_id:
             return '%s%s' % (self.document_class_id.doc_code_prefix, self.sii_document_number)
         return super(AccountMove, self)._get_invoice_computed_reference()
