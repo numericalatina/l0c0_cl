@@ -1,35 +1,39 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-    <report
-        id="libro_xlsx"
-        model="account.move.book"
-        string="Libro xls"
-        report_type="xlsx"
-        name="account.move.book.xlsx"
-        file="account.move.book.xlsx"
-        attachment_use="True"
-        attachment="(object.state in ('Enviado','Proceso')) and ((object.name or '').replace('/','')+'.xlsx')"
-    />
-    <report
-        id="libro_h_xlsx"
-        model="account.move.book.honorarios"
-        string="Libro Honorarios"
-        report_type="xlsx"
-        name="account.move.book.honorarios.xlsx"
-        file="account.move.book.honorarios.xlsx"
-        attachment_use="True"
-        attachment="(object.state in ('Enviado','Proceso')) and ((object.name or '').replace('/','')+'.xlsx')"
-    />
-    <report
-        string="Libro CV PDF"
-        id="action_print_libro"
-        model="account.move.book"
-        report_type="qweb-pdf"
-        name="l10n_cl_fe.libro_cv"
-        file="l10n_cl_fe.libro_cv"
-        attachment_use="False"
-        attachment="object.name.replace('/','')+'.pdf'"
-    />
+    <record id="libro_xlsx" model="ir.actions.report">
+        <field name="model">account.move.book</field>
+        <field name="name">Libro xls</field>
+        <field name="report_type">xlsx</field>
+        <field name="report_name">account.move.book.xlsx</field>
+        <field name="report_file">account.move.book.xlsx</field>
+        <field name="attachment_use">True</field>
+        <field name="attachment">(object.state in ('Enviado','Proceso')) and ((object.name or '').replace('/','')+'.xlsx')</field>
+        <field name="binding_model_id" ref="model_account_move_book"/>
+        <field name="binding_type">report</field>
+    </record>
+    <record id="libro_h_xlsx"  model="ir.actions.report">
+        <field name="model">account.move.book.honorarios</field>
+        <field name="name">Libro Honorarios</field>
+        <field name="report_type">xlsx</field>
+        <field name="report_name">account.move.book.honorarios.xlsx</field>
+        <field name="report_file">account.move.book.honorarios.xlsx</field>
+        <field name="attachment_use">True</field>
+        <field name="attachment">(object.state in ('Enviado','Proceso')) and ((object.name or '').replace('/','')+'.xlsx')</field>
+        <field name="binding_model_id" ref="model_account_move_book_honorarios"/>
+        <field name="binding_type">report</field>
+    </record>
+    <record id="action_print_libro" model="ir.actions.report">
+        <field name="name">Libro CV PDF</field>
+        <field name="model">account.move.book</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_cl_fe.libro_cv</field>
+        <field name="report_file">l10n_cl_fe.libro_cv</field>
+        <field name="attachment_use">False</field>
+        <field name="attachment">object.name.replace('/','')+'.pdf'</field>
+        <field name="binding_model_id" ref="model_account_move_book"/>
+        <field name="binding_type">report</field>
+    </record>
+
     <template t-name="l10n_cl_fe.layout_libro">
         <t t-call="web.basic_layout">
             <style>
