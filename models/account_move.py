@@ -210,8 +210,6 @@ class AccountMove(models.Model):
         default="1",
     )
     contact_id = fields.Many2one("res.partner", string="Contacto",)
-
-    canceled = fields.Boolean(string="Canceled?", copy=False,)
     estado_recep_dte = fields.Selection(
         [("recibido", "Recibido en DTE"), ("mercaderias", "Recibido mercaderias"), ("validate", "Validada Comercial")],
         string="Estado de Recepcion del Envio",
@@ -284,12 +282,6 @@ class AccountMove(models.Model):
         ]
     )
     claim_ids = fields.One2many("sii.dte.claim", "move_id", strign="Historial de Reclamos")
-    sended = fields.Boolean(
-        string="Enviado al SII", default=False, readonly=True, states={"draft": [("readonly", False)]},
-    )
-    factor_proporcionalidad = fields.Float(
-        string="Factor proporcionalidad", default=0.00, readonly=True, states={"draft": [("readonly", False)]},
-    )
     amount_retencion = fields.Monetary(string='Monto Retención', store=True, readonly=True,
         compute='_compute_amount',
         inverse='_inverse_amount_total'
@@ -1012,25 +1004,27 @@ class AccountMove(models.Model):
             to_unlink += r
         return super(AccountMove, to_unlink).unlink()
 
-    @api.constrains("reference", "partner_id", "company_id", "move_type", "journal_document_class_id")
+    @api.constrains("ref", "partner_id", "company_id", "move_type", "journal_document_class_id")
     def _check_reference_in_invoice(self):
-        if self.move_type in ["in_invoice", "in_refund"] and self.sii_document_number:
-            domain = [
-                ("move_type", "=", self.move_type),
-                ("sii_document_number", "=", self.sii_document_number),
-                ("partner_id", "=", self.partner_id.id),
-                ("journal_document_class_id.sii_document_class_id", "=", self.document_class_id.id),
-                ("company_id", "=", self.company_id.id),
-                ("id", "!=", self.id),
-                ("state", "!=", "cancel"),
-            ]
-            move_ids = self.search(domain)
-            if move_ids:
-                raise UserError(
-                    u"El numero de factura debe ser unico por Proveedor.\n"
-                    u"Ya existe otro documento con el numero: %s para el proveedor: %s"
-                    % (self.sii_document_number, self.partner_id.display_name)
-                )
+        moves = self.filtered(lambda move: move.is_purchase_document() and move.ref)
+        for r in moves:
+            if r.move_type in ["in_invoice", "in_refund"] and r.sii_document_number:
+                domain = [
+                    ("move_type", "=", r.move_type),
+                    ("sii_document_number", "=", r.sii_document_number),
+                    ("partner_id", "=", r.partner_id.id),
+                    ("journal_document_class_id.sii_document_class_id", "=", r.document_class_id.id),
+                    ("company_id", "=", r.company_id.id),
+                    ("id", "!=", r.id),
+                    ("state", "!=", "cancel"),
+                ]
+                move_ids = r.search(domain)
+                if move_ids:
+                    raise UserError(
+                        u"El numero de factura debe ser unico por Proveedor.\n"
+                        u"Ya existe otro documento con el numero: %s para el proveedor: %s"
+                        % (r.sii_document_number, r.partner_id.display_name)
+                    )
 
     @api.onchange("journal_document_class_id")
     def set_document_class_id(self):
@@ -1038,23 +1032,6 @@ class AccountMove(models.Model):
             return
         self.document_class_id = self.journal_document_class_id.sii_document_class_id.id
         self._onchange_invoice_line_ids()
-
-    def _check_duplicate_supplier_reference(self):
-        for invoice in self:
-            if invoice.move_type in ("in_invoice", "in_refund") and invoice.sii_document_number:
-                if self.search(
-                    [
-                        ("sii_document_number", "=", invoice.sii_document_number),
-                        ("journal_document_class_id", "=", invoice.journal_document_class_id.id),
-                        ("partner_id", "=", invoice.partner_id.id),
-                        ("move_type", "=", invoice.move_type),
-                        ("id", "!=", invoice.id),
-                    ]
-                ):
-                    raise UserError(
-                        "El documento %s, Folio %s de la Empresa %s ya se en cuentra registrado"
-                        % (invoice.document_class_id.name, invoice.sii_document_number, invoice.partner_id.name)
-                    )
 
     def _validaciones_uso_dte(self):
         if not self.document_class_id:
