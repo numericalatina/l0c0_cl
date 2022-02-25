@@ -163,8 +163,10 @@ class SIIXMLEnvio(models.Model):
     def ask_for(self):
         self.get_send_status(self.user_id)
 
-    def set_childs(self, state):
-        for r in self.move_ids:
+    def set_childs(self, state, detalle_rep_rech=False):
+        for r in self.invoice_ids:
+            if r.es_boleta() and detalle_rep_rech:
+                state = self.check_estado_boleta(r, detalle_rep_rech, state)
             r.sii_result = state
 
     @api.onchange('state')
@@ -172,11 +174,13 @@ class SIIXMLEnvio(models.Model):
         state = self.state
         if state in ['draft', 'NoEnviado']:
             return
+        detalle_rep_rech = {}
         if self.sii_receipt:
             receipt = self.object_receipt()
             if type(receipt) is dict:
                 if not receipt.get('estadistica'):
                     state = 'Aceptado'
+                detalle_rep_rech = json.loads(receipt.get('detalle_rep_rech', '{}'))
             elif receipt.find("RESP_HDR") is not None:
                 state = "Aceptado"
-        self.set_childs(state)
+        self.set_childs(state, detalle_rep_rech)
