@@ -265,7 +265,7 @@ class UploadXMLWizard(models.TransientModel):
         return res
 
     def _buscar_impuesto(self, type="purchase", name="Impuesto", amount=0,
-                         sii_code=0, sii_type=False, IndExe=None,
+                         sii_code=0, IndExe=None,
                          company_id=False):
         query = [
             ("amount", "=", amount),
@@ -275,14 +275,8 @@ class UploadXMLWizard(models.TransientModel):
             ("company_id", "=", company_id.id),
             ("credec", '=', False),
         ]
-        if IndExe is not None:
-            query.append(("sii_type", "=", False))
         if amount == 0 and sii_code == 0 and IndExe is None:
             query.append(("name", "=", name))
-        if sii_type:
-            query.extend(
-                [("sii_type", "=", sii_type),]
-            )
         imp = self.env["account.tax"].search(query)
         if not imp:
             imp = (
@@ -293,7 +287,6 @@ class UploadXMLWizard(models.TransientModel):
                         "amount": amount,
                         "name": name,
                         "sii_code": sii_code,
-                        "sii_type": sii_type,
                         "type_tax_use": type,
                         "company_id": company_id.id,
                     }
@@ -305,23 +298,19 @@ class UploadXMLWizard(models.TransientModel):
         IndExe = line.find("IndExe")
         amount = 0
         sii_code = 0
-        sii_type = False
         if IndExe is None and not exenta:
             amount = 19
             sii_code = 14
-            sii_type = False
         else:
             IndExe = True
         imp = self._buscar_impuesto(amount=amount,
                                     type="purchase",
                                     sii_code=sii_code,
-                                    sii_type=sii_type,
                                     IndExe=IndExe,
                                     company_id=company_id)
         imp_sale = self._buscar_impuesto(amount=amount,
                                     type="sale",
                                     sii_code=sii_code,
-                                    sii_type=sii_type,
                                     IndExe=IndExe,
                                     company_id=company_id)
         uom = 'UnmdItem'
@@ -460,26 +449,23 @@ class UploadXMLWizard(models.TransientModel):
             IndExe = line.find("IndExe")
             amount = 0
             sii_code = 0
-            sii_type = False
             tax_ids = self.env["account.tax"]
             if IndExe is None and not exenta:
                 amount = 19
                 sii_code = 14
-                sii_type = False
             else:
                 IndExe = True
             tax_ids += self._buscar_impuesto(
                 type="purchase" if self.type == "compras" else "sale",
-                amount=amount, sii_code=sii_code, sii_type=sii_type,
+                amount=amount, sii_code=sii_code,
                 IndExe=IndExe, company_id=company_id
             )
             if line.find("CodImpAdic") is not None:
                 amount = 19
-                sii_type = False
                 tax_ids += self._buscar_impuesto(
                     type="purchase" if self.type == "compras" else "sale",
                     amount=amount, sii_code=line.find("CodImpAdic").text,
-                    sii_type=sii_type, IndExe=IndExe, company_id=company_id
+                    IndExe=IndExe, company_id=company_id
                 )
             if IndExe is None:
                 tax_include = False
