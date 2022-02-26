@@ -499,7 +499,7 @@ class UploadXMLWizard(models.TransientModel):
         return [0, 0, data]
 
     def _create_tpo_doc(self, TpoDocRef, RazonRef=None):
-        vals = dict(name=str(TpoDocRef))
+        vals = dict(name=str(TpoDocRef), dte=False)
         if RazonRef is not None:
             vals["name"] = "{} {}".format(vals["name"], RazonRef.text)
         if str(TpoDocRef).isdigit():
