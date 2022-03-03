@@ -164,7 +164,7 @@ class SIIXMLEnvio(models.Model):
         self.get_send_status(self.user_id)
 
     def set_childs(self, state, detalle_rep_rech=False):
-        for r in self.invoice_ids:
+        for r in self.move_ids:
             if r.es_boleta() and detalle_rep_rech:
                 state = self.check_estado_boleta(r, detalle_rep_rech, state)
             r.sii_result = state
