@@ -20,12 +20,12 @@
             </t>
             <t t-set="partner_id" t-value="o.partner_id" />
             <t t-set="commercial_partner_id" t-value="o.partner_id.commercial_partner_id" />
-            <t t-set="logo" t-value="company.logo" />
+            <t t-set="logo" t-value="company.logo_web" />
             <t t-if="o.move_type in ['in_invoice', 'in_refund']">
                 <t t-set="partner_id" t-value="company.partner_id" />
                 <t t-set="commercial_partner_id" t-value="company.partner_id" />
                 <t t-set="company" t-value="o.partner_id" />
-                <t t-set="logo" t-value="o.partner_id.image_1920" />
+                <t t-set="logo" t-value="o.partner_id.image_128" />
             </t>
             <div class="header">
                 <div class="row">
@@ -336,10 +336,10 @@
                                 <br />
                                 Resolución <t t-esc="o.company_id.dte_resolution_number" /> de <t
                                             t-esc="o.company_id.dte_resolution_date.year"
-                                        /> Verifique documento en: www.sii.cl <t t-if="not o.es_boleta()">o en </t><t
-                                            t-if="o.es_boleta()"
+                                        /> Verifique documento en: www.sii.cl <t t-if="o.es_boleta()">o en <t
                                             t-esc="'%s/boleta/%s' % (o.company_id.website, o.sii_document_number)"
                                         />
+                                        </t>
                               </p>
                                 </div>
                             </t>
@@ -752,15 +752,15 @@
                 <t t-set="partner_id" t-value="company.partner_id" />
                 <t t-set="commercial_partner_id" t-value="company.partner_id" />
                 <t t-set="company" t-value="doc.partner_id" />
-                <t t-set="logo" t-value="doc.partner_id.image" />
+                <t t-set="logo" t-value="doc.partner_id.image_1920" />
                 <t t-set="sii_document_number" t-value="doc.reference" />
             </t>
             <receipt align='center' width='45' value-thousands-separator='.'>
                 <div class="pos-center-align">
                     <img t-att-src="'data:image/png;base64,%s' % doc.sii_header()" />
                 </div>
-                <t t-if='doc.company_id'>
-                    <img t-att-src='logo' />
+                <t t-if='logo'>
+                    <img t-att-src="'data:image/png;base64,%s' % to_text(logo)"/>
                 </t>
                 <div>
                     <h3>
@@ -792,7 +792,7 @@
                   <left font='b'>  Casa Matriz: </left>
                   <right><t t-esc="doc.company_id.street"/></right>
                 </line>
-                <t t-if="doc.company_id.sucursal_ids and o.move_type in ['out_invoice', 'out_refund']">
+                <t t-if="doc.company_id.sucursal_ids and doc.move_type in ['out_invoice', 'out_refund']">
                   <line t-foreach="doc.company_id.sucursal_ids" t-as="sucursal">
                     <left>  Sucursal: </left>
                     <right><t t-esc="sucursal.partner_id.street + ', ' + sucursal.partner_id.city_id.name+ ', ' + sucursal.partner_id.city"/></right>
@@ -873,7 +873,7 @@
                     <right>--------</right>
                 </line>
                 <div class='orderlines' line-ratio='0.6'>
-                    <t t-foreach='doc.invoice_line_ids' t-as='line'>
+                    <t t-foreach="doc.invoice_line_ids.filtered(lambda line: line.sudo().account_id and line.product_id).sorted(key=lambda l: (l.sequence))" t-as='line'>
                         <t
                             t-set='simple'
                             t-value="line.discount == 0 and line.product_uom_id.name == 'Unit(s)' and line.quantity == 1"
@@ -949,12 +949,12 @@
                     <left>
                         <pre>        Impuestos</pre>
                     </left>
-                    <t t-foreach="doc.tax_line_ids" t-as="tl">
+                    <t t-foreach="doc.line_ids.filtered(lambda line: line.tax_line_id)" t-as="tl">
                         <t
-                            t-if="not doc.es_boleta() or (doc.es_boleta() and ( tl.tax_id.amount == 0 or tl.tax_id.sii_code in [14, 15, 17]))"
+                            t-if="not doc.es_boleta() or (doc.es_boleta() and ( tl.tax_id.amount == 0 or tl.tax_line_id.sii_code in [14, 15, 17]))"
                         >
-                            <right><t t-esc="tl.tax_id.description" />: $ <value value-decimals='0'>
-                                    <t t-esc='tl.amount' />
+                            <right><t t-esc="tl.tax_line_id.description" />: $ <value value-decimals='0'>
+                                    <t t-esc='tl.debit or tl.credit' />
                                 </value></right>
                         </t>
                     </t>
@@ -975,10 +975,10 @@
                     <br />
                     Resolución <t t-esc="doc.company_id.dte_resolution_number" /> de <t
                                 t-esc="doc.company_id.dte_resolution_date.year"
-                            /> Verifique documento en: www.sii.cl <t t-if="not doc.es_boleta()">o en </t><t
-                                t-if="doc.es_boleta()"
+                            /> Verifique documento en: www.sii.cl <t t-if="doc.es_boleta()">o en <t
                                 t-esc="'%s/boleta/%s' % (doc.company_id.website, doc.sii_document_number)"
                             />
+                            </t>
                   </p>
                     </em>
                 </div>
