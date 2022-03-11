@@ -11,7 +11,7 @@ try:
     import urllib3
 
     urllib3.disable_warnings()
-    pool = urllib3.PoolManager()
+    pool = urllib3.PoolManager(timeout=10.0)
 except ImportError:
     _logger.warning("no se ha cargado urllib3")
 
