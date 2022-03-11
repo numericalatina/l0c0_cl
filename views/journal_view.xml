@@ -36,13 +36,13 @@
                     <field name="sucursal_id" />
                     <field name="sii_code" />
                     <field name="use_documents" attrs="{'invisible': [('type', 'not in', [ 'purchase', 'sale'])]}" />
-                    <field name="restore_mode" attrs="{'invisible': [('type', 'not in', [ 'sale' ])]}" />
+                    <field name="restore_mode" attrs="{'invisible': [('use_documents', '=', False)]}" />
                 </field>
 
                 <notebook position="inside">
                     <page
                         string="Documents"
-                        attrs="{'invisible': ['|',('use_documents','=',False), ('type','not in',['purchase','sale'])]}"
+                        attrs="{'invisible': [('use_documents','=',False)]}"
                     >
                         <button
                             name="%(action_account_journal_document_config_form)d"
@@ -54,8 +54,6 @@
                         <button
                             name="%(action_apicaf_form)d"
                             attrs="{'invisible': [
-                                  ('type', '!=', 'sale'),
-                                  ('use_documents', '=', False),
                                   ('journal_document_class_ids', '=', [])]}"
                             string="Obtener Folios desde el SII"
                             type="action"
@@ -67,7 +65,7 @@
                             <field name="company_activity_ids" invisible="1" />
                             <field
                                 name="journal_activities_ids"
-                                attrs="{'invisible': [('type','not in',['purchase','sale'])],'required': [('use_documents','=',True),('type','in',['sale'])]}"
+                                attrs="{'invisible': [('journal_document_class_ids', '=', [])],'required': [('use_documents','=',True), ('journal_document_class_ids', '!=', [])]}"
                                 placeholder="Giros del Diario"
                                 widget="many2many_tags"
                                 options="{'no_create': True}"
@@ -83,7 +81,7 @@
                         <field
                             name='journal_document_class_ids'
                             context="{'journal_type': type}"
-                            attrs="{'invisible': [('type', '!=', 'sale')]}"
+                            attrs="{'invisible': [('journal_document_class_ids', '=', []), ('type', '=', 'purchase')]}"
                             editable="bottom"
                             widget="one2many"
                         >
