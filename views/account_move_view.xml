@@ -63,9 +63,13 @@
                     <field name="discount_amount" invisible="1" />
                 </field>
                 <xpath expr="//form/sheet/div/h1[hasclass('mt0')]" position="replace">
+                    <div attrs="{'invisible': ['|', ('state', '!=', 'draft'),('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}">
+                      <span class="o_form_label">Emitir Documentos</span>
+                      <field name="use_documents"/>
+                    </div>
                     <h1 class="mt0">
                         <div
-                            attrs="{'invisible': [('state', '=', 'draft'), ('move_type', 'not in', ['in_invoice', 'in_refund'])]}"
+                            attrs="{'invisible': [('state', '=', 'draft'), ('use_documents', '=', True)]}"
                         >
                           <field
                               name="document_class_id"
@@ -101,10 +105,6 @@
                           />
                       </div>
                       <field name="name" readonly="1" invisible="1" class="oe_inline" />
-                      <div attrs="{'invisible': ['|', ('state', '!=', 'draft'),('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}">
-                        <span class="o_form_label">Emitir Documentos</span>
-                        <field name="use_documents"/>
-                      </div>
                   </h1>
                 </xpath>
                 <field name='partner_id' position="after">

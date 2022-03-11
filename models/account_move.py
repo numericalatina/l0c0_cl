@@ -98,15 +98,20 @@ class AccountMove(models.Model):
                 sii_barcode_img = r.get_barcode_img()
             r.sii_barcode_img = sii_barcode_img
 
-    @api.onchange("journal_id")
-    @api.depends("journal_id")
+    @api.onchange("journal_id", "use_documents")
+    @api.depends("journal_id", "use_documents")
     def get_dc_ids(self):
         for r in self:
             r.document_class_ids = []
             if not r.check_invoice_type(r.move_type):
                 continue
-            dc_type = ["invoice"] if r.move_type in ["in_invoice", "out_invoice"] else ["credit_note", "debit_note"]
-            if r.move_type in ["in_invoice", "in_refund"]:
+            if not r.use_documents and r.move_type in ["in_invoice", "out_invoice"]:
+                dc_type = ["invoice", "invoice_in"]
+            elif r.use_documents and r.move_type == "in_invoice":
+                dc_type = ["invoice_in"]
+            else:
+                dc_type = ["credit_note", "debit_note"]
+            if not r.use_documents and r.move_type in ["in_invoice", "in_refund"]:
                 for dc in r.journal_id.document_class_ids:
                     if dc.document_type in dc_type:
                         r.document_class_ids += dc
@@ -723,7 +728,7 @@ class AccountMove(models.Model):
         imps["neto"] = self.amount_total - imps["otros_imps"] - imps["exento"] - imps["iva"]
         return imps
 
-    @api.onchange("invoice_line_ids")
+    @api.onchange("invoice_line_ids", "journal_document_class_id")
     def _onchange_invoice_line_ids(self):
         i = 0
         for l in self.invoice_line_ids:
@@ -1066,10 +1071,7 @@ class AccountMove(models.Model):
 
     @api.onchange("journal_document_class_id")
     def set_document_class_id(self):
-        if self.move_type in ["in_invoice", "in_refund"]:
-            return
         self.document_class_id = self.journal_document_class_id.sii_document_class_id.id
-        self._onchange_invoice_line_ids()
 
     def _validaciones_uso_dte(self):
         if not self.document_class_id:
