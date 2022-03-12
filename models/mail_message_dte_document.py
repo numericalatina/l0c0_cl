@@ -181,8 +181,8 @@ class ProcessMailsDocument(models.Model):
                 _logger.warning("encolar")
             if r.move_id and r.state != "draft":
                 continue
-            if self.move_id:
-                resp = [self.move_id.id]
+            if r.move_id:
+                resp = r.move_id.ids
             else:
                 vals = {
                     "xml_file": r.xml.encode("ISO-8859-1"),
