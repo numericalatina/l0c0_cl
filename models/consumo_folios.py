@@ -164,7 +164,7 @@ class ConsumoFolios(models.Model):
             total_exento = 0
             total = 0
             total_boletas = 0
-            for d in r.impuestos:
+            for d in r.impuestos.filtered(lambda a: a.tpo_doc.sii_code in [39, 41]):
                 total_iva += d.monto_iva
                 total_exento += d.monto_exento
                 total += d.monto_total
