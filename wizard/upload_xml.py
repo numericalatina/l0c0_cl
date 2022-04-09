@@ -105,7 +105,7 @@ class UploadXMLWizard(models.TransientModel):
         )
         if check:
             return xml
-        xml = xml.replace(' xmlns="http://www.sii.cl/SiiDte"', "")
+        xml = xml.replace('xmlns="http://www.sii.cl/SiiDte"', "")
         if mode == "etree":
             parser = etree.XMLParser(remove_blank_text=True)
             return etree.fromstring(xml, parser=parser)
