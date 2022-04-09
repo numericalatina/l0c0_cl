@@ -660,7 +660,7 @@ class AccountMove(models.Model):
                 continue
             inv._validaciones_uso_dte()
             inv.sii_result = "NoEnviado"
-            if inv.journal_id.restore_mode:
+            if inv.journal_id.restore_mode or self._context.get("restore_mode", False):
                 inv.sii_result = "Proceso"
             else:
                 inv._timbrar()

@@ -53,7 +53,7 @@ class UploadXMLWizard(models.TransientModel):
             self.dte_id = dte_id
         if self.type == "ventas":
             created = self.do_create_inv()
-            xml_id = "account.action_vendor_bill_template"
+            xml_id = "account.view_move_form"
             target_model = "account.move"
         elif self.pre_process or self.option == "upload":
             created = self.do_create_pre()
@@ -64,7 +64,7 @@ class UploadXMLWizard(models.TransientModel):
             return
         elif self.action == "create":
             created = self.do_create_inv()
-            xml_id = "account.action_vendor_bill_template"
+            xml_id = "account.view_move_form"
             target_model = "account.move"
         if self.action == "create_po":
             self.do_create_po()
@@ -614,11 +614,7 @@ class UploadXMLWizard(models.TransientModel):
         invoice["document_class_id"] = dc_id.id
         if not document:
             invoice["sii_document_number"] =  Folio
-        if not document and self.type == "ventas":
-            invoice.update(
-                {"move_name": "{}{}".format(dc_id.doc_code_prefix, Folio),}
-            )
-        elif document:
+        if document:
             RznSoc = Emisor.find("RznSoc")
             if RznSoc is None:
                 RznSoc = Emisor.find("RznSocEmisor")
@@ -634,11 +630,16 @@ class UploadXMLWizard(models.TransientModel):
     def _get_journal(self, sii_code, company_id, ignore_journal=False):
         dc_id = self.env["sii.document_class"].search([("sii_code", "=", sii_code)])
         type = "purchase"
+        query = [("company_id", "=", company_id.id),]
         if self.type == "ventas":
             type = "sale"
+            query.append(("journal_document_class_ids.sii_document_class_id", "=", dc_id.id))
+        else:
+            query.append(("document_class_ids", "=", dc_id.id))
+        query.append(("type", "=", type))
         journal_id = self.env["account.journal"].search(
-            [("document_class_ids", "=", dc_id.id), ("type", "=", type), ("company_id", "=", company_id.id),], limit=1,
-        )
+                query, limit=1,
+            )
         if not journal_id and not ignore_journal:
             raise UserError(
                 "No existe Diario para el tipo de documento %s, por favor añada uno primero, o ignore el documento"
@@ -889,13 +890,13 @@ class UploadXMLWizard(models.TransientModel):
                     total_line.with_context(check_move_validity=False).credit += diff_balance
                 else:
                     total_line.with_context(check_move_validity=False).debit += diff_balance
-                inv._post()
+                inv.with_context(restore_mode=True)._post()
                 if inv.amount_total == monto_xml:
                     continue
                 raise UserError("no se pudo cuadrar la factura")
             except Exception as e:
                 msg = "Error en crear 1 factura con error:  %s" % str(e)
-                _logger.warning(msg)
+                _logger.warning(msg, exc_info=True)
                 if self.document_id:
                     self.document_id.message_post(body=msg)
 
