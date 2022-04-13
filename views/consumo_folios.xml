@@ -18,7 +18,7 @@
                     <field name="currency_id" invisible="True" />
                     <field name="date" />
                     <field name="company_id" />
-                    <field name="state" />
+                    <field name="state" widget="badge" decoration-muted="state in ['draft', 'NoEnviado', 'Anulado']" decoration-info="state in ['Enviado', 'EnProceso']" decoration-success="state == 'Proceso'" decoration-danger="state == 'Rechazado'" decoration-warning="state == 'Reparo'"/>
                 </tree>
             </field>
         </record>
