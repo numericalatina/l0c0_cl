@@ -548,6 +548,8 @@ class UploadXMLWizard(models.TransientModel):
         data["gdr_detail"] = dr.find("GlosaDR").text if dr.find("GlosaDR") is not None else "Descuento global"
         if journal_id:
             data['account_id'] = journal_id.default_gd_account_id.id if data['type'] == 'D' else journal_id.default_gr_account_id.id
+            if not data['account_id']:
+                raise UserError("No tiene cuenta contable seleccionada para  %s" % data["gdr_detail"])
         return data
 
     def _prepare_invoice(self, documento, company_id, journal_id, document=False):
