@@ -177,8 +177,7 @@ class ProcessMailsDocument(models.Model):
             try:
                 r.get_dte_claim()
             except Exception as e:
-                _logger.warning("Problema al obtener claim desde accept %s" % str(e))
-                _logger.warning("encolar")
+                _logger.warning("Problema al obtener claim desde accept %s" % str(e), exc_info=True)
             if r.move_id and r.state != "draft":
                 continue
             if r.move_id:
@@ -209,7 +208,6 @@ class ProcessMailsDocument(models.Model):
         if created:
             action['domain'] = [('id', 'in', created)]
         return action
-
 
     def reject_document(self):
         for r in self:
@@ -246,7 +244,7 @@ class ProcessMailsDocument(models.Model):
             respuesta = fe.ingreso_reclamo_documento(datos)[key]
         except Exception as e:
             msg = "Error al ingresar Reclamo DTE"
-            _logger.warning("{}: {}".format(msg, str(e)))
+            _logger.warning("{}: {}".format(msg, str(e)), exc_info=True)
             if e.args[0][0] == 503:
                 raise UserError(
                     "%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción"
@@ -284,10 +282,9 @@ class ProcessMailsDocument(models.Model):
             elif date_end <= datetime.now() and self.claim == "N/D":
                 self.state = "accepted"
         except Exception as e:
-            _logger.warning("Error al obtener aceptación %s" % (str(e)))
+            _logger.warning("Error al obtener aceptación %s" % (str(e)), exc_info=True)
             if self.company_id.dte_service_provider == "SII":
                 raise UserError("Error al obtener aceptación: %s" % str(e))
-
 
     def get_claim(self):
         date_end = self.create_date + relativedelta(days=8)

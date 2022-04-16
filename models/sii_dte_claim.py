@@ -99,7 +99,7 @@ class DTEClaim(models.Model):
             respuesta = fe.ingreso_reclamo_documento(datos)
         except Exception as e:
                 msg = "Error al ingresar Reclamo DTE"
-                _logger.warning("%s: %s" % (msg, str(e)))
+                _logger.warning("%s: %s" % (msg, str(e)), exc_info=True)
                 if e.args[0][0] == 503:
                     raise UserError('%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción' % (msg))
                 raise UserError(("%s: %s" % (msg, str(e))))
@@ -228,11 +228,11 @@ class DTEClaim(models.Model):
         try:
             doc.set_dte_claim(claim=self.claim)
         except Exception as e:
-            _logger.warning("Error al setear Reclamo %s" % str(e))
+            _logger.warning("Error al setear Reclamo %s" % str(e), exc_info=True)
         try:
             doc.get_dte_claim()
         except Exception:
-            _logger.warning("@TODO crear código que encole la respuesta")
+            _logger.warning("@TODO crear código que encole la respuesta", exc_info=True)
 
 
     def do_recep_mercaderia(self):
@@ -282,8 +282,8 @@ class DTEClaim(models.Model):
         try:
             doc.set_dte_claim(claim=self.claim)
         except Exception as e:
-            _logger.warning("Error al setear Reclamo  Recep Mercadería %s" % str(e))
+            _logger.warning("Error al setear Reclamo  Recep Mercadería %s" % str(e), exc_info=True)
         try:
             doc.get_dte_claim()
         except Exception:
-            _logger.warning("@TODO crear código que encole la respuesta")
+            _logger.warning("@TODO crear código que encole la respuesta", exc_info=True)

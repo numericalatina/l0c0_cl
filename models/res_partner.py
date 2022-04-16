@@ -96,7 +96,7 @@ class ResPartner(models.Model):
                             ):
                                 r.put_remote_user_data()
                     except Exception as e:
-                        _logger.warning("Error en subida información %s" % str(e))
+                        _logger.warning("Error en subida información %s" % str(e), exc_info=True)
                     break
         return result
 
@@ -340,7 +340,7 @@ class ResPartner(models.Model):
                 return
             data = json.loads(resp.data.decode("ISO-8859-1"))
         except Exception as ex:
-            _logger.error(tools.ustr(ex))
+            _logger.error(tools.ustr(ex), exc_info=True)
 
     def get_remote_user_data(self, to_check, process_data=True):
         company = self.company_id or self.env.company
@@ -383,7 +383,7 @@ class ResPartner(models.Model):
                 return
             self._process_data(data)
         except Exception as ex:
-            _logger.error(tools.ustr(ex))
+            _logger.error(tools.ustr(ex), exc_info=True)
 
     @api.onchange("name")
     def fill_partner(self):
@@ -432,4 +432,4 @@ class ResPartner(models.Model):
                     r.sync = False
                     r.fill_partner()
             except Exception as ex:
-                _logger.error(tools.ustr(ex))
+                _logger.error(tools.ustr(ex), exc_info=True)

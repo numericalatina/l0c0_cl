@@ -1989,7 +1989,7 @@ class AccountMove(models.Model):
         try:
             self._get_dte_status()
         except Exception as e:
-            _logger.warning("Error al obtener DTE Status: %s" % str(e))
+            _logger.warning("Error al obtener DTE Status: %s" % str(e), exc_info=True)
         for r in self:
             mess = False
             if r.sii_result == "Rechazado":
@@ -2003,7 +2003,7 @@ class AccountMove(models.Model):
                 try:
                     r.action_invoice_cancel()
                 except Exception:
-                    _logger.warning("Error al cancelar Documento")
+                    _logger.warning("Error al cancelar Documento", exc_info=True)
                 mess = {
                     "title": "Documento Anulado",
                     "message": "%s" % r.name,
@@ -2035,7 +2035,7 @@ class AccountMove(models.Model):
             self.claim_description = respuesta[key]
         except Exception as e:
             msg = "Error al ingresar Reclamo DTE"
-            _logger.warning("{}: {}".format(msg, str(e)))
+            _logger.warning("{}: {}".format(msg, str(e)), exc_info=True)
             if e.args[0][0] == 503:
                 raise UserError(
                     "%s: Conexión al SII caída/rechazada o el SII está temporalmente fuera de línea, reintente la acción"
@@ -2064,7 +2064,7 @@ class AccountMove(models.Model):
         try:
             respuesta = fe.consulta_reclamo_documento(datos)
             key = "RUT%sT%sF%s" %(rut_emisor,
-                                  tipo_dte, str(self.sii_document_number))
+                                  tipo_dte, str(self.sii_document_number), exc_info=True)
             self.claim_description = respuesta[key]
         except Exception as e:
             if e.args[0][0] == 503:

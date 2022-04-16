@@ -581,7 +581,7 @@ class UploadXMLWizard(models.TransientModel):
         try:
             name = self.filename.decode("ISO-8859-1").encode("UTF-8")
         except Exception as ex:
-            _logger.error(tools.ustr(ex))
+            _logger.error(tools.ustr(ex), exc_info=True)
             name = self.filename.encode("UTF-8")
         ted_string = b""
         if documento.find("TED") is not None:
@@ -831,7 +831,7 @@ class UploadXMLWizard(models.TransientModel):
                     )
                     created.append(pre.id)
             except Exception as e:
-                _logger.warning("Error en 1 pre con error:  %s" % str(e))
+                _logger.warning("Error en 1 pre con error:  %s" % str(e), exc_info=True)
         return created
 
     def do_create_inv(self):
