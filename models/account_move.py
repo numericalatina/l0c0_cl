@@ -67,7 +67,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     def check_invoice_type(self, move_type):
-        return move_type in ["in_invoice", "in_refund", "out_invoice", "out_refund"]
+        return move_type in self.get_invoice_types()
 
     def _default_journal_document_class_id(self):
         if not self.env["ir.model"].search([("model", "=", "sii.document_class")]) or self.document_class_id:
@@ -98,8 +98,8 @@ class AccountMove(models.Model):
                 sii_barcode_img = r.get_barcode_img()
             r.sii_barcode_img = sii_barcode_img
 
-    @api.onchange("journal_id", "use_documents")
-    @api.depends("journal_id", "use_documents")
+    @api.onchange("journal_id", "use_documents", "move_type")
+    @api.depends("journal_id", "use_documents", "move_type")
     def get_dc_ids(self):
         for r in self:
             r.document_class_ids = []
