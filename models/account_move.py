@@ -2064,7 +2064,7 @@ class AccountMove(models.Model):
         try:
             respuesta = fe.consulta_reclamo_documento(datos)
             key = "RUT%sT%sF%s" %(rut_emisor,
-                                  tipo_dte, str(self.sii_document_number), exc_info=True)
+                                  tipo_dte, str(self.sii_document_number))
             self.claim_description = respuesta[key]
         except Exception as e:
             if e.args[0][0] == 503:
