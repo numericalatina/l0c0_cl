@@ -1,7 +1,6 @@
 import base64
 import logging
 from datetime import datetime
-
 import pytz
 
 from odoo import SUPERUSER_ID, api, fields, models, tools
@@ -22,7 +21,8 @@ class IRSequence(models.Model):
                 r.solicitar_caf()
             except Exception as e:
                 _logger.warning(
-                    "Error al solictar folios a secuencia {}: {}".format(r.sii_document_class_id.name, str(e))
+                    "Error al solictar folios a secuencia {}: {}".format(r.sii_document_class_id.name, str(e)),
+                    exc_info=True
                 )
 
     def get_qty_available(self, folio=None):
@@ -30,7 +30,8 @@ class IRSequence(models.Model):
         try:
             cafs = self.get_caf_files(folio)
         except Exception as ex:
-            _logger.error(tools.ustr(ex))
+            _logger.warning(tools.ustr(ex),
+            exc_info=True)
             cafs = False
         available = 0
         folio = int(folio)
@@ -52,6 +53,10 @@ class IRSequence(models.Model):
         return available
 
     def solicitar_caf(self):
+        if self.qty_available == self.nivel_minimo:
+            self.inspeccionar_folios_sin_usar()
+            if self.qty_available >= self.nivel_minimo:
+                return
         firma = self.env.user.sudo(SUPERUSER_ID).get_digital_signature(self.company_id)
         wiz_caf = self.env["dte.caf.apicaf"].create(
             {"company_id": self.company_id.id, "sequence_id": self.id, "firma": firma.id,}
@@ -97,6 +102,26 @@ class IRSequence(models.Model):
     nivel_minimo = fields.Integer(string="Nivel Mínimo de Folios", default=5,)  # @TODO hacerlo configurable
     autoreponer_caf = fields.Boolean(string="Reposición Automática de CAF", default=False)
     autoreponer_cantidad = fields.Integer(string="Cantidad de Folios a Reponer", default=2)
+    folios_sin_usar = fields.Integer(string="Folios sin usar", compute="set_folios_sin_usar", store=True)
+
+    @api.depends('dte_caf_ids.cantidad_folios_sin_usar')
+    def set_folios_sin_usar(self):
+        for r in self:
+            folios_sin_usar = 0
+            for caf in r.dte_caf_ids:
+                folios_sin_usar += caf.cantidad_folios_sin_usar
+            r.folios_sin_usar = folios_sin_usar
+
+    def obtener_folios_sin_usar(self):
+        folios = []
+        for caf in self.dte_caf_ids:
+            folios += caf.obtener_folios_sin_usar()
+        return folios
+
+    @api.onchange('qty_available')
+    def inspeccionar_folios_sin_usar(self):
+        for caf in self.dte_caf_ids:
+            caf.inspeccionar_folios_sin_usar()
 
     def get_folio(self):
         if self.implementation == 'standard':

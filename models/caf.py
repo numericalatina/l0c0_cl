@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-
+import ast
 from dateutil.relativedelta import relativedelta
 from lxml import etree
 
@@ -52,10 +52,48 @@ has been exhausted.""",
     )
     sequence_id = fields.Many2one("ir.sequence", string="Sequence",)
     use_level = fields.Float(string="Use Level", compute="_used_level",)
+    cantidad_folios_sin_usar = fields.Integer(string="Cantidad folios sin usar", default=0)
+    folios_sin_usar = fields.Text(string="Folios sin usar")
     _sql_constraints = [
         ("filename_unique", "unique(filename)", "Error! Filename Already Exist!"),
     ]
     _order = "start_nm DESC"
+
+    def obtener_folios_sin_usar(self):
+        if not self.folios_sin_usar:
+            return []
+        return ast.literal_eval(self.folios_sin_usar)
+
+    def ingresar_folio_sin_usar(self, folio):
+        folios = self.obtener_folios_sin_usar()
+        if not folio in folios:
+            folios.append(folio)
+        self.folios_sin_usar = str(sorted(folios))
+        self.cantidad_folios_sin_usar += 1
+
+    def eliminar_folio_sin_usar(self, folio):
+        self.folios_sin_usar.replace(', %s'% folio, '').replace('%s,'% folio, '').replace('%s'% folio, '')
+
+    def _join_inspeccionar(self):
+        return 'LEFT JOIN account_move a on s = a.sii_document_number and a.document_class_id = %s' % self.sequence_id.sii_document_class_id.id
+
+    def _where_inspeccionar(self):
+        return 'a.sii_document_number is null'
+
+    def inspeccionar_folios_sin_usar(self):
+        joins = self._join_inspeccionar()
+        wheres = self._where_inspeccionar()
+        self._cr.execute("SELECT s FROM generate_series({0},{1},1) s {2} WHERE {3}".format(
+            self.start_nm,
+            self.final_nm,
+            joins,
+            wheres,
+        ))
+        folios = sorted([x[0] for x in self._cr.fetchall()])
+        self.write({
+            'folios_sin_usar': str(folios),
+            'cantidad_folios_sin_usar': len(folios)
+            })
 
     def load_caf(self, flags=False):
         if not self.caf_file and not self.caf_string:

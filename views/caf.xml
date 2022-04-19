@@ -24,6 +24,9 @@
                 </field>
                 <xpath expr='//notebook' position="inside">
                     <page string="CAF Files" attrs="{'invisible': [('is_dte','=',False)]}">
+                      <header>
+                        <button name="inspeccionar_folios_sin_usar" type="object" string="Inspeccionar folios sin usar" attrs="{'invisible': [('dte_caf_ids', '=', [])]}"/>
+                      </header>
                         <group>
                             <field name="nivel_minimo" />
                             <div class="text-muted">Solo se lanzará una alerta si no está marcado autoreponer</div>
@@ -35,6 +38,7 @@
                             <div
                                 class="text-muted"
                             >Cantidad a solicitar por CAF cuando se llegue al mínimo de la secuencia</div>
+                            <field name="folios_sin_usar" readonly="1"/>
                         </group>
                         <field
                             name="dte_caf_ids"
@@ -44,6 +48,7 @@
                                 <field name="name" />
                                 <field name="start_nm" />
                                 <field name="final_nm" />
+                                <field name="cantidad_folios_sin_usar" readonly="1"/>
                                 <field name="issued_date" readonly="1" />
                                 <field name="expiration_date" readonly="1" />
                                 <field name="use_level" widget="progressbar" />
@@ -94,6 +99,19 @@
                                 backgrounds="blue:status == 'in_use';red:status == 'spent'"
                             />
                         </group>
+                        <notebook>
+                          <page string="Mantención">
+                            <header>
+                              <button name="inspeccionar_folios_sin_usar" type="object" string="Inspeccionar folios sin usar" attrs="{'invisible': [('status', '=', 'draft')]}"/>
+                            </header>
+                            <sheet>
+                              <group>
+                                <field name="cantidad_folios_sin_usar" readonly="1"/>
+                              </group>
+                              <field name="folios_sin_usar" readonly="1"/>
+                            </sheet>
+                          </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>
@@ -110,6 +128,7 @@
                     <field name="final_nm" />
                     <field name="expiration_date" />
                     <field name="company_id" />
+                    <field name="cantidad_folios_sin_usar" readonly="1"/>
                     <field name="use_level" />
                     <field name="status" />
                 </tree>
