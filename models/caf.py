@@ -81,11 +81,15 @@ has been exhausted.""",
         return 'a.sii_document_number is null'
 
     def inspeccionar_folios_sin_usar(self):
+        folio = self.sequence_id.get_folio()
+        if self.start_nm > folio:
+            return
+        final_nm = folio if self.start_nm <= folio <= self.final_nm else self.final_nm
         joins = self._join_inspeccionar()
         wheres = self._where_inspeccionar()
         self._cr.execute("SELECT s FROM generate_series({0},{1},1) s {2} WHERE {3}".format(
             self.start_nm,
-            self.final_nm,
+            final_nm,
             joins,
             wheres,
         ))
