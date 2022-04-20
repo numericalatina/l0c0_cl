@@ -278,15 +278,17 @@ class ConsumoFolios(models.Model):
                     ("sii_document_number", 'not in', [0, False]),
                 ]
             ).filtered(lambda a: a.is_invoice() and (a.es_boleta() or a.es_nc_boleta()))
-        consumos = self.search_count(
+        consumo = self.search(
             [
                 ("fecha_inicio", "=", self.fecha_inicio),
                 ("state", "not in", ["draft", "Rechazado"]),
                 ("company_id", "=", self.company_id.id),
-            ]
+            ],
+            limit=1,
+            order="sec_envio DESC"
         )
-        if consumos > 0:
-            self.sec_envio = consumos + 1
+        if consumo:
+            self.sec_envio = consumo.sec_envio + 1
 
     def copy(self, default=None):
         res = super(ConsumoFolios, self).copy(default)
