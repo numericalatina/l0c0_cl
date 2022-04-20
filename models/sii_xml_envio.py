@@ -180,6 +180,8 @@ class SIIXMLEnvio(models.Model):
             if type(receipt) is dict:
                 if not receipt.get('estadistica'):
                     state = 'Aceptado'
+                if '"detalle_rep_rech":null' in receipt.get('detalle_rep_rech', '{}'):
+                    return
                 detalle_rep_rech = json.loads(receipt.get('detalle_rep_rech', '{}'))
             elif receipt.find("RESP_HDR") is not None:
                 state = "Aceptado"
