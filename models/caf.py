@@ -72,7 +72,7 @@ has been exhausted.""",
         self.cantidad_folios_sin_usar += 1
 
     def eliminar_folio_sin_usar(self, folio):
-        self.folios_sin_usar.replace(', %s'% folio, '').replace('%s,'% folio, '').replace('%s'% folio, '')
+        self.folios_sin_usar = self.folios_sin_usar.replace('%s, '% folio, '').replace(', %s'% folio, '').replace('%s'% folio, '')
 
     def _join_inspeccionar(self):
         return 'LEFT JOIN account_move a on s = a.sii_document_number and a.document_class_id = %s' % self.sequence_id.sii_document_class_id.id
