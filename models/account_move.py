@@ -105,10 +105,10 @@ class AccountMove(models.Model):
             r.document_class_ids = []
             if not r.check_invoice_type(r.move_type):
                 continue
-            if not r.use_documents and r.move_type in ["in_invoice", "out_invoice"]:
-                dc_type = ["invoice", "invoice_in"]
-            elif r.use_documents and r.move_type == "in_invoice":
-                dc_type = ["invoice_in"]
+            dc_type = ["invoice", "invoice_in"]
+            if r.use_documents:
+                if r.move_type == "in_invoice":
+                    dc_type = ["invoice_in"]
             else:
                 dc_type = ["credit_note", "debit_note"]
             if not r.use_documents and r.move_type in ["in_invoice", "in_refund"]:
