@@ -163,6 +163,12 @@ class SIIXMLEnvio(models.Model):
     def ask_for(self):
         self.get_send_status(self.user_id)
 
+    def check_estado_boleta(self, doc, detalles, state):
+        for d in detalles:
+            if d['tipo'] == doc.document_class_id.sii_code and d['folio'] == doc.sii_document_number:
+                return 'Rechazado'
+        return state
+
     def set_childs(self, state, detalle_rep_rech=False):
         for r in self.move_ids:
             if r.es_boleta() and detalle_rep_rech:
@@ -180,9 +186,9 @@ class SIIXMLEnvio(models.Model):
             if type(receipt) is dict:
                 if not receipt.get('estadistica'):
                     state = 'Aceptado'
-                if '"detalle_rep_rech":null' in receipt.get('detalle_rep_rech', '{}'):
-                    return
-                detalle_rep_rech = json.loads(receipt.get('detalle_rep_rech', '{}'))
+                detalle_rep_rech = []
+                if receipt.get('detalle_rep_rech', '{}') != [] and '"detalle_rep_rech":null' not in receipt.get('detalle_rep_rech', '{}'):
+                    detalle_rep_rech = json.loads(receipt.get('detalle_rep_rech', '{}'))
             elif receipt.find("RESP_HDR") is not None:
                 state = "Aceptado"
         self.set_childs(state, detalle_rep_rech)
