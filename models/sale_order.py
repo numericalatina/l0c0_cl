@@ -14,21 +14,21 @@ class SO(models.Model):
         vals = super(SO, self)._prepare_invoice()
         if self.acteco_id:
             vals["acteco_id"] = self.acteco_id.id
-        if self.referencia_ids:
-            vals["referencias"] = []
-            for ref in self.referencia_ids:
-                vals["referencias"].append(
-                    (
-                        0,
-                        0,
-                        {
-                            "origen": ref.folio,
-                            "sii_referencia_TpoDocRef": ref.sii_referencia_TpoDocRef.id,
-                            "motivo": ref.motivo,
-                            "fecha_documento": ref.fecha_documento,
-                        },
-                    )
-                )
+        if self._context.get('default_referencias', []):
+            for r in self._context.get('default_referencias', []):
+                if not self.env['sale.order.referencias'].search([
+                    ('folio', '=', r[2]['origen']),
+                    ('fecha_documento', '=', r[2]['fecha_documento']),
+                    ('sii_referencia_TpoDocRef', '=', r[2]['sii_referencia_TpoDocRef']),
+                    ('motivo', '=', r[2]['motivo']),
+                ]):
+                    self.env['sale.order.referencias'].create({
+                        'folio': r[2]['origen'],
+                        'fecha_documento': r[2]['fecha_documento'],
+                        'sii_referencia_TpoDocRef': r[2]['sii_referencia_TpoDocRef'],
+                        'motivo': r[2]['motivo'],
+                        'so_id': self.id,
+                    })
         return vals
 
     @api.depends("order_line.price_total")
