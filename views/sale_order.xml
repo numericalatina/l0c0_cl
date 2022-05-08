@@ -14,6 +14,7 @@
                     options="{'no_open': True, 'no_create': True}"
                 />
             </field>
+
             <page name="other_information" position="after">
               <page string="Referencias DTE">
                 <field name="referencia_ids" mode="tree">
@@ -26,6 +27,13 @@
                 </field>
               </page>
             </page>
+
+            <field name="require_signature" position="before">
+              <field name="use_documents" />
+              <field name="journal_id" options="{'no_create': True}" invisible="1"/>
+              <field name="journal_document_class_ids" invisible="1"/>
+              <field name="journal_document_class_id" options="{'no_create': True}" attrs="{'invisible': [('use_documents', '=', False)]}"/>
+            </field>
         </field>
     </record>
 </odoo>

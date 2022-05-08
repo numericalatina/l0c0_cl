@@ -5,30 +5,72 @@ from odoo import api, fields, models
 class SO(models.Model):
     _inherit = "sale.order"
 
+    def _default_journal_document_class_id(self):
+        if not self.env["ir.model"].search([("model", "=", "sii.document_class")]):
+            return False
+        journal = self.journal_id or self.env["account.nove"].default_get(["journal_id"])["journal_id"]
+        jdc = self.env["account.journal.sii_document_class"].search(
+            [("journal_id", "=", journal), ("sii_document_class_id.document_type", "in", ['invoice']),], limit=1
+        )
+        return jdc
+
+    def _default_use_documents(self):
+        if self._default_journal_document_class_id():
+            return True
+        return False
+
     acteco_ids = fields.Many2many("partner.activities", related="partner_invoice_id.acteco_ids",)
     acteco_id = fields.Many2one("partner.activities", string="Partner Activity",)
     referencia_ids = fields.One2many("sale.order.referencias", "so_id", string="Referencias de documento")
-
+    journal_id = fields.Many2one(
+        'account.journal',
+        default=lambda self: self.env['account.move'].with_context(default_move_type='out_invoice')._get_default_journal(),
+        domain="[('type', '=', 'sale')]"
+    )
+    journal_document_class_ids = fields.Many2many(
+        "account.journal.sii_document_class",
+        related="journal_id.journal_document_class_ids",
+        string="Available Document Classes",
+        domain="[('sii_document_class_id.document_type', '=', 'invoice')]"
+    )
+    journal_document_class_id = fields.Many2one(
+        "account.journal.sii_document_class",
+        string="Documents Type",
+        default=lambda self: self._default_journal_document_class_id(),
+        readonly=True,
+        states={"draft": [("readonly", False)]},
+    )
+    use_documents = fields.Boolean(
+        string="Use Documents?",
+       default=lambda self: self._default_use_documents(),
+    )
 
     def _prepare_invoice(self):
         vals = super(SO, self)._prepare_invoice()
         if self.acteco_id:
             vals["acteco_id"] = self.acteco_id.id
-        if self._context.get('default_referencias', []):
-            for r in self._context.get('default_referencias', []):
-                if not self.env['sale.order.referencias'].search([
-                    ('folio', '=', r[2]['origen']),
-                    ('fecha_documento', '=', r[2]['fecha_documento']),
-                    ('sii_referencia_TpoDocRef', '=', r[2]['sii_referencia_TpoDocRef']),
-                    ('motivo', '=', r[2]['motivo']),
-                ]):
-                    self.env['sale.order.referencias'].create({
-                        'folio': r[2]['origen'],
-                        'fecha_documento': r[2]['fecha_documento'],
-                        'sii_referencia_TpoDocRef': r[2]['sii_referencia_TpoDocRef'],
-                        'motivo': r[2]['motivo'],
-                        'so_id': self.id,
-                    })
+        if self.use_documents:
+            vals.update({
+                'use_documents': self.use_documents,
+                'journal_id': self.journal_id.id,
+                'journal_document_class_id': self.journal_document_class_id.id,
+                'document_class_id': self.journal_document_class_id.sii_document_class_id.id,
+            })
+            if self._context.get('default_referencias', []):
+                for r in self._context.get('default_referencias', []):
+                    if not self.env['sale.order.referencias'].search([
+                        ('folio', '=', r[2]['origen']),
+                        ('fecha_documento', '=', r[2]['fecha_documento']),
+                        ('sii_referencia_TpoDocRef', '=', r[2]['sii_referencia_TpoDocRef']),
+                        ('motivo', '=', r[2]['motivo']),
+                    ]):
+                        self.env['sale.order.referencias'].create({
+                            'folio': r[2]['origen'],
+                            'fecha_documento': r[2]['fecha_documento'],
+                            'sii_referencia_TpoDocRef': r[2]['sii_referencia_TpoDocRef'],
+                            'motivo': r[2]['motivo'],
+                            'so_id': self.id,
+                        })
         return vals
 
     @api.depends("order_line.price_total")
