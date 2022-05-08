@@ -14,8 +14,8 @@ class ResUsers(models.Model):
             user_id = self.env.ref("base.user_admin").id
         signature = self.env["sii.firma"].search(
             [
-                ("user_ids", "child_of", [user_id]),
-                ("company_ids", "child_of", [company_id.id]),
+                ("user_ids", "=", user_id),
+                ("company_ids", "=", company_id.id),
                 ("state", "=", "valid"),
             ],
             limit=1,
