@@ -44,5 +44,6 @@
         action="cola_envio"
         id="menu_action_sii_cola_envio"
         parent="l10n_cl_fe.menu_sii_config"
+        groups="base.group_no_one"
     />
 </odoo>

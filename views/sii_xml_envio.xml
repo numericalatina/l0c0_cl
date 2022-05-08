@@ -56,4 +56,17 @@
             </tree>
         </field>
     </record>
+
+    <record model="ir.actions.act_window" id="xml_envio">
+        <field name="name">SII xml de envío</field>
+        <field name="res_model">sii.xml.envio</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem
+        name="XML de envío"
+        action="xml_envio"
+        id="menu_action_sii_xml_envio"
+        parent="l10n_cl_fe.menu_sii_config"
+        groups="base.group_no_one"
+    />
 </odoo>
