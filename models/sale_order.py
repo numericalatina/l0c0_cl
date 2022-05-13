@@ -8,7 +8,7 @@ class SO(models.Model):
     def _default_journal_document_class_id(self):
         if not self.env["ir.model"].search([("model", "=", "sii.document_class")]):
             return False
-        journal = self.journal_id or self.env["account.nove"].default_get(["journal_id"])["journal_id"]
+        journal = self.journal_id.id or self.env["account.nove"].default_get(["journal_id"])["journal_id"]
         jdc = self.env["account.journal.sii_document_class"].search(
             [("journal_id", "=", journal), ("sii_document_class_id.document_type", "in", ['invoice']),], limit=1
         )
@@ -19,6 +19,12 @@ class SO(models.Model):
             return True
         return False
 
+    @api.onchange('journal_id')
+    @api.depends('journal_id')
+    def _get_dc_ids(self):
+        for r in self:
+            r.document_class_ids = [j.sii_document_class_id.id for j in r.journal_id.journal_document_class_ids.filtered(lambda x: x.sii_document_class_id.document_type == 'invoice')]
+
     acteco_ids = fields.Many2many("partner.activities", related="partner_invoice_id.acteco_ids",)
     acteco_id = fields.Many2one("partner.activities", string="Partner Activity",)
     referencia_ids = fields.One2many("sale.order.referencias", "so_id", string="Referencias de documento")
@@ -27,18 +33,14 @@ class SO(models.Model):
         default=lambda self: self.env['account.move'].with_context(default_move_type='out_invoice')._get_default_journal(),
         domain="[('type', '=', 'sale')]"
     )
-    journal_document_class_ids = fields.Many2many(
-        "account.journal.sii_document_class",
-        related="journal_id.journal_document_class_ids",
-        string="Available Document Classes",
-        domain="[('sii_document_class_id.document_type', '=', 'invoice')]"
+    document_class_ids = fields.Many2many(
+        "sii.document_class", compute="_get_dc_ids", string="Available Document Classes",
     )
     journal_document_class_id = fields.Many2one(
         "account.journal.sii_document_class",
         string="Documents Type",
         default=lambda self: self._default_journal_document_class_id(),
-        readonly=True,
-        states={"draft": [("readonly", False)]},
+        domain="[('sii_document_class_id', '=', document_class_ids)]",
     )
     use_documents = fields.Boolean(
         string="Use Documents?",
