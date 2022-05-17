@@ -20,7 +20,7 @@ class SaleAdvancePaymentInv(models.TransientModel):
     def _default_journal_document_class_id(self):
         if not self.env["ir.model"].search([("model", "=", "sii.document_class")]):
             return False
-        journal = self.journal_id.id or self.env["account.nove"].default_get(["journal_id"])["journal_id"]
+        journal = self.journal_id.id or self.env["account.move"].default_get(["journal_id"])["journal_id"]
         jdc = self.env["account.journal.sii_document_class"].search(
             [("journal_id", "=", journal), ("sii_document_class_id.document_type", "in", ['invoice']),], limit=1
         )
