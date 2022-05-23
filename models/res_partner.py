@@ -282,7 +282,7 @@ class ResPartner(models.Model):
         if data.get("url"):
             self.website = data["url"]
         if data.get("logo"):
-            self.image = data["logo"]
+            self.image_1920 = data["logo"]
         self.sync = True
         if not self.document_number:
             self.document_number = data["rut"]
@@ -315,7 +315,7 @@ class ResPartner(models.Model):
                         "actectos": [ac.code for ac in self.acteco_ids],
                         "url": self.website,
                         "origen": self.env['ir.config_parameter'].sudo().get_param('web.base.url'),
-                        "logo": self.image.decode() if self.image_128 else False,
+                        "logo": self.image_1920.decode() if self.image_1920 else False,
                     }
                 ).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
