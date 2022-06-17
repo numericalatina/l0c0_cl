@@ -205,7 +205,6 @@ class Libro(models.Model):
         operator = "not in"
         query = [
             ("company_id", "=", self.company_id.id),
-            ("sended", "=", False),
             ("invoice_date", "<", next_month.strftime("%Y-%m-%d")),
             ('sii_document_number', 'not in', [0, False])
         ]
