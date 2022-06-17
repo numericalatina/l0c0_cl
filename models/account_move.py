@@ -841,15 +841,15 @@ class AccountMove(models.Model):
                 is_refund = True
 
         tax_repartition_lines_mapping = compute_tax_repartition_lines_mapping(move_vals) if is_refund else {}
-
+        move = self.env['account.move'].browse(default_values['reversed_entry_id'])
         for line_command in move_vals.get('line_ids', []):
             line_vals = line_command[2]  # (0, 0, {...})
 
             # ==== Inverse debit / credit / amount_currency ====
-            if move_vals['move_type'] in ('out_refund', 'in_refund'):
+            if move_vals['move_type'] in ('out_refund', 'in_refund') or move.move_type in ('out_refund', 'in_refund'):
                 amount_currency = -line_vals.get('amount_currency', 0.0)
                 balance = line_vals['credit'] - line_vals['debit']
-            elif move_vals['move_type'] in ('out_invoice', 'in_invoice'):
+            elif move_vals['move_type'] in ('out_invoice', 'in_invoice') or move.move_type in ('out_invoice', 'in_invoice'):
                 amount_currency = line_vals.get('amount_currency', 0.0)
                 balance = line_vals['debit'] - line_vals['credit']
             else:
