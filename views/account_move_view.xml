@@ -58,6 +58,9 @@
                 <button name="preview_invoice" position="after">
                     <button string="Imprimir Copia y Cedible" type="object" name="print_copy_cedible" />
                     <button string="Imprimir Cedible" type="object" name="print_cedible" />
+                    <button name="action_reverse" string='Agregar Nota de Débito'
+                            type='object' groups="account.group_account_invoice"
+                            attrs="{'invisible': ['|', ('move_type', 'not in', ('out_refund', 'in_refund')), ('state', '!=', 'posted')]}"/>
                 </button>
                 <field name="discount" position="after">
                     <field name="discount_amount" invisible="1" />
