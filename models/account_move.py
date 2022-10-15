@@ -664,11 +664,11 @@ class AccountMove(models.Model):
                     ptd.write({"state": "done"})
             if not inv.journal_document_class_id or not inv.use_documents:
                 continue
-            inv._validaciones_uso_dte()
             inv.sii_result = "NoEnviado"
             if inv.journal_id.restore_mode or self._context.get("restore_mode", False):
                 inv.sii_result = "Proceso"
             else:
+                inv._validaciones_uso_dte()
                 inv._timbrar()
                 tiempo_pasivo = datetime.now() + timedelta(
                     hours=int(self.env["ir.config_parameter"].sudo().get_param("account.auto_send_dte", default=1))
@@ -1089,7 +1089,7 @@ class AccountMove(models.Model):
         if not self.env.user.get_digital_signature(self.company_id):
             raise UserError(
                 _(
-                    "Usuario no autorizado a usar firma electrónica para esta compañia. Por favor solicatar autorización en la ficha de compañia del documento por alguien con los permisos suficientes de administrador"
+                    "Usuario no autorizado a usar firma electrónica para esta compañia. Por favor solicitar autorización en la ficha de compañia del documento por alguien con los permisos suficientes de administrador"
                 )
             )
         if not self.env.ref("base.lang_es_CL").active:
