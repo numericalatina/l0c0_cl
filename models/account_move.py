@@ -627,13 +627,9 @@ class AccountMove(models.Model):
 
     @api.depends('posted_before', 'state', 'journal_id', 'date', 'document_class_id', 'sii_document_number')
     def _compute_name(self):
-        dcs = self.filtered('use_documents')
+        dcs = self.filtered(lambda m: m.use_documents and m.document_class_id and m.state != 'draft')
         for r in dcs:
-            if not r.document_class_id or r.state == 'draft':
-                not_dcs += r
-                continue
             r.name = '%s%s' % (r.document_class_id.doc_code_prefix, r.sii_document_number)
-
         super(AccountMove, (self - dcs))._compute_name()
 
     def _get_invoice_computed_reference(self):
