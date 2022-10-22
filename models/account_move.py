@@ -999,10 +999,10 @@ class AccountMove(models.Model):
         gdrs.unlink()
         self._recompute_dynamic_lines()
 
-    @api.onchange("payment_term_id")
+    @api.onchange("invoice_payment_term_id")
     def _onchange_payment_term(self):
-        if self.payment_term_id and self.payment_term_id.dte_sii_code:
-            self.forma_pago = self.payment_term_id.dte_sii_code
+        if self.invoice_payment_term_id and self.invoice_payment_term_id.dte_sii_code:
+            self.forma_pago = self.invoice_payment_term_id.dte_sii_code
 
     @api.returns("self")
     def refund(self, invoice_date=None, description=None, journal_id=None, tipo_nota=61, mode="1"):
