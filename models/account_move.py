@@ -99,17 +99,16 @@ class AccountMove(models.Model):
             r.sii_barcode_img = sii_barcode_img
 
     @api.onchange("journal_id", "use_documents", "move_type")
-    @api.depends("journal_id", "use_documents", "move_type")
     def get_dc_ids(self):
         for r in self:
-            r.document_class_ids = []
+            r.document_class_ids = self.env['sii.document_class']
             if not r.check_invoice_type(r.move_type):
                 continue
+
             dc_type = ["invoice", "invoice_in"]
-            if r.use_documents:
-                if r.move_type == "in_invoice":
-                    dc_type = ["invoice_in"]
-            else:
+            if r.use_documents and r.move_type == "in_invoice":
+                dc_type = ["invoice_in"]
+            elif r.move_type in ['in_refund', 'out_refund']:
                 dc_type = ["credit_note", "debit_note"]
             if not r.use_documents and r.move_type in ["in_invoice", "in_refund"]:
                 for dc in r.journal_id.document_class_ids:
@@ -117,7 +116,8 @@ class AccountMove(models.Model):
                         r.document_class_ids += dc
             else:
                 jdc_ids = self.env["account.journal.sii_document_class"].search(
-                    [("journal_id", "=", r.journal_id.id), ("sii_document_class_id.document_type", "in", dc_type),]
+                    [("journal_id", "=", r.journal_id.id),
+                     ("sii_document_class_id.document_type", "in", dc_type),]
                 )
                 for dc in jdc_ids:
                     r.document_class_ids += dc.sii_document_class_id
