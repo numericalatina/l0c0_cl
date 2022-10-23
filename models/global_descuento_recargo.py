@@ -108,6 +108,7 @@ class GlobalDescuentoRecargo(models.Model):
     def _untaxed_gdr(self):
         groups = {}
         for gdr in self:
+            gdr.amount_untaxed_global_dr = 0
             if not gdr.valor:
                 continue
             if gdr.move_id.id not in groups:
