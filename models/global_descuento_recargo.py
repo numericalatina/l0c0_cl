@@ -21,9 +21,15 @@ class GlobalDescuentoRecargo(models.Model):
                 calculo = "Monto"
             g.name = type + "-" + calculo + ": " + (g.gdr_detail or "")
 
-    name = fields.Char(compute="_get_name", string="Name")
+    name = fields.Char(
+        compute="_get_name",
+        string="Name"
+    )
     type = fields.Selection(
-        [("D", "Descuento"), ("R", "Recargo"),],
+        [
+            ("D", "Descuento"),
+            ("R", "Recargo"),
+        ],
         string="Seleccione Descuento/Recargo Global",
         default="D",
         required=True,
@@ -32,17 +38,43 @@ class GlobalDescuentoRecargo(models.Model):
         string="Descuento/Recargo Global", default=0.00, required=True, digits="Global DR"
     )
     gdr_type = fields.Selection(
-        [("amount", "Monto"), ("percent", "Porcentaje"),], string="Tipo de descuento", default="percent", required=True,
+        [
+            ("amount", "Monto"),
+            ("percent", "Porcentaje"),
+        ],
+        string="Tipo de descuento",
+        default="percent",
+        required=True,
     )
-    gdr_detail = fields.Char(string="Razón del descuento", oldname="gdr_dtail",)
-    amount_untaxed_global_dr = fields.Float(string="Descuento/Recargo Global", default=0.00, compute="_untaxed_gdr",)
-    aplicacion = fields.Selection([("flete", "Flete"), ("seguro", "Seguro"),], string="Aplicación del Desc/Rec",)
+    gdr_detail = fields.Char(
+        string="Razón del descuento",
+        oldname="gdr_dtail",)
+    amount_untaxed_global_dr = fields.Float(
+        string="Descuento/Recargo Global",
+        default=0.00,
+        compute="_untaxed_gdr",)
+    aplicacion = fields.Selection(
+        [
+            ("flete", "Flete"),
+            ("seguro", "Seguro"),
+        ],
+        string="Aplicación del Desc/Rec",)
     impuesto = fields.Selection(
-        [("afectos", "Solo Afectos"), ("exentos", "Solo Exentos"), ("no_facturables", "Solo No Facturables")],
+        [
+            ("afectos", "Solo Afectos"),
+            ("exentos", "Solo Exentos"),
+            ("no_facturables", "Solo No Facturables")
+        ],
         default="afectos",
     )
-    move_id = fields.Many2one("account.move", string="Factura", copy=False,)
-    account_id = fields.Many2one('account.account', string='Account',
+    move_id = fields.Many2one(
+        "account.move",
+        string="Factura",
+        copy=False,
+    )
+    account_id = fields.Many2one(
+        'account.account',
+        string='Account',
         required=True,
         company_dependent=True,
         domain="[('deprecated', '=', False), ('company_id', '=', current_company_id)]",
