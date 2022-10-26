@@ -19,6 +19,21 @@ class AccountInvoiceLine(models.Model):
     is_retention = fields.Boolean(
         string="ES Retención"
     )
+    ind_exe = fields.Selection([
+            ('1', 'No afecto o exento de IVA (10)'),
+            ('2', 'Producto o servicio no es facturable'),
+            ('3', 'Garantía de depósito por envases (Cervezas, Jugos, Aguas Minerales, Bebidas Analcohólicas u otros autorizados por Resolución especial)'),
+            ('4', 'Ítem No Venta. (Para facturas y guías de despacho (ésta última con Indicador Tipo de Traslado de Bienes igual a 1) y este ítem no será facturado.'),
+            ('5', 'Ítem a rebajar. Para guías de despacho NO VENTA que rebajan guía anterior. En el área de referencias se debe indicar la guía anterior.'),
+            ('6', 'Producto o servicio no facturable negativo (excepto en liquidaciones-factura)'),
+        ],
+        string="Indicador Exento"
+    )
+
+    @api.onchange('tax_ids')
+    def set_ind_exe(self):
+        if len(self.tax_ids) == 1:
+            self.ind_exe = self.tax_ids.ind_exe
 
     @api.onchange("discount", "price_unit", "quantity")
     def set_discount_amount(self):
@@ -83,8 +98,8 @@ class AccountInvoiceLine(models.Model):
                 if t.sii_code in [26, 27, 28, 35, 271]:#@Agregar todos los adicionales
                     details['cod_imp_adic'] = t.sii_code
             details['taxInclude'] = t.price_include
-            if t.amount == 0 or t.sii_code in [0]:#@TODO mejor manera de identificar exento de afecto
-                details['IndExe'] = 1#line.product_id.ind_exe or 1
+            if self.ind_exe or t.ind_exe or t.amount == 0 or t.sii_code in [0]:
+                details['IndExe'] = self.ind_exe or t.ind_exe or 1
                 details['MntExe'] += currency_base.round(self.price_subtotal)
             else:
                 if boleta or nc_boleta:

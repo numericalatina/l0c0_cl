@@ -1386,7 +1386,7 @@ class AccountMove(models.Model):
             actecos.append(acteco.code)
         return actecos
 
-    def _id_doc(self, taxInclude=False, MntExe=0):
+    def _id_doc(self, resumen):
         IdDoc = {}
         IdDoc["TipoDTE"] = self.document_class_id.sii_code
         IdDoc["Folio"] = self.get_folio()
@@ -1398,18 +1398,20 @@ class AccountMove(models.Model):
         if self.ind_servicio:
             IdDoc["IndServicio"] = self.ind_servicio
         # todo: forma de pago y fecha de vencimiento - opcional
-        if taxInclude and MntExe == 0 and not self.es_boleta():
+        if resumen['tax_include'] and resumen['MntExe'] == 0 and \
+                not self.es_boleta():
             IdDoc["MntBruto"] = 1
         if not self.es_boleta():
             IdDoc["FmaPago"] = self.forma_pago or 1
-        if not taxInclude and self.es_boleta():
+        if not resumen['tax_include'] and self.es_boleta():
             IdDoc["IndMntNeto"] = 2
         # if self.es_boleta():
         # Servicios periódicos
         #    IdDoc['PeriodoDesde'] =
         #    IdDoc['PeriodoHasta'] =
         if not self.es_boleta() and self.invoice_date_due:
-            IdDoc["FchVenc"] = self.invoice_date_due.strftime("%Y-%m-%d") or datetime.strftime(datetime.now(), "%Y-%m-%d")
+            IdDoc["FchVenc"] = self.invoice_date_due.strftime("%Y-%m-%d") or \
+                datetime.strftime(datetime.now(), "%Y-%m-%d")
         return IdDoc
 
     def _emisor(self):
@@ -1502,56 +1504,84 @@ class AccountMove(models.Model):
             Receptor["CiudadRecep"] = ciudad_recep
         return Receptor
 
-    def _totales_otra_moneda(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, MntTotal=0, MntBase=0):
+    def _totales_otra_moneda(self, currency_id, totales):
         Totales = {}
         Totales["TpoMoneda"] = self._acortar_str(currency_id.abreviatura, 15)
         Totales["TpoCambio"] = round(currency_id.rate, 10)
-        if MntNeto > 0:
+        if totales['MntNeto'] > 0:
             if currency_id != self.currency_id:
-                MntNeto = currency_id._convert(MntNeto, self.currency_id, self.company_id, self.invoice_date)
-            Totales["MntNetoOtrMnda"] = MntNeto
-        if MntExe:
+                totales['MntNeto'] = currency_id._convert(totales['MntNeto'],
+                                               self.currency_id,
+                                               self.company_id,
+                                               self.invoice_date)
+            Totales["MntNetoOtrMnda"] = totales['MntNeto']
+        if totales['MntExe']:
             if currency_id != self.currency_id:
-                MntExe = currency_id._convert(MntExe, self.currency_id, self.company_id, self.invoice_date)
-            Totales["MntExeOtrMnda"] = MntExe
-        if MntBase and MntBase > 0:
-            Totales["MntFaeCarneOtrMnda"] = MntBase
-        if TasaIVA:
+                totales['MntExe'] = currency_id._convert(totales['MntExe'],
+                                                         self.currency_id,
+                                                         self.company_id,
+                                                         self.invoice_date)
+            Totales["MntExeOtrMnda"] = totales['MntExe']
+        if totales.get('MntBase', 0) > 0:
+            Totales["MntFaeCarneOtrMnda"] = totales['MntBase']
+        if totales['TasaIVA']:
             if currency_id != self.currency_id:
-                IVA = currency_id._convert(IVA, self.currency_id, self.company_id, self.invoice_date)
-            Totales["IVAOtrMnda"] = IVA
+                totales['MntIVA'] = currency_id._convert(totales['IVA'],
+                                                         self.currency_id,
+                                                         self.company_id,
+                                                         self.invoice_date)
+            Totales["IVAOtrMnda"] = totales['IVA']
         if currency_id != self.currency_id:
-            MntTotal = currency_id._convert(MntTotal, self.currency_id, self.company_id, self.invoice_date)
-        Totales["MntTotOtrMnda"] = MntTotal
+            totales['MntTotal'] = currency_id._convert(totales['MntTotal'],
+                                            self.currency_id,
+                                            self.company_id,
+                                            self.invoice_date)
+        Totales["MntTotOtrMnda"] = totales['MntTotal']
         # Totales['MontoNF']
         # Totales['TotalPeriodo']
         # Totales['SaldoAnterior']
         # Totales['VlrPagar']
         return Totales
 
-    def _totales_normal(self, currency_id, MntExe, MntNeto, IVA, TasaIVA, MntTotal=0, MntBase=0, Credec=0):
+    def _totales_normal(self, currency_id, totales):
         Totales = {}
-        if MntNeto > 0:
+        if totales['MntNeto'] > 0:
             if currency_id != self.currency_id:
-                MntNeto = currency_id._convert(MntNeto, self.currency_id, self.company_id, self.invoice_date)
-            Totales["MntNeto"] = currency_id.round(MntNeto)
-        if MntExe:
+                totales['MntNeto'] = currency_id._convert(totales['MntNeto'],
+                                               self.currency_id,
+                                               self.company_id,
+                                               self.invoice_date)
+            Totales["MntNeto"] = currency_id.round(totales['MntNeto'])
+        if totales['MntExe']:
             if currency_id != self.currency_id:
-                MntExe = currency_id._convert(MntExe, self.currency_id, self.company_id, self.invoice_date)
-            Totales["MntExe"] = currency_id.round(MntExe)
-        if MntBase > 0:
-            Totales["MntBase"] = currency_id.round(MntBase)
-        if TasaIVA:
-            Totales["TasaIVA"] = TasaIVA
+                totales['MntExe'] = currency_id._convert(totales['MntExe'],
+                                              self.currency_id,
+                                              self.company_id,
+                                              self.invoice_date)
+            Totales["MntExe"] = currency_id.round(totales['MntExe'])
+        if totales['MntBase'] > 0:
+            Totales["MntBase"] = currency_id.round(totales['MntBase'])
+        if totales['TasaIVA']:
+            Totales["TasaIVA"] = totales['TasaIVA']
             if currency_id != self.currency_id:
-                IVA = currency_id._convert(IVA, self.currency_id, self.company_id, self.invoice_date)
-            Totales["IVA"] = currency_id.round(IVA)
-            if Credec:
-                Totales["CredEC"] = currency_id.round(Credec)
+                totales['MntIVA'] = currency_id._convert(totales['MntIVA'],
+                                           self.currency_id,
+                                           self.company_id,
+                                           self.invoice_date)
+            Totales["IVA"] = currency_id.round(totales['MntIVA'])
+        if totales['CredEC']:
+            Totales["CredEC"] = currency_id.round(totales['CredEC'])
+        if totales['MntRet']:
+            Totales["MntRet"] = currency_id.round(totales['MntRet'])
         if currency_id != self.currency_id:
-            MntTotal = currency_id._convert(MntTotal, self.currency_id, self.company_id, self.invoice_date)
-        Totales["MntTotal"] = currency_id.round(MntTotal)
-        # Totales['MontoNF']
+            totales['MntTotal'] = currency_id._convert(
+                totales['MntTotal'],
+                self.currency_id,
+                self.company_id,
+                self.invoice_date)
+        Totales["MntTotal"] = currency_id.round(totales['MntTotal'])
+        if totales['MontoNF'] > 0:
+            Totales['MontoNF'] = totales['MontoNF']
         # Totales['TotalPeriodo']
         # Totales['SaldoAnterior']
         # Totales['VlrPagar']
@@ -1562,46 +1592,60 @@ class AccountMove(models.Model):
             self.referencias and self.referencias[0].sii_referencia_TpoDocRef.sii_code in [32, 34, 41]
         )
 
-    def _totales(self, MntExe=0, no_product=False, taxInclude=False):
+    def _totales(self, resumen):
+        totales = dict(MntExe=resumen['MntExe'], MntNeto=0, MntIVA=0, TasaIVA=0,
+                       MntTotal=0, MntBase=0, MntRet=0, MontoNF=0, OtrosImp=0,
+                       CredEC=0)
         if self.move_type == 'entry' or self.is_outbound():
             sign = 1
         else:
             sign = -1
-        MntNeto = 0
-        IVA = False
-        TasaIVA = False
-        MntIVA = 0
-        MntBase = 0
         if self._es_exento():
-            MntExe = self.amount_total
-            if no_product:
-                MntExe = 0
+            totales['MntExe'] = self.amount_total
+            if resumen['no_product']:
+                totales['MntExe'] = 0
             if self.amount_tax > 0:
                 raise UserError("NO pueden ir productos afectos en documentos exentos")
         elif self.amount_untaxed and self.amount_untaxed != 0:
-            IVA = False
             for t in self.line_ids:
+                balance = sign * t.balance
                 sii_code = t.tax_line_id.sii_code
                 if sii_code in [14, 15]:
-                    IVA = t
-                    MntIVA += t.balance
+                    if totales['TasaIVA'] == 0:
+                        totales['TasaIVA'] = round(t.tax_line_id.amount, 2)
+                    totales['MntIVA'] += balance
+                    if t.is_retention and t.tax_line_id.credec:
+                        totales['CredEC'] += balance
+                    elif t.is_retention:
+                        totales['MntRet'] += balance
+                elif not t.tax_line_id.ind_exe and sii_code != 0:
+                    totales['OtrosImp'] += balance
                 for tl in t.tax_ids:
                     if tl.sii_code in [14, 15]:
-                        MntNeto += t.balance
+                        totales['MntNeto'] += balance
                     if tl.sii_code in [17]:
-                        MntBase += t.balance  # @TODO Buscar forma de calcular la base para faenamiento
-        if self.amount_tax == 0 and MntExe > 0 and not self._es_exento() and self.document_class_id.sii_code not in [60, 61, 55, 56]:
+                        totales['MntBase'] += balance  # @TODO Buscar forma de calcular la base para faenamiento
+        if totales['MntIVA'] == 0 and totales['MntExe'] > 0 and not \
+                self._es_exento() and self.document_class_id.sii_code not in [
+                                                                60, 61, 55, 56]:
             raise UserError("Debe ir almenos un producto afecto")
-        if IVA:
-            TasaIVA = round(IVA.tax_line_id.amount, 2)
-        if no_product:
-            MntNeto = 0
-            TasaIVA = 0
-            MntIVA = 0
-        MntTotal = self.amount_total
-        if no_product:
-            MntTotal = 0
-        return MntExe, (sign * (MntNeto)), (sign * (MntIVA)), TasaIVA, MntTotal, (sign * (MntBase)), self.amount_retencion
+        if resumen['no_product']:
+            totales.update({
+                'MntExe': 0,
+                'MntNeto': 0,
+                'TasaIVA': 0,
+                'MntIVA': 0,
+                'OtrosImp': 0,
+                'MontoNF': 0,
+                'MntRet': 0,
+                'CredEC': 0,
+            })
+        totales['MntTotal'] = totales['MntNeto'] + totales['MntExe'] + \
+            totales['MntIVA'] + totales['OtrosImp'] - totales['MntRet'] - \
+            totales['CredEC']
+        if resumen['no_product']:
+            totales['MntTotal'] = 0
+        return totales
 
     def currency_base(self):
         return self.env.ref("base.CLP")
@@ -1611,18 +1655,18 @@ class AccountMove(models.Model):
             return self.currency_id
         return False
 
-    def _encabezado(self, MntExe=0, no_product=False, taxInclude=False):
+    def _encabezado(self, resumen):
         Encabezado = {}
-        Encabezado["IdDoc"] = self._id_doc(taxInclude, MntExe)
+        Encabezado["IdDoc"] = self._id_doc(resumen)
         Encabezado["Emisor"] = self._emisor()
         Encabezado["Receptor"] = self._receptor()
         currency_base = self.currency_base()
         another_currency_id = self.currency_target()
-        MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase, CredEC = self._totales(MntExe, no_product, taxInclude)
-        Encabezado["Totales"] = self._totales_normal(currency_base, MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase, CredEC)
+        totales = self._totales(resumen)
+        Encabezado["Totales"] = self._totales_normal(currency_base, totales)
         if another_currency_id:
             Encabezado["OtraMoneda"] = self._totales_otra_moneda(
-                another_currency_id, MntExe, MntNeto, IVA, TasaIVA, MntTotal, MntBase
+                another_currency_id, totales
             )
         return Encabezado
 
@@ -1652,6 +1696,7 @@ class AccountMove(models.Model):
         invoice_lines = []
         no_product = False
         MntExe = 0
+        MontoNF = 0
         currency_base = self.currency_base()
         currency_id = self.currency_target()
         taxInclude = self.document_class_id.es_boleta()
@@ -1674,12 +1719,15 @@ class AccountMove(models.Model):
                 lines["CdgItem"]["VlrCodigo"] = line.product_id.default_code
             details = line.get_tax_detail()
             lines["Impuesto"] = details['impuestos']
-            MntExe += details['MntExe']
             taxInclude = details['taxInclude']
             if details.get('cod_imp_adic'):
                 lines['CodImpAdic'] = details['cod_imp_adic']
             if details.get('IndExe'):
                 lines['IndExe'] = details['IndExe']
+                if details['IndExe'] == 1:
+                    MntExe += details['MntExe']
+                else:
+                    MontoNF += details['MntExe']
             # if line.product_id.move_type == 'events':
             #   lines['ItemEspectaculo'] =
             #            if self.es_boleta():
@@ -1758,6 +1806,7 @@ class AccountMove(models.Model):
             "MntExe": MntExe,
             "no_product": no_product,
             "tax_include": taxInclude,
+            "MontoNF": MontoNF,
         }
 
     def _gdr(self):
@@ -1791,10 +1840,7 @@ class AccountMove(models.Model):
     def _dte(self, n_atencion=None):
         dte = {}
         invoice_lines = self._invoice_lines()
-        dte["Encabezado"] = self._encabezado(
-            invoice_lines["MntExe"], invoice_lines["no_product"],
-            invoice_lines["tax_include"]
-        )
+        dte["Encabezado"] = self._encabezado(invoice_lines)
         lin_ref = 1
         ref_lines = []
         if self._context.get("set_pruebas", False):
@@ -2167,7 +2213,7 @@ class AccountMove(models.Model):
     def exento(self):
         exento = 0
         for l in self.invoice_line_ids:
-            if l.tax_ids.amount == 0:
+            if l.tax_ids[0].amount == 0:
                 exento += l.price_subtotal
         return exento if exento > 0 else (exento * -1)
 

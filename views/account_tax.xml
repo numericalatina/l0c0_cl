@@ -19,6 +19,10 @@
                     />
                 </header>
             </sheet>
+
+            <field name="name" position="before">
+              <field name="ind_exe" />
+            </field>
         </field>
     </record>
 </odoo>

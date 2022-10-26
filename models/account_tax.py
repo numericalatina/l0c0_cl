@@ -6,7 +6,7 @@ import dateutil.relativedelta as relativedelta
 import pytz
 from lxml import html
 
-from odoo import api, models
+from odoo import api, models, fields
 
 from .currency import float_round_custom
 from odoo.tools.float_utils import float_round as round
@@ -43,11 +43,22 @@ meses = {
 class SiiTax(models.Model):
     _inherit = "account.tax"
 
+    ind_exe = fields.Selection([
+            ('1', 'No afecto o exento de IVA (10)'),
+            ('2', 'Producto o servicio no es facturable'),
+            ('3', 'Garantía de depósito por envases (Cervezas, Jugos, Aguas Minerales, Bebidas Analcohólicas u otros autorizados por Resolución especial)'),
+            ('4', 'Ítem No Venta. (Para facturas y guías de despacho (ésta última con Indicador Tipo de Traslado de Bienes igual a 1) y este ítem no será facturado.'),
+            ('5', 'Ítem a rebajar. Para guías de despacho NO VENTA que rebajan guía anterior. En el área de referencias se debe indicar la guía anterior.'),
+            ('6', 'Producto o servicio no facturable negativo (excepto en liquidaciones-factura)'),
+        ],
+        string="Indicador Exento por defecto"
+    )
+
     def compute_factor(self, uom_id):
         amount_tax = self.amount or 0.0
         if self.uom_id and self.uom_id != uom_id:
-            if self.env.context.get("date"):
-                mepco = self._target_mepco(self.env.context.get("date"))
+            if self._context.get("date"):
+                mepco = self._target_mepco(self._context.get("date"))
                 amount_tax = mepco.amount
             factor = self.uom_id._compute_quantity(1, uom_id)
             amount_tax = amount_tax / factor
@@ -105,6 +116,7 @@ class SiiTax(models.Model):
         else:
             company = self[0].company_id
 
+        uom_id = self._context.get('tax_uom_id', False) or uom_id
         # 1) Flatten the taxes.
         taxes, groups_map = self.flatten_taxes_hierarchy(create_map=True)
 
