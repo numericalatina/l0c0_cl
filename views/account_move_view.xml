@@ -90,7 +90,7 @@
                                     attrs="{
                                     'required':[('use_documents', '=', True), ('state', '=', 'draft')]}"
                                     options="{'no_create': True}"
-                                    domain="[('sii_document_class_id', 'in', document_class_ids)]"
+                                    domain="[('sii_document_class_id', 'in', document_class_ids), ('journal_id', '=', journal_id)]"
                                     style="width: 100%"
                                 /><br /> Número:
                           <field
