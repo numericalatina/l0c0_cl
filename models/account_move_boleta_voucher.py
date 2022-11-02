@@ -594,7 +594,7 @@ class SIIResumenBoletaVoucher(models.Model):
                 'TipoDTE': self.document_class_id.sii_code,
                 'documentos': [self._dte()],
             })
-        resultado = fe.consulta_estado_documento(datos)
+        resultado = fe.consulta_estado_dte(datos)
         if not resultado:
             _logger.warning("En get_dte_status, no resultado")
             return

@@ -154,7 +154,7 @@ class SIIXMLEnvio(models.Model):
         datos.update(
             {"codigo_envio": self.sii_send_ident, "api": api,}
         )
-        res = fe.consulta_estado_dte(datos)
+        res = fe.consulta_estado_envio(datos)
         self.write(
             {"state": res["status"], "sii_receipt": res.get("xml_resp", False),}
         )

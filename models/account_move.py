@@ -2016,7 +2016,7 @@ class AccountMove(models.Model):
         datos['api'] = api
         for k, v in docs.items():
             datos["Documento"].append({"TipoDTE": k, "documentos": v})
-        resultado = fe.consulta_estado_documento(datos)
+        resultado = fe.consulta_estado_dte(datos)
         if not resultado:
             _logger.warning("En get_dte_status, no resultado")
             return
