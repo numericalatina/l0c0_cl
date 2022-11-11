@@ -49,8 +49,8 @@ Se crea este repositorio, para dar un enfoque de firma electrónica directa con 
   |   15   | IVA Retención total               |  19  |   R  |   OK  |                                                                                                    |
   |   17   | IVA al faenamiento de carnes      |   5  |   A  |   OK  |                                                                                                    |
   |   18   | IVA a las carne                   |   5  |   A  |   OK  |                                                                                                    |
-  |   19   | IVA a la Harina                   |  12  |   A  |   OK  |                                                                                                    |
-  |   23   | Impuesto adicional                |  15  |   N  |   OK  | a) artículos oro, platino, marfil b) Joyas, piedras preciosas c) Pieles finas                      |
+  |   19   | IVA a la Harina                   |  12  |   A  |   X   |                                                                                                    |
+  |   23   | Impuesto adicional                |  15  |   N  |   X   | a) artículos oro, platino, marfil b) Joyas, piedras preciosas c) Pieles finas                      |
   |   24   | DL 825/74, ART. 42, letra b)      | 31.5 |   D  |   OK  | Licores, Piscos, whisky, aguardiente, y vinos licorosos o aromatizados.                            |
   |   25   | Vinos                             | 20.5 |   D  |   OK  |                                                                                                    |
   |   26   | Cervezas y bebidas alcohólicas    | 20.5 |   D  |   OK  |                                                                                                    |
