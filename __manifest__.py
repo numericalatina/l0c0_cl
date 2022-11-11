@@ -52,6 +52,7 @@ Facturación Electrónica para Chile. Mayor información en https://globalrespon
         "views/account_tax.xml",
         "views/consumo_folios.xml",
         "views/caf.xml",
+        "views/ir_sequence.xml",
         "views/export.xml",
         "views/layout.xml",
         "views/libro_compra_venta.xml",

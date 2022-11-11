@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_sequence_dte_caf_form" model="ir.ui.view">
+      <field name="name">ir.sequence.caf.form</field>
+      <field name="model">ir.sequence</field>
+      <field name="inherit_id" ref="base.sequence_view" />
+      <field name="arch" type="xml">
+          <field name="number_next_actual" position="after">
+              <field name="sii_document_class_id" options="{'no_open': True, 'no_create': True}" />
+              <field name="is_dte" />
+              <field name="forced_by_caf" attrs="{'invisible': [('is_dte', '=', False)]}" />
+              <field name="qty_available" attrs="{'invisible': [('is_dte', '=', False)], 'readonly': 1}" />
+              <button
+                  name="%(action_apicaf_form)d"
+                  string="Obtener Folios desde el SII"
+                  type="action"
+                  context="{'default_company_id': company_id,
+                          'default_sequence_id': active_id}"
+                  attrs="{'invisible': [('is_dte', '=', False)]}"
+                  class="btn-primary"
+              />
+          </field>
+          <xpath expr='//notebook' position="inside">
+              <page string="CAF Files" attrs="{'invisible': [('is_dte','=',False)]}">
+                <header>
+                  <button name="inspeccionar_folios_sin_usar" type="object" string="Inspeccionar folios sin usar" attrs="{'invisible': [('dte_caf_ids', '=', [])]}"/>
+                </header>
+                  <group>
+                      <field name="nivel_minimo" />
+                      <div class="text-muted">Solo se lanzará una alerta si no está marcado autoreponer</div>
+                      <field name="autoreponer_caf" attrs="{'invisible': [('is_dte', '=', False)]}" />
+                      <field
+                          name="autoreponer_cantidad"
+                          attrs="{'invisible': [('autoreponer_caf', '=', False)]}"
+                      />
+                      <div
+                          class="text-muted"
+                      >Cantidad a solicitar por CAF cuando se llegue al mínimo de la secuencia</div>
+                      <field name="folios_sin_usar" readonly="1"/>
+                  </group>
+                  <field
+                      name="dte_caf_ids"
+                      context="{'default_sequence_id':active_id, 'default_company_id':company_id}"
+                  >
+                      <tree string="DTE CAF Files">
+                          <field name="name" />
+                          <field name="start_nm" />
+                          <field name="final_nm" />
+                          <field name="cantidad_folios_sin_usar" readonly="1"/>
+                          <field name="issued_date" readonly="1" />
+                          <field name="expiration_date" readonly="1" />
+                          <field name="use_level" widget="progressbar" />
+                          <field name="status" readonly="1" />
+                      </tree>
+                  </field>
+              </page>
+          </xpath>
+      </field>
+  </record>
+</odoo>
