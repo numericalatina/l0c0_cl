@@ -117,4 +117,15 @@ class AccountInvoiceLine(models.Model):
                             'TasaImp': amount,
                         }
                 )
+        if details['desglose']:
+            taxes_res = self._get_price_total_and_subtotal_model(
+                    self.price_unit,
+                    1,
+                    0,
+                    self.move_id.currency_id,
+                    self.product_id,
+                    self.move_id.partner_id,
+                    self.tax_ids,
+                    self.move_id.move_type)
+            details['price_unit'] = taxes_res.get('price_subtotal', 0.0)
         return details
