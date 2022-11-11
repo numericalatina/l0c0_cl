@@ -85,25 +85,29 @@ class AccountInvoiceLine(models.Model):
     def get_tax_detail(self):
         boleta = self.move_id.document_class_id.es_boleta()
         nc_boleta = self.move_id.es_nc_boleta()
-        amount_total = 0
         details = dict(
             impuestos=[],
             taxInclude=False,
             MntExe=0,
             price_unit=self.price_unit,
+            desglose=False,
         )
         currency_base = self.move_id.currency_base()
         for t in self.tax_ids:
-            if not boleta and not nc_boleta:
-                if t.sii_code in [26, 27, 28, 35, 271]:#@Agregar todos los adicionales
-                    details['cod_imp_adic'] = t.sii_code
-            details['taxInclude'] = t.price_include
+            if t.sii_code in [24, 25, 26, 27, 28, 35, 271]:#@Agregar todos los adicionales
+                if boleta or nc_boleta:
+                    continue
+                details['cod_imp_adic'] = t.sii_code
+            taxInclude = t.price_include and not t.sii_detailed
+            if len(details['impuestos']) > 0 and details['taxInclude'] != taxInclude:
+                raise UserError("No puede mezclar Impuesto Incluído sin desglose e impuesto sin incluir")
+            details['taxInclude'] = taxInclude
+            if t.sii_detailed:
+                details['desglose'] = t.sii_detailed
             if self.ind_exe or t.ind_exe or t.amount == 0 or t.sii_code in [0]:
                 details['IndExe'] = self.ind_exe or t.ind_exe or 1
                 details['MntExe'] += currency_base.round(self.price_subtotal)
             else:
-                if boleta or nc_boleta:
-                    amount_total += self.price_total
                 amount = t.amount
                 if t.sii_code in [28, 35]:
                     amount = t.compute_factor(self.product_uom_id)
@@ -113,25 +117,4 @@ class AccountInvoiceLine(models.Model):
                             'TasaImp': amount,
                         }
                 )
-        if amount_total > 0:
-            details['impuestos'].append({
-                    'name': t.description,
-                    "CodImp": t.sii_code,
-                    'price_include': boleta or nc_boleta or details['taxInclude'],
-                    'TasaImp': amount,
-                }
-            )
-            if not details['taxInclude'] and (boleta or nc_boleta):
-                taxes_res = self._get_price_total_and_subtotal_model(
-                    self.price_unit,
-                    1,
-                    self.discount,
-                    self.move_id.currency_id,
-                    self.product_id,
-                    self.move_id.partner_id,
-                    self.tax_ids,
-                    self.move_id.move_type)
-                details['price_unit'] = taxes_res.get('price_total', 0.0)
-        if boleta or nc_boleta:
-             details['taxInclude'] = True
         return details

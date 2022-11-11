@@ -1398,8 +1398,7 @@ class AccountMove(models.Model):
         if self.ind_servicio:
             IdDoc["IndServicio"] = self.ind_servicio
         # todo: forma de pago y fecha de vencimiento - opcional
-        if resumen['tax_include'] and resumen['MntExe'] == 0 and \
-                not self.es_boleta():
+        if resumen['tax_include'] and not self.es_boleta():
             IdDoc["MntBruto"] = 1
         if not self.es_boleta():
             IdDoc["FmaPago"] = self.forma_pago or 1
@@ -1593,17 +1592,18 @@ class AccountMove(models.Model):
         )
 
     def _totales(self, resumen):
-        totales = dict(MntExe=resumen['MntExe'], MntNeto=0, MntIVA=0, TasaIVA=0,
+        totales = dict(MntExe=0, MntNeto=0, MntIVA=0, TasaIVA=0,
                        MntTotal=0, MntBase=0, MntRet=0, MontoNF=0, OtrosImp=0,
                        CredEC=0)
+        if not resumen['product']:
+            return totales
+        totales['MntExe'] = resumen['MntExe']
         if self.move_type == 'entry' or self.is_outbound():
             sign = 1
         else:
             sign = -1
         if self._es_exento():
             totales['MntExe'] = self.amount_total
-            if resumen['no_product']:
-                totales['MntExe'] = 0
             if self.amount_tax > 0:
                 raise UserError("NO pueden ir productos afectos en documentos exentos")
         elif self.amount_untaxed and self.amount_untaxed != 0:
@@ -1629,22 +1629,9 @@ class AccountMove(models.Model):
                 self._es_exento() and self.document_class_id.sii_code not in [
                                                                 60, 61, 55, 56]:
             raise UserError("Debe ir almenos un producto afecto")
-        if resumen['no_product']:
-            totales.update({
-                'MntExe': 0,
-                'MntNeto': 0,
-                'TasaIVA': 0,
-                'MntIVA': 0,
-                'OtrosImp': 0,
-                'MontoNF': 0,
-                'MntRet': 0,
-                'CredEC': 0,
-            })
         totales['MntTotal'] = totales['MntNeto'] + totales['MntExe'] + \
             totales['MntIVA'] + totales['OtrosImp'] - totales['MntRet'] - \
             totales['CredEC']
-        if resumen['no_product']:
-            totales['MntTotal'] = 0
         return totales
 
     def currency_base(self):
@@ -1694,7 +1681,7 @@ class AccountMove(models.Model):
 
     def _invoice_lines(self):
         invoice_lines = []
-        no_product = False
+        product = True
         MntExe = 0
         MontoNF = 0
         currency_base = self.currency_base()
@@ -1709,11 +1696,11 @@ class AccountMove(models.Model):
         for line in self.with_context(lang="es_CL").invoice_line_ids:
             if not line.account_id or not line.product_id:
                 continue
-            if line.product_id.default_code == "NO_PRODUCT":
-                no_product = True
+            product = line.product_id.default_code != "NO_PRODUCT":
+
             lines = {}
             lines["NroLinDet"] = line.sequence
-            if line.product_id.default_code and not no_product:
+            if line.product_id.default_code and product:
                 lines["CdgItem"] = {}
                 lines["CdgItem"]["TpoCodigo"] = "INT1"
                 lines["CdgItem"]["VlrCodigo"] = line.product_id.default_code
@@ -1722,6 +1709,8 @@ class AccountMove(models.Model):
             taxInclude = details['taxInclude']
             if details.get('cod_imp_adic'):
                 lines['CodImpAdic'] = details['cod_imp_adic']
+                if taxInclude and not details['desglose']:
+                    raise UserError("Con impuestos adicionales, la configuración impuesto incluído debe llevar marcado desglose de impuesto en la ficha del impuesto por obligación")
             if details.get('IndExe'):
                 lines['IndExe'] = details['IndExe']
                 if details['IndExe'] == 1:
@@ -1739,15 +1728,17 @@ class AccountMove(models.Model):
                     line.product_id.name.replace("[" + line.product_id.default_code + "] ", ""), 80
                 )
             # lines['InfoTicket']
-            qty = round(line.quantity, 4)
-            if not no_product:
-                lines["QtyItem"] = qty
-            if qty == 0 and not no_product:
-                lines["QtyItem"] = 1
-            elif qty < 0:
-                raise UserError("NO puede ser menor que 0")
-            if not no_product:
-                uom_name = line.product_uom_id.with_context(exportacion=self.document_class_id.es_exportacion()).name_get()
+            MontoItem = 0
+            qty = 0
+            if product:
+                qty = round(line.quantity, 4)
+                if qty == 0:
+                    qty = 1
+                elif qty < 0:
+                    raise UserError("Cantidad no puede ser menor que 0")
+                uom_name = line.product_uom_id.with_context(
+                        exportacion=self.document_class_id.es_exportacion()
+                    ).name_get()
                 lines["UnmdItem"] = uom_name[0][1][:4]
                 price_unit = details['price_unit']
                 lines["PrcItem"] = round(price_unit, 6)
@@ -1761,50 +1752,63 @@ class AccountMove(models.Model):
                     )
                     lines["OtrMnda"]["Moneda"] = self._acortar_str(currency_id.name, 3)
                     lines["OtrMnda"]["FctConv"] = round(currency_id.rate, 4)
-            if line.discount > 0:
-                lines["DescuentoPct"] = line.discount
-                DescMonto = line.discount_amount
-                lines["DescuentoMonto"] = DescMonto
-                if currency_id:
-                    lines["DescuentoMonto"] = currency_base._convert(
-                        DescMonto, currency_id, self.company_id, self.invoice_date
-                    )
-                    lines["OtrMnda"]["DctoOtrMnda"] = DescMonto
-            if line.discount < 0:
-                lines["RecargoPct"] = line.discount * -1
-                RecargoMonto = line.discount_amount * -1
-                lines["RecargoMonto"] = RecargoMonto
-                if currency_id:
-                    lines["OtrMnda"]["RecargoOtrMnda"] = currency_base._convert(
-                        RecargoMonto, currency_id, self.company_id, self.invoice_date
-                    )
-            if not no_product and not taxInclude:
-                price_subtotal = line.price_subtotal
+                MontoItem = line.price_subtotal
+                if taxInclude:
+                    MontoItem = line.price_total
+                if line.discount > 0:
+                    lines["DescuentoPct"] = line.discount
+                    DescMonto = line.discount_amount
+                    if details['desglose']:
+                        taxes_res = line._get_price_total_and_subtotal_model(
+                            DescMonto,
+                            1,
+                            0,
+                            self.currency_id,
+                            line.product_id,
+                            self.partner_id,
+                            line.tax_ids,
+                            self.move_type)
+                        DescMonto = taxes_res.get('price_subtotal', 0.0)
+                    lines["DescuentoMonto"] = DescMonto
+                    if currency_id:
+                        lines["DescuentoMonto"] = currency_base._convert(
+                            DescMonto, currency_id, self.company_id, self.invoice_date
+                        )
+                        lines["OtrMnda"]["DctoOtrMnda"] = DescMonto
+                if line.discount < 0:
+                    lines["RecargoPct"] = line.discount * -1
+                    RecargoMonto = line.discount_amount * -1
+                    if details['desglose']:
+                        taxes_res = line._get_price_total_and_subtotal_model(
+                            RecargoMonto,
+                            1,
+                            0,
+                            self.currency_id,
+                            line.product_id,
+                            self.partner_id,
+                            line.tax_ids,
+                            self.move_type)
+                        DescMonto = taxes_res.get('price_subtotal', 0.0)
+                    lines["RecargoMonto"] = RecargoMonto
+                    if currency_id:
+                        lines["OtrMnda"]["RecargoOtrMnda"] = currency_base._convert(
+                            RecargoMonto, currency_id, self.company_id, self.invoice_date
+                        )
                 if currency_id:
                     lines["OtrMnda"]["MontoItemOtrMnda"] = currency_base._convert(
-                        price_subtotal, currency_id, self.company_id, self.invoice_date
+                        MontoItem, currency_id, self.company_id, self.invoice_date
                     )
-                lines["MontoItem"] = price_subtotal
-            elif not no_product:
-                price_total = line.price_total
-                if currency_id:
-                    lines["OtrMnda"]["MontoItemOtrMnda"] = currency_base._convert(
-                        price_total, currency_id, self.company_id, self.invoice_date
-                    )
-                lines["MontoItem"] = price_total
-            if no_product:
-                lines["MontoItem"] = 0
-            if lines["MontoItem"] < 0:
+            lines["QtyItem"] = qty
+            lines["MontoItem"] = MontoItem
+            if MontoItem < 0:
                 raise UserError(_("No pueden ir valores negativos en las líneas de detalle"))
             if lines.get("PrcItem", 1) == 0:
                 del lines["PrcItem"]
             invoice_lines.append(lines)
-            if "IndExe" in lines:
-                taxInclude = False
         return {
             "Detalle": invoice_lines,
             "MntExe": MntExe,
-            "no_product": no_product,
+            "product": product,
             "tax_include": taxInclude,
             "MontoNF": MontoNF,
         }
