@@ -1696,8 +1696,7 @@ class AccountMove(models.Model):
         for line in self.with_context(lang="es_CL").invoice_line_ids:
             if not line.account_id or not line.product_id:
                 continue
-            product = line.product_id.default_code != "NO_PRODUCT":
-
+            product = line.product_id.default_code != "NO_PRODUCT"
             lines = {}
             lines["NroLinDet"] = line.sequence
             if line.product_id.default_code and product:
