@@ -113,7 +113,7 @@ class AccountInvoiceLine(models.Model):
                     amount = t.compute_factor(self.product_uom_id)
                 details['impuestos'].append({
                             "CodImp": t.sii_code,
-                            'price_include': details['taxInclude'],
+                            'price_include': taxInclude,
                             'TasaImp': amount,
                         }
                 )
