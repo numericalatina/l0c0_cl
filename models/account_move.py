@@ -1078,9 +1078,8 @@ class AccountMove(models.Model):
     def _validaciones_uso_dte(self):
         if not self.document_class_id:
             raise UserError("NO tiene seleccionado tipo de documento")
-        ncs = [60, 61, 112, 802]
-        nds = [55, 56, 111]
-        if self.document_class_id.sii_code in ncs + nds and not self.referencias:
+
+        if (self.es_nc() or self.es_nd()) and not self.referencias:
             raise UserError("Las Notas deben llevar por obligación una referencia al documento que están afectando")
         if not self.env.user.get_digital_signature(self.company_id):
             raise UserError(
@@ -1092,9 +1091,9 @@ class AccountMove(models.Model):
             raise UserError(_("Lang es_CL must be enabled"))
         if not self.env.ref("base.CLP").active:
             raise UserError(_("Currency CLP must be enabled"))
-        if self.move_type in ["out_refund", "in_refund"] and self.document_class_id.sii_code not in ncs:
+        if self.move_type in ["out_refund", "in_refund"] and not self.es_nc():
             raise UserError(_("El tipo de documento %s, no es de tipo Rectificativo" % self.document_class_id.name))
-        if self.move_type in ["out_invoice", "in_invoice"] and self.document_class_id.sii_code in ncs:
+        if self.move_type in ["out_invoice", "in_invoice"] and self.es_nc():
             raise UserError(_("El tipo de documento %s, no es de tipo Documento" % self.document_class_id.name))
         for gd in self.global_descuentos_recargos:
             if gd.valor <= 0:
@@ -1370,13 +1369,31 @@ class AccountMove(models.Model):
                 }
             )
 
+    def es_nc(self):
+        if not self.referencias or self.move_type != "out_refund":
+            return False
+        return self.sii_document_class_id.sii_code in [60, 61, 112]
+
+    def es_nd(self):
+        if not self.referencias or self.move_type != "out_refund":
+            return False
+        return self.sii_document_class_id.sii_code in [55, 56, 111]
+
     def es_boleta(self):
         return self.document_class_id.es_boleta()
 
     def es_nc_boleta(self):
-        if not self.referencias or self.move_type != "out_refund":
+        if not self.es_nc() and not self.es_nd():
             return False
         return any(r.sii_referencia_TpoDocRef.es_boleta() for r in self.referencias)
+
+    def es_factura_compra(self):
+        return self.document_class_id.es_factura_compra()
+
+    def es_nc_factura_compra(self):
+        if not self.es_nc() and not self.es_nd():
+            return False
+        return any(r.sii_referencia_TpoDocRef.es_factura_compra() for r in self.referencias)
 
     def _actecos_emisor(self):
         actecos = []

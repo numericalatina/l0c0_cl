@@ -512,3 +512,17 @@ class SiiTax(models.Model):
     def verify_mepco(self, date_target=False, currency_id=False, force=False):
         mepco = self._target_mepco(date_target, currency_id, force)
         self.amount = mepco.amount
+
+    def documentos_dte_admitidos(self):
+        facturas = [30, 33]
+        boleta = [35, 39]
+        exportacion = [110]
+        factura_compra = [45, 46]
+        liquidacion = [43]
+        factura_exenta = [32, 34]
+        boleta_exenta = [38, 41]
+        if self.sii_code in [14, 15, 17, 18, 19, 23, 24, 25, 26, 27, 271, 28, 35, 44, 45, 46, 50, 51, 52, 53]:
+            return facturas + boleta + liquidacion
+        if self.sii_code in [30, 31, 32, 33, 34, 36, 37, 38, 39, 41, 47, 48, 49]:
+            return factura_compra
+        return exportacion + factura_exenta + boleta_exenta

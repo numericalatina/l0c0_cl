@@ -69,8 +69,11 @@ class AccountInvoiceLine(models.Model):
         # Compute 'price_total'.
         if taxes:
             force_sign = -1 if move_type in ('out_invoice', 'in_refund', 'out_receipt') else 1
-            taxes_res = taxes._origin.with_context(force_sign=force_sign).compute_all(line_discount_price_unit,
-                quantity=quantity, currency=currency, product=product, partner=partner, is_refund=move_type in ('out_refund', 'in_refund'),
+            taxes_res = taxes._origin.with_context(force_sign=force_sign).compute_all(
+                line_discount_price_unit,
+                quantity=quantity, currency=currency, product=product,
+                partner=partner,
+                is_refund=move_type in ('out_refund', 'in_refund'),
                 discount=discount,
                 uom_id=uom_id)
             res['price_subtotal'] = taxes_res['total_excluded']
@@ -94,6 +97,13 @@ class AccountInvoiceLine(models.Model):
         )
         currency_base = self.move_id.currency_base()
         for t in self.tax_ids:
+            if not self.move_id.es_nc() and not self.move_id.es_nd() and \
+                self.move_id.document_class_id.sii_code not in t.documentos_dte_admitidos():
+                raise UserError("Tipo de documento {0} no admitido para el impuesto [{1}]{2}".format(
+                    self.move_id.document_class_id.name,
+                    t.sii_code,
+                    t.name
+                ))
             if t.sii_code in [24, 25, 26, 27, 28, 35, 271]:#@Agregar todos los adicionales
                 if boleta or nc_boleta:
                     continue
