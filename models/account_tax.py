@@ -54,6 +54,16 @@ class SiiTax(models.Model):
         string="Indicador Exento por defecto"
     )
 
+    def es_adicional(self):
+        return self.sii_code in [24, 25, 26, 27, 271]
+
+    def es_especifico(self):
+        return self.sii_code in [28, 35, 51]
+
+    @api.onchange('sii_code', 'price_include')
+    def autoseleccionar_detailed(self):
+        self.sii_detailed = self.price_include and (self.es_adicional() or self.es_especifico())
+
     def compute_factor(self, uom_id):
         amount_tax = self.amount or 0.0
         if self.uom_id and self.uom_id != uom_id:
@@ -521,7 +531,7 @@ class SiiTax(models.Model):
         liquidacion = [43]
         factura_exenta = [32, 34]
         boleta_exenta = [38, 41]
-        if self.sii_code in [14, 15, 17, 18, 19, 23, 24, 25, 26, 27, 271, 28, 35, 44, 45, 46, 50, 51, 52, 53]:
+        if self.es_adicional() or self.es_especifico() or self.sii_code in [14, 15, 17, 18, 19, 23, 44, 45, 46, 50, 52, 53]:
             return facturas + boleta + liquidacion
         if self.sii_code in [30, 31, 32, 33, 34, 36, 37, 38, 39, 41, 47, 48, 49]:
             return factura_compra

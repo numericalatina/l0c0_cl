@@ -104,7 +104,7 @@ class AccountInvoiceLine(models.Model):
                     t.sii_code,
                     t.name
                 ))
-            if t.sii_code in [24, 25, 26, 27, 28, 35, 271]:#@Agregar todos los adicionales
+            if t.es_adicional() or t.es_especifico():
                 if boleta or nc_boleta:
                     continue
                 details['cod_imp_adic'] = t.sii_code
