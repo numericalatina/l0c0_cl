@@ -90,7 +90,8 @@
                                 <field name="sii_document_class_id" options="{'no_open': True, 'no_create': True}" />
                                 <field
                                     name='sequence_id'
-                                    context="{'default_sii_document_class_id': sii_document_class_id}"
+                                    context="{'default_sii_document_class_id': sii_document_class_id, 'is_dte': True}"
+                                    domain="[('is_dte', '=', True)]"
                                 />
                                 <field name="qty_available" />
                             </tree>
