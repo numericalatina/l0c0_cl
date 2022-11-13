@@ -1737,12 +1737,10 @@ class AccountMove(models.Model):
             #   lines['ItemEspectaculo'] =
             #            if self.es_boleta():
             #                lines['RUTMandante']
-            lines["NmbItem"] = self._acortar_str(line.product_id.name, 80)  #
-            lines["DscItem"] = self._acortar_str(line.name, 1000)  # descripción más extenza
-            if line.product_id.default_code:
-                lines["NmbItem"] = self._acortar_str(
-                    line.product_id.name.replace("[" + line.product_id.default_code + "] ", ""), 80
-                )
+            lines["NmbItem"] = line.product_id.with_context(
+                display_default_code=False).name
+            if line.product_id.name != l.name:
+                lines["DscItem"] = line.name.replace(line.name, lines['NmbItem'])
             # lines['InfoTicket']
             MontoItem = 0
             qty = 0
