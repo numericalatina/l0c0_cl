@@ -53,6 +53,9 @@ class SiiTax(models.Model):
         ],
         string="Indicador Exento por defecto"
     )
+    include_base_amount_cl = fields.Boolean(
+        string="Base Precio Incluído Chileno"
+    )
 
     def es_adicional(self):
         return self.sii_code in [24, 25, 26, 27, 271]
@@ -63,6 +66,7 @@ class SiiTax(models.Model):
     @api.onchange('sii_code', 'price_include')
     def autoseleccionar_detailed(self):
         self.sii_detailed = self.price_include and (self.es_adicional() or self.es_especifico())
+        self.include_base_amount_cl = self.price_include
 
     def compute_factor(self, uom_id):
         amount_tax = self.amount or 0.0
@@ -73,30 +77,6 @@ class SiiTax(models.Model):
             factor = self.uom_id._compute_quantity(1, uom_id)
             amount_tax = amount_tax / factor
         return amount_tax
-
-    def _fix_composed_included_tax(self, base, quantity, uom_id):
-        composed_tax = {}
-        price_included = False
-        percent = 0.0
-        rec = 0.0
-        for tax in self.sorted(key=lambda r: r.sequence):
-            if tax.price_include:
-                price_included = True
-            else:
-                continue
-            if tax.amount_type == "percent":
-                percent += tax.amount
-            else:
-                amount_tax = tax.compute_factor(uom_id)
-                rec += quantity * amount_tax
-        if price_included:
-            _base = base - rec
-            common_base = _base / (1 + percent / 100.0)
-            for tax in self.sorted(key=lambda r: r.sequence):
-                if tax.amount_type == "percent":
-                    composed_tax[tax.id] = common_base * (1 + tax.amount / 100)
-        return composed_tax
-
 
     def compute_all(self, price_unit, currency=None, quantity=1.0, product=None, partner=None, is_refund=False, handle_price_include=True, discount=None, uom_id=None):
         """ Returns all information required to apply taxes (in self + their children in case of a tax group).
@@ -256,7 +236,7 @@ class SiiTax(models.Model):
                 ).filtered(lambda x: x.repartition_type == "tax")
                 sum_repartition_factor = sum(tax_repartition_lines.mapped("factor"))
 
-                if tax.include_base_amount:
+                if tax.include_base_amount and not tax.include_base_amount_cl:
                     base = recompute_base(base, incl_fixed_amount, incl_percent_amount, incl_division_amount)
                     incl_fixed_amount = incl_percent_amount = incl_division_amount = 0
                     store_included_tax_total = True
@@ -266,10 +246,13 @@ class SiiTax(models.Model):
                     elif tax.amount_type == 'division':
                         incl_division_amount += tax.amount * sum_repartition_factor
                     elif tax.amount_type == 'fixed':
-                        incl_fixed_amount += quantity * tax.amount * sum_repartition_factor
+                        amount_tax = tax.amount
+                        if tax.uom_id:
+                            amount_tax = tax.compute_factor(uom_id)
+                        incl_fixed_amount += quantity * amount_tax * sum_repartition_factor
                     else:
                         # tax.amount_type == other (python)
-                        tax_amount = tax._compute_amount(base, sign * price_unit, quantity, product, partner) * sum_repartition_factor
+                        tax_amount = tax._compute_amount(base, sign * price_unit, quantity, product, partner, uom_id=uom_id) * sum_repartition_factor
                         incl_fixed_amount += tax_amount
                         # Avoid unecessary re-computation
                         cached_tax_amounts[i] = tax_amount
@@ -284,7 +267,6 @@ class SiiTax(models.Model):
                 i -= 1
 
         total_excluded = currency.round(recompute_base(base, incl_fixed_amount, incl_percent_amount, incl_division_amount))
-
         # 5) Iterate the taxes in the sequence order to compute missing tax amounts.
         # Start the computation of accumulated amounts at the total_excluded value.
         base = total_included = total_void = total_excluded
@@ -297,21 +279,22 @@ class SiiTax(models.Model):
             sum_repartition_factor = sum(tax_repartition_lines.mapped('factor'))
 
             price_include = self._context.get('force_price_include', tax.price_include)
-
             #compute the tax_amount
+            if price_include and tax.include_base_amount_cl:
+                tax_amount = tax.with_context(force_price_include=False)._compute_amount(
+                    total_excluded, sign * price_unit, quantity, product, partner, uom_id=uom_id)
             if price_include and total_included_checkpoints.get(i):
                 # We know the total to reach for that tax, so we make a substraction to avoid any rounding issues
                 tax_amount = total_included_checkpoints[i] - (base + cumulated_tax_included_amount)
                 cumulated_tax_included_amount = 0
             else:
                 tax_amount = tax.with_context(force_price_include=False)._compute_amount(
-                    base, sign * price_unit, quantity, product, partner)
+                    base, sign * price_unit, quantity, product, partner, uom_id=uom_id)
 
             # Round the tax_amount multiplied by the computed repartition lines factor.
             tax_amount = round(tax_amount, precision_rounding=prec)
             factorized_tax_amount = round(tax_amount * sum_repartition_factor, precision_rounding=prec)
-
-            if price_include and not total_included_checkpoints.get(i):
+            if not tax.include_base_amount_cl and price_include and not total_included_checkpoints.get(i):
                 cumulated_tax_included_amount += factorized_tax_amount
 
             # If the tax affects the base of subsequent taxes, its tax move lines must
@@ -365,7 +348,7 @@ class SiiTax(models.Model):
                     total_void += line_amount
 
             # Affect subsequent taxes
-            if tax.include_base_amount:
+            if tax.include_base_amount or tax.include_base_amount_cl:
                 base += factorized_tax_amount
 
             total_included += factorized_tax_amount - tax_amount_retencion
