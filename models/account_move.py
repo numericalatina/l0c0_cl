@@ -2231,7 +2231,7 @@ class AccountMove(models.Model):
     def exento(self):
         exento = 0
         for l in self.invoice_line_ids:
-            if l.tax_ids[0].amount == 0:
+            if l.price_subtotal == 0 or l.tax_ids[0].amount == 0:
                 exento += l.price_subtotal
         return exento if exento > 0 else (exento * -1)
 
