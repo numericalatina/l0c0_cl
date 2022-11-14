@@ -19,6 +19,12 @@
                         type="object"
                         attrs="{'invisible': [('sii_send_ident', '=', False)]}"
                     />
+                    <button
+                        name="solicitar_reenvio_email"
+                        string="Solicitar Reenvío Email SII"
+                        type="object"
+                        attrs="{'invisible': [('sii_send_ident', '=', False)]}"
+                    />
                 </header>
                 <sheet>
                     <group>

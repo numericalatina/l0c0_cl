@@ -163,6 +163,14 @@ class SIIXMLEnvio(models.Model):
     def ask_for(self):
         self.get_send_status(self.user_id)
 
+    def solicitar_reenvio_email(self):
+        datos = self._get_datos_empresa(self.company_id)
+        datos.update(
+            {"codigo_envio": self.sii_send_ident, "api": api,}
+        )
+        res = fe.consulta_estado_envio(datos)
+        _logger.warning(res)
+
     def check_estado_boleta(self, doc, detalles, state):
         for d in detalles:
             if d['tipo'] == doc.document_class_id.sii_code and d['folio'] == doc.sii_document_number:
