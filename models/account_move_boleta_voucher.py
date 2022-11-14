@@ -514,7 +514,7 @@ class SIIResumenBoletaVoucher(models.Model):
         if result[0].get('error'):
             raise UserError(result[0].get('error'))
         self.write({
-            'sii_xml_dte': result[0]['sii_xml_request'],
+            'sii_xml_dte': result[0]['sii_xml_dte'],
             'sii_barcode': result[0]['sii_barcode'],
         })
 

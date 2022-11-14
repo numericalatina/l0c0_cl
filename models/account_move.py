@@ -1936,7 +1936,7 @@ class AccountMove(models.Model):
         bci = self.get_barcode_img(xml=result[0]["sii_barcode"])
         self.write(
             {
-                "sii_xml_dte": result[0]["sii_xml_request"],
+                "sii_xml_dte": result[0]["sii_xml_dte"],
                 "sii_barcode": result[0]["sii_barcode"],
                 "sii_barcode_img": bci,
             }
