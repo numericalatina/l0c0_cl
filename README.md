@@ -15,24 +15,25 @@ Se crea este repositorio, para dar un enfoque de firma electrónica directa con 
  | Factura                       | FAC 33, FNA 34 |   OK  |    OK    |        OK       |       OK      |
  | Nota de Crédito               |       61       |   OK  |    OK    |        Ok       |       OK      |
  | Nota de Débito                |       56       |   OK  |    OK    |        OK       |       OK      |
- | Recepción XML Intercambio     |                |   OK  |    OK    |        OK       |       OK      |
+ | Recepción XML Intercambio     | Env, Merc, Com |   OK  |    OK    |        OK       |       OK      |
  | Libro de Compra-Venta         |  Compra, Venta |   OK  |    OK    |        OK       |       OK      |
  | Boleta   (1)                  | BEL 39, BNA 41 |   OK  |    OK    |        OK       |       OK      |
- | Consumo de Folios Boletas (1) |                |   OK  |    OK    |        OK       |       OK      |
+ | Consumo de Folios Boletas (1) |       CF       |   OK  |    OK    |        OK       |       OK      |
  | Guía de Despacho (2)          |       52       |   OK  |    OK    |        OK       |       OK      |
- | Libro de Guías (2)            |                |   OK  |    OK    |        OK       |       OK      |
- | Cesión de Créditos (3)        |                |   OK  |    OK    |        OK       |       OK      |
+ | Libro de Guías (2)            |       LG       |   OK  |    OK    |        OK       |       OK      |
+ | Cesión de Créditos (3)        |       CES      |   OK  |    OK    |        OK       |       OK      |
  | Factura Exportación (4)       |       110      |   OK  |    OK    |        OK       |       OK      |
  | Nota Crédito Exportación (4)  |       112      |   OK  |    OK    |        OK       |       OK      |
  | Nota Débito Exportación (5)   |       111      |   OK  |    OK    |        OK       |       OK      |
  | Factura de Compras (5)        |       46       |   OK  |    OK    |        OK       |       OK      |
- | Liquidación de facturas       |       43       |   X   |    X     |        X        |       OK      |
+ | Liquidación de facturas (6)   |       43       |   X   |    X     |        X        |       X       |
 
- (1) https://gitlab.com/dansanti/l10n_cl_dte_point_of_sale  
- (2) https://gitlab.com/dansanti/l10n_cl_stock_picking  
- (3) https://gitlab.com/dansanti/l10n_cl_dte_factoring  
- (4) https://gitlab.com/dansanti/l10n_cl_dte_exportacion  
- (5) NO confundir con el concepto de ingresar facturas de proveedor, que la mayoría le dice de compras, este es un documento de retención de impuestos, la recepción de documentos proveedor, está soportada, con los 4 tipos de respuesta que se deben generar según normativa del SII
+ (1) Boleta Integrada,  pero se peude extneder al PDV https://gitlab.com/dansanti/l10n_cl_dte_point_of_sale  
+ (2) Disponible solo desde este módulo en inventario https://gitlab.com/dansanti/l10n_cl_stock_picking  
+ (3) Mediante este módulo se agregan las opciones de timbraje de cesiones solo en facturando https://gitlab.com/dansanti/l10n_cl_dte_factoring  
+ (4) Se agregan las opciones Exportación solo en Facturando https://gitlab.com/dansanti/l10n_cl_dte_exportacion  
+ (5) NO confundir con el concepto de ingresar facturas de proveedor, que la mayoría le dice de compras, este es un documento de retención de impuestos, la recepción de documentos proveedor, está soportada, con los 4 tipos de respuesta que se deben generar según normativa del SII  
+ (6) Se agregará módulo adicional, aún no se dearrolla
 
 
   - Impuestos Soportados Para Ventas(Probados en emisión):
@@ -50,7 +51,7 @@ Se crea este repositorio, para dar un enfoque de firma electrónica directa con 
   |   17   | IVA al faenamiento de carnes      |   5  |   A  |   OK  |                                                                                                    |
   |   18   | IVA a las carnes                   |   5  |   A  |   OK  |                                                                                                    |
   |   19   | IVA a la Harina                   |  12  |   A  |   X   |                                                                                                    |
-  |   23   | Impuesto adicional                |  15  |   N  |   X   | a) artículos oro, platino, marfil b) Joyas, piedras preciosas c) Pieles finas                      |
+  |   23   | Impuesto adicional                |  15  |   A  |   X   | a) artículos oro, platino, marfil b) Joyas, piedras preciosas c) Pieles finas                      |
   |   24   | DL 825/74, ART. 42, letra b)      | 31.5 |   D  |   OK  | Licores, Piscos, whisky, aguardiente, y vinos licorosos o aromatizados.                            |
   |   25   | Vinos                             | 20.5 |   D  |   OK  |                                                                                                    |
   |   26   | Cervezas y bebidas alcohólicas    | 20.5 |   D  |   OK  |                                                                                                    |
