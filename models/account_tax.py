@@ -518,4 +518,4 @@ class SiiTax(models.Model):
             return facturas + boleta + liquidacion
         if self.sii_code in [30, 31, 32, 33, 34, 36, 37, 38, 39, 41, 47, 48, 49]:
             return factura_compra
-        return exportacion + factura_exenta + boleta_exenta
+        return exportacion + factura_exenta + boleta_exenta + facturas + boleta + liquidacion
