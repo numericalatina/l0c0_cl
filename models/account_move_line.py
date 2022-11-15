@@ -109,12 +109,11 @@ class AccountInvoiceLine(models.Model):
                 if boleta or nc_boleta:
                     continue
                 details['cod_imp_adic'] = t.sii_code
-            taxInclude = t.price_include and not t.sii_detailed
+            taxInclude = t.price_include and not t.sii_detailed or boleta or nc_boleta
             if len(details['impuestos']) > 0 and details['taxInclude'] != taxInclude:
                 raise UserError("No puede mezclar Impuesto Incluído sin desglose e impuesto sin incluir")
             details['taxInclude'] = taxInclude
-            if t.sii_detailed:
-                details['desglose'] = t.sii_detailed
+            details['desglose'] = t.sii_detailed and not boleta and not nc_boleta
             if self.ind_exe or t.ind_exe or t.amount == 0 or t.sii_code in [0]:
                 details['IndExe'] = self.ind_exe or t.ind_exe or 1
                 details['MntExe'] += currency_base.round(self.price_subtotal)
