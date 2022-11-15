@@ -160,7 +160,7 @@ class UploadXMLWizard(models.TransientModel):
                 ]
             }
         )
-        respuesta = fe.leer_xml(vals)
+        respuesta = fe.recepcion_xml(vals)
         if self.dte_id:
             for r in respuesta:
                 att = self._create_attachment(r["respuesta_xml"], r["nombre_xml"], self.dte_id.id, "mail.message.dte")

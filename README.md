@@ -73,7 +73,7 @@ Se crea este repositorio, para dar un enfoque de firma electrónica directa con 
   |   45   | Impuesto Pirotecnia               |  50  |   A  |   X   |                                                                                                    |
   |   46   | IVA ORO                           |  19  |   R  |   X   |                                                                                                    |
   |   47   | IVA Cartones                      |  19  |   R  |   X   |                                                                                                    |
-  |   48   | IVA Frambuesas                    |  14  |   R  |       |                                                                                                    |
+  |   48   | IVA Frambuesas                    |  14  |   R  |   X   |                                                                                                    |
   |   49   | IVA factura Compra sin Retención  |   0  |   R  |   X   | hoy utilizada sólo por Bolsa de Productos de Chile, lo cual es validado por el sistema             |
   |   50   | IVA instrumentos de prepago       |  19  |   N  |   X   |                                                                                                    |
   |   51   | IVA gas natural                   |      |   E  |   X   | Compuesto                                                                                          |
