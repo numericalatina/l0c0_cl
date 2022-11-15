@@ -298,6 +298,40 @@ class AccountMove(models.Model):
         compute='_get_sequence_prefix'
     )
 
+    @api.depends('line_ids.price_subtotal', 'line_ids.tax_base_amount', 'line_ids.tax_line_id', 'partner_id', 'currency_id')
+    def _compute_invoice_taxes_by_group(self):
+        ''' Helper to get the taxes grouped according their account.tax.group.
+        This method is only used when printing the invoice.
+        '''
+        for move in self.filtered('document_class_id'):
+            lang_env = move.with_context(lang=move.partner_id.lang).env
+            tax_lines = move.line_ids.filtered(lambda line: line.tax_line_id)
+            tax_balance_multiplicator = -1 if move.is_inbound(True) else 1
+            res = {}
+            # There are as many tax line as there are repartition lines
+            for line in tax_lines:
+                if move.es_boleta() and line.tax_line_id.sii_code not in [14, 15, 17]:
+                    continue
+                res.setdefault(line.tax_line_id, {'base': 0.0, 'amount': 0.0, 'name': line.tax_line_id.name if line.is_retention else line.tax_line_id.description})
+                res[line.tax_line_id]['amount'] += tax_balance_multiplicator * (line.amount_currency if line.currency_id else line.balance)
+
+            for line in (self.invoice_line_ids).filtered('tax_ids'):
+                if line.tax_ids[0].amount == 0:
+                    res.setdefault(line.tax_ids[0], {'base': 0.0, 'amount': 0.0, 'name': line.tax_ids[0].name})
+                    res[line.tax_ids[0]]['amount'] += line.price_subtotal
+
+            move.amount_by_group = [(
+                amounts['name'],
+                amounts['amount'],
+                amounts['base'],
+                formatLang(lang_env, amounts['amount'], currency_obj=move.currency_id),
+                formatLang(lang_env, amounts['base'], currency_obj=move.currency_id),
+                len(res),
+                group.id
+            ) for group, amounts in res.items()]
+            self -= move
+        return super(AccountMove, self)._compute_invoice_taxes_by_group()
+
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency',
@@ -2228,15 +2262,6 @@ class AccountMove(models.Model):
         else:
             report_string = super(AccountMove, self)._get_report_base_filename()
         return report_string
-
-
-    def exento(self):
-        exento = 0
-        for l in self.invoice_line_ids:
-            if l.price_subtotal == 0 or l.tax_ids[0].amount == 0:
-                exento += l.price_subtotal
-        return exento if exento > 0 else (exento * -1)
-
 
     def getTotalDiscount(self):
         total_discount = 0
