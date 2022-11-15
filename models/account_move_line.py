@@ -97,7 +97,7 @@ class AccountInvoiceLine(models.Model):
         )
         currency_base = self.move_id.currency_base()
         for t in self.tax_ids:
-            if self.move_id.use_documents not self.move_id.es_nc() and \
+            if self.move_id.use_documents and not self.move_id.es_nc() and \
             not self.move_id.es_nd() and self.move_id.document_class_id.sii_code \
             not in t.documentos_dte_admitidos():
                 raise UserError("Tipo de documento {0} no admitido para el impuesto [{1}]{2}".format(
