@@ -1739,7 +1739,7 @@ class AccountMove(models.Model):
             #                lines['RUTMandante']
             lines["NmbItem"] = line.product_id.with_context(
                 display_default_code=False).name
-            if line.product_id.name != l.name:
+            if line.product_id.name != line.name:
                 lines["DscItem"] = line.name.replace(line.name, lines['NmbItem'])
             # lines['InfoTicket']
             MontoItem = 0
@@ -1812,6 +1812,8 @@ class AccountMove(models.Model):
                     lines["OtrMnda"]["MontoItemOtrMnda"] = currency_base._convert(
                         MontoItem, currency_id, self.company_id, self.invoice_date
                     )
+                if taxInclude and details['desglose']:
+                    taxInclude = False
             lines["QtyItem"] = qty
             lines["MontoItem"] = MontoItem
             if MontoItem < 0:
