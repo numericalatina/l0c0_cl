@@ -168,8 +168,9 @@ class SIIXMLEnvio(models.Model):
         datos.update(
             {"codigo_envio": self.sii_send_ident, "api": api,}
         )
-        res = fe.consulta_estado_envio(datos)
-        _logger.warning(res)
+        res = fe.reenvio_correo_envio(datos)
+        if res.get('errores'):
+            raise UserError(res.get('errores'))
 
     def check_estado_boleta(self, doc, detalles, state):
         for d in detalles:
