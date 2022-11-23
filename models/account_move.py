@@ -1576,11 +1576,11 @@ class AccountMove(models.Model):
             Totales["MntFaeCarneOtrMnda"] = totales['MntBase']
         if totales['TasaIVA']:
             if currency_id != self.currency_id:
-                totales['MntIVA'] = currency_id._convert(totales['IVA'],
+                totales['MntIVA'] = currency_id._convert(totales['MntIVA'],
                                                          self.currency_id,
                                                          self.company_id,
                                                          self.invoice_date)
-            Totales["IVAOtrMnda"] = totales['IVA']
+            Totales["IVAOtrMnda"] = totales['MntIVA']
         if currency_id != self.currency_id:
             totales['MntTotal'] = currency_id._convert(totales['MntTotal'],
                                             self.currency_id,
