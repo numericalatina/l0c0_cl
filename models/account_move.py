@@ -2145,7 +2145,9 @@ class AccountMove(models.Model):
                 )
             raise UserError("{}: {}".format(msg, str(e)))
         self.claim_description = respuesta
-        if respuesta.codResp in [0, 7]:
+        if respuesta.get('{}T{}F{}'.format(
+            rut_emisor, tipo_dte, self.sii_document_number),
+                         {'codResp': 9})["codResp"] in [0, 7]:
             self.claim = claim
 
 
