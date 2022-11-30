@@ -514,8 +514,8 @@ class SiiTax(models.Model):
         liquidacion = [43]
         factura_exenta = [32, 34]
         boleta_exenta = [38, 41]
-        if self.es_adicional() or self.es_especifico() or self.sii_code in [14, 15, 17, 18, 19, 23, 44, 45, 46, 50, 52, 53]:
+        if self.es_adicional() or self.es_especifico() or self.sii_code in [14, 17, 18, 19, 23, 44, 45, 46, 50, 52, 53]:
             return facturas + boleta + liquidacion
-        if self.sii_code in [30, 31, 32, 33, 34, 36, 37, 38, 39, 41, 47, 48, 49]:
+        if self.sii_code in [15, 30, 31, 32, 33, 34, 36, 37, 38, 39, 41, 47, 48, 49]:
             return factura_compra
         return exportacion + factura_exenta + boleta_exenta + facturas + boleta + liquidacion
