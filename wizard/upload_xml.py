@@ -301,8 +301,6 @@ class UploadXMLWizard(models.TransientModel):
         if IndExe is None and not exenta:
             amount = 19
             sii_code = 14
-        else:
-            IndExe = True
         imp = self._buscar_impuesto(amount=amount,
                                     type="purchase",
                                     sii_code=sii_code,
@@ -653,6 +651,8 @@ class UploadXMLWizard(models.TransientModel):
         exenta = documento.find("Encabezado/IdDoc/TipoDTE").text in ["34", "41"]
         lines = []
         for line in documento.findall("Detalle"):
+            if (not self.pre_process or self.option == "upload") and self.type == 'compras' and documento.find("Encabezado/Totales/MontoNF") is not None and line.find("IndExe") is not None:
+                continue
             new_line = self._prepare_line(line, document_id, invoice_type, company_id, fpos, price_included, exenta, document)
             if new_line:
                 lines.append(new_line)
