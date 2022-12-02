@@ -1787,7 +1787,8 @@ class AccountMove(models.Model):
                 uom_name = line.product_uom_id.with_context(
                         exportacion=self.document_class_id.es_exportacion()
                     ).name_get()
-                lines["UnmdItem"] = uom_name[0][1][:4]
+                if uom_name:
+                    lines["UnmdItem"] = uom_name[0][1][:4]
                 price_unit = details['price_unit']
                 lines["PrcItem"] = round(price_unit, 6)
                 if currency_id:
