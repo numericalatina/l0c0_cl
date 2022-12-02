@@ -348,7 +348,7 @@
                                 </div>
                             </t>
                         </div>
-                        <div class="col-xs-3">
+                        <div class="col-3">
                             <p t-if="o.narration">
                                 <strong>Comment:</strong>
                                 <br />
