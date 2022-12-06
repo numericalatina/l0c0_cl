@@ -131,7 +131,7 @@ class ResPartner(models.Model):
             self.env.cr.execute(query, where_clause_params)
             return [row[0] for row in self.env.cr.fetchall()]
 
-        return super(Partner, self)._name_search(name, args, operator=operator, limit=limit, name_get_uid=name_get_uid)
+        return super(ResPartner, self)._name_search(name, args, operator=operator, limit=limit, name_get_uid=name_get_uid)
 
     def rut(self):
         rut = "66666666-6"
