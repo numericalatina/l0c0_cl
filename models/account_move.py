@@ -309,16 +309,36 @@ class AccountMove(models.Model):
             tax_balance_multiplicator = -1 if move.is_inbound(True) else 1
             res = {}
             # There are as many tax line as there are repartition lines
+            if move.es_boleta():
+                imps = move.line_ids.filtered(lambda line: line.tax_line_id.sii_code)
+                tax_lines -= imps
+
             for line in tax_lines:
-                if move.es_boleta() and line.tax_line_id.sii_code not in [14, 15, 17]:
-                    continue
                 res.setdefault(line.tax_line_id, {'base': 0.0, 'amount': 0.0, 'name': line.tax_line_id.name if line.is_retention else line.tax_line_id.description})
                 res[line.tax_line_id]['amount'] += tax_balance_multiplicator * (line.amount_currency if line.currency_id else line.balance)
-
+            amount_exe = 0
             for line in (self.invoice_line_ids).filtered('tax_ids'):
                 if line.tax_ids[0].amount == 0:
                     res.setdefault(line.tax_ids[0], {'base': 0.0, 'amount': 0.0, 'name': line.tax_ids[0].name})
                     res[line.tax_ids[0]]['amount'] += line.price_subtotal
+                    amount_exe += line.price_subtotal
+            if move.es_boleta():
+                for i in imps:
+                    if i.tax_line_id.sii_code in [14, 15]:
+                        iva = i.tax_line_id
+                        break
+                if iva:
+                    force_sign = -1 if move.move_type in ('out_invoice', 'in_refund', 'out_receipt') else 1
+                    if iva.price_include:
+                        amount = move.amount_total_signed
+                    else:
+                        amount = move.amount_untaxed_signed
+                    taxes_res = iva._origin.with_context(force_sign=force_sign).compute_all(
+                        (amount - amount_exe),
+                        quantity=1, currency=move.currency_id,
+                        partner=move.partner_id,
+                        is_refund=move.move_type in ('out_refund', 'in_refund'))
+                    res[iva] = {'base': 0.0, 'amount': taxes_res['taxes'][0]['amount'], 'name': iva.description}
 
             move.amount_by_group = [(
                 amounts['name'],
@@ -1885,7 +1905,7 @@ class AccountMove(models.Model):
                     dr.valor, currency_id, self.company_id, self.invoice_date
                 )
             if self.document_class_id.sii_code in [34] and (
-                self.referencias and self.referencias[0].sii_referencia_TpoDocRef.sii_code == "34"
+                self.referencias and self.referencias[0].sii_referencia_TpoDocRef.sii_code == 34
             ):  # solamente si es exento
                 dr_line["IndExeDR"] = 1
             result.append(dr_line)
