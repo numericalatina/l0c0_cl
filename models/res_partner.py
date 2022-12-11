@@ -371,35 +371,40 @@ class ResPartner(models.Model):
                         "direccion": self.street,
                         # 'comuna': self.
                         "telefono": self.phone,
-                        "actectos": [ac.code for ac in self.acteco_ids],
+                        "actecos": [ac.code for ac in self.acteco_ids],
                         "url": self.website,
                         "origen": self.env['ir.config_parameter'].sudo().get_param('web.base.url'),
                         "logo": self.image_1920.decode() if self.image_1920 else False,
+                        "version": 1.0,
                     }
                 ).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )
+            message = ""
+            title = "Advertencia"
             if resp.status != 200:
                 _logger.warning("Error en conexión al sincronizar partners %s" % resp.data)
-                message = ""
+                title = "Error en conexión al sincronizar partners"
                 if resp.status == 403:
                     data = json.loads(resp.data.decode("ISO-8859-1"))
                     message = data["message"]
                 else:
                     message = str(resp.data)
+            else:
+                data = json.loads(resp.data.decode("ISO-8859-1"))
+                message = data.get('message')
+            if message:
                 self.env["bus.bus"].sendone(
                     (self._cr.dbname, "res.partner", self.env.user.partner_id.id),
                     {
-                        "title": "Error en conexión al sincronizar partners",
+                        "title": title,
                         "message": message,
                         "url": "res_config",
                         "type": "dte_notif",
                     },
                 )
-                return
-            data = json.loads(resp.data.decode("ISO-8859-1"))
-        except Exception as ex:
-            _logger.error(tools.ustr(ex), exc_info=True)
+        except:
+            _logger.error("Error en PUT partner", exc_info=True)
 
     def get_remote_user_data(self, to_check, process_data=True):
         company = self.company_id or self.env.company
@@ -413,36 +418,44 @@ class ResPartner(models.Model):
             resp = pool.request(
                 "POST",
                 url,
-                body=json.dumps({"rut": to_check, "token": token,}).encode("utf-8"),
+                body=json.dumps({
+                    "rut": to_check,
+                    "token": token,
+                    "version": 1.0,}).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )
+            message = ""
+            title = "Advertencia"
             if resp.status != 200:
                 _logger.warning("Error en conexión al obtener partners %s" % resp.data)
-                message = ""
+                title = "Error en conexión al obtener partners"
+                process_data = False
                 if resp.status == 403:
                     data = json.loads(resp.data.decode("ISO-8859-1"))
                     message = data["message"]
                 else:
                     message = str(resp.data)
+            else:
+                data = json.loads(resp.data.decode("ISO-8859-1"))
+                message = data.get('message')
+            if message:
                 self.env["bus.bus"].sendone(
                     (self._cr.dbname, "res.partner", self.env.user.partner_id.id),
                     {
-                        "title": "Error en conexión al obtener partners",
+                        "title": title,
                         "message": message,
                         "url": "res_config",
                         "type": "dte_notif",
                     },
                 )
-                return
-            data = json.loads(resp.data.decode("ISO-8859-1"))
             if not process_data:
                 return data
             if not data:
                 self.sync = False
                 return
             self._process_data(data)
-        except Exception as ex:
-            _logger.error(tools.ustr(ex), exc_info=True)
+        except:
+            _logger.error("Error en get remote partner", exc_info=True)
 
     @api.onchange("name")
     def fill_partner(self):
@@ -465,30 +478,38 @@ class ResPartner(models.Model):
                 r.put_remote_user_data()
             try:
                 resp = pool.request(
-                    "GET", url, {"rut": r.document_number, "token": token, "actualizado": r.last_sync_update,}
+                    "GET", url, {
+                        "rut": r.document_number,
+                        "token": token,
+                        "actualizado": r.last_sync_update,
+                        "version": 1.0,
+                    }
                 )
+                message = ""
+                title = "Advertencia"
                 if resp.status != 200:
                     _logger.warning("Error en conexión al consultar partners %s" % resp.data)
-                    message = ""
+                    title = "Error en conexión al consultar partners"
                     if resp.status == 403:
                         data = json.loads(resp.data.decode("ISO-8859-1"))
                         message = data["message"]
-                        return
                     else:
                         message = str(resp.data)
+                else:
+                    data = json.loads(resp.data.decode("ISO-8859-1"))
+                    message = data.get('message')
+                    if data.get("result", False):
+                        r.sync = False
+                        r.fill_partner()
+                if message:
                     self.env["bus.bus"].sendone(
                         (self._cr.dbname, "res.partner", self.env.user.partner_id.id),
                         {
-                            "title": "Error en conexión al consultar partners",
+                            "title": title,
                             "message": message,
                             "url": "res_config",
                             "type": "dte_notif",
                         },
                     )
-                    return
-                data = json.loads(resp.data.decode("ISO-8859-1"))
-                if data.get("result", False):
-                    r.sync = False
-                    r.fill_partner()
-            except Exception as ex:
-                _logger.error(tools.ustr(ex), exc_info=True)
+            except:
+                _logger.error("Error en need_update", exc_info=True)
