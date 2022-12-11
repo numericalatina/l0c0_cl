@@ -125,6 +125,7 @@ class AccountInvoiceLine(models.Model):
                             "CodImp": t.sii_code,
                             'price_include': taxInclude,
                             'TasaImp': amount,
+                            'mepco': t.mepco,
                         }
                 )
         if details['desglose']:
