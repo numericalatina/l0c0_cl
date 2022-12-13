@@ -1783,10 +1783,18 @@ class AccountMove(models.Model):
             product = line.product_id.default_code != "NO_PRODUCT"
             lines = {}
             lines["NroLinDet"] = line.sequence
-            if line.product_id.default_code and product:
-                lines["CdgItem"] = {}
-                lines["CdgItem"]["TpoCodigo"] = "INT1"
-                lines["CdgItem"]["VlrCodigo"] = line.product_id.default_code
+            if product and line.product_id.default_code or line.product_id.barcode:
+                lines["CdgItem"] = []
+                if line.product_id.default_code:
+                    lines["CdgItem"].append({
+                        "TpoCodigo": "INT1",
+                        "VlrCodigo": line.product_id.default_code
+                    })
+                if line.product_id.barcode:
+                    lines["CdgItem"].append({
+                        "TpoCodigo": "EAN13",
+                        "VlrCodigo": line.product_id.barcode
+                    })
             details = line.get_tax_detail()
             lines["Impuesto"] = details['impuestos']
             taxInclude = details['taxInclude']
