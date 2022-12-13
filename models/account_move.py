@@ -1578,35 +1578,44 @@ class AccountMove(models.Model):
         Totales = {}
         Totales["TpoMoneda"] = self._acortar_str(currency_id.abreviatura, 15)
         Totales["TpoCambio"] = round(currency_id.rate, 10)
-        if totales['MntNeto'] > 0:
+        if totales['MntNeto']:
+            MntNeto = totales['MntNeto']
             if currency_id != self.currency_id:
-                totales['MntNeto'] = currency_id._convert(totales['MntNeto'],
+                MntNeto = currency_id._convert(totales['MntNeto'],
                                                self.currency_id,
                                                self.company_id,
                                                self.invoice_date)
-            Totales["MntNetoOtrMnda"] = totales['MntNeto']
+            Totales["MntNetoOtrMnda"] = MntNeto
         if totales['MntExe']:
+            MntExe = totales['MntExe']
             if currency_id != self.currency_id:
-                totales['MntExe'] = currency_id._convert(totales['MntExe'],
+                MntExe = currency_id._convert(totales['MntExe'],
                                                          self.currency_id,
                                                          self.company_id,
                                                          self.invoice_date)
-            Totales["MntExeOtrMnda"] = totales['MntExe']
-        if totales.get('MntBase', 0) > 0:
-            Totales["MntFaeCarneOtrMnda"] = totales['MntBase']
+            Totales["MntExeOtrMnda"] = MntExe
+        if totales.get('MntBase', 0):
+            MntBase = totales['MntBase']:
+            if currency_id != self.currency_id:
+                MntBase = currency_id._convert(totales['MntBase'],
+                                                         self.currency_id,
+                                                         self.company_id,
+                                                         self.invoice_date)
+            Totales["MntFaeCarneOtrMnda"] = MntBase
         if totales['TasaIVA']:
             if currency_id != self.currency_id:
-                totales['MntIVA'] = currency_id._convert(totales['MntIVA'],
+                IVA = currency_id._convert(totales['MntIVA'],
                                                          self.currency_id,
                                                          self.company_id,
                                                          self.invoice_date)
-            Totales["IVAOtrMnda"] = totales['MntIVA']
+            Totales["IVAOtrMnda"] = IVA
+        MntTotal = totales['MntTotal']
         if currency_id != self.currency_id:
-            totales['MntTotal'] = currency_id._convert(totales['MntTotal'],
+            MntTotal = currency_id._convert(totales['MntTotal'],
                                             self.currency_id,
                                             self.company_id,
                                             self.invoice_date)
-        Totales["MntTotOtrMnda"] = totales['MntTotal']
+        Totales["MntTotOtrMnda"] = MntTotal
         # Totales['MontoNF']
         # Totales['TotalPeriodo']
         # Totales['SaldoAnterior']
@@ -1615,41 +1624,45 @@ class AccountMove(models.Model):
 
     def _totales_normal(self, currency_id, totales):
         Totales = {}
-        if totales['MntNeto'] > 0:
+        if totales['MntNeto']:
+            MntNeto = totales['MntNeto']
             if currency_id != self.currency_id:
-                totales['MntNeto'] = currency_id._convert(totales['MntNeto'],
+                MntNeto = currency_id._convert(totales['MntNeto'],
                                                self.currency_id,
                                                self.company_id,
                                                self.invoice_date)
-            Totales["MntNeto"] = currency_id.round(totales['MntNeto'])
+            Totales["MntNeto"] = currency_id.round(MntNeto)
         if totales['MntExe']:
+            MntExe = totales['MntExe']
             if currency_id != self.currency_id:
-                totales['MntExe'] = currency_id._convert(totales['MntExe'],
+                MntExe = currency_id._convert(totales['MntExe'],
                                               self.currency_id,
                                               self.company_id,
                                               self.invoice_date)
-            Totales["MntExe"] = currency_id.round(totales['MntExe'])
+            Totales["MntExe"] = currency_id.round(MntExe)
         if totales['MntBase'] > 0:
             Totales["MntBase"] = currency_id.round(totales['MntBase'])
         if totales['TasaIVA']:
             Totales["TasaIVA"] = totales['TasaIVA']
+            IVA = totales['MntIVA']
             if currency_id != self.currency_id:
-                totales['MntIVA'] = currency_id._convert(totales['MntIVA'],
+                IVA = currency_id._convert(totales['MntIVA'],
                                            self.currency_id,
                                            self.company_id,
                                            self.invoice_date)
-            Totales["IVA"] = currency_id.round(totales['MntIVA'])
+            Totales["IVA"] = currency_id.round(IVA)
         if totales['CredEC']:
             Totales["CredEC"] = currency_id.round(totales['CredEC'])
         if totales['MntRet']:
             Totales["MntRet"] = currency_id.round(totales['MntRet'])
+        MntTotal = totales['MntTotal']
         if currency_id != self.currency_id:
-            totales['MntTotal'] = currency_id._convert(
+            MntTotal = currency_id._convert(
                 totales['MntTotal'],
                 self.currency_id,
                 self.company_id,
                 self.invoice_date)
-        Totales["MntTotal"] = currency_id.round(totales['MntTotal'])
+        Totales["MntTotal"] = currency_id.round(MntTotal)
         if totales['MontoNF'] > 0:
             Totales['MontoNF'] = totales['MontoNF']
         # Totales['TotalPeriodo']
