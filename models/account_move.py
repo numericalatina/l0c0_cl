@@ -1595,7 +1595,7 @@ class AccountMove(models.Model):
                                                          self.invoice_date)
             Totales["MntExeOtrMnda"] = MntExe
         if totales.get('MntBase', 0):
-            MntBase = totales['MntBase']:
+            MntBase = totales['MntBase']
             if currency_id != self.currency_id:
                 MntBase = currency_id._convert(totales['MntBase'],
                                                          self.currency_id,
@@ -1603,6 +1603,7 @@ class AccountMove(models.Model):
                                                          self.invoice_date)
             Totales["MntFaeCarneOtrMnda"] = MntBase
         if totales['TasaIVA']:
+            IVA = totales['MntIVA']
             if currency_id != self.currency_id:
                 IVA = currency_id._convert(totales['MntIVA'],
                                                          self.currency_id,
@@ -1640,7 +1641,13 @@ class AccountMove(models.Model):
                                               self.company_id,
                                               self.invoice_date)
             Totales["MntExe"] = currency_id.round(MntExe)
-        if totales['MntBase'] > 0:
+        if totales['MntBase']:
+            MntBase = totales['MntBase']
+            if currency_id != self.currency_id:
+                MntBase = currency_id._convert(totales['MntBase'],
+                                           self.currency_id,
+                                           self.company_id,
+                                           self.invoice_date)
             Totales["MntBase"] = currency_id.round(totales['MntBase'])
         if totales['TasaIVA']:
             Totales["TasaIVA"] = totales['TasaIVA']
