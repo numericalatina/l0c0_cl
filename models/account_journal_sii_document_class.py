@@ -34,12 +34,11 @@ class AccountJournalSiiDocumentClass(models.Model):
 
     @api.onchange("sii_document_class_id")
     def check_sii_document_class(self):
-        if (
-            self.sii_document_class_id
-            and self.sequence_id
-            and self.sii_document_class_id != self.sequence_id.sii_document_class_id
-        ):
+        dc = self.sii_document_class_id
+        if self.sequence_id and dc != self.sequence_id.sii_document_class_id:
             raise UserError("El tipo de Documento de la secuencia es distinto")
+        if dc.es_guia():
+            raise UserError("Las guías no es pueden agregar por esta área")
 
     @api.model
     def name_search(self, name, args=None, operator="ilike", limit=100):
