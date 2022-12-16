@@ -681,7 +681,8 @@ class AccountMove(models.Model):
 
     @api.depends('posted_before', 'state', 'journal_id', 'date', 'document_class_id', 'sii_document_number')
     def _compute_name(self):
-        dcs = self.filtered(lambda m: m.use_documents and m.document_class_id and m.state != 'draft')
+        dcs = self.filtered(lambda m: m.use_documents and m.document_class_id \
+                            and m.state in ['posted', 'cancel'])
         for r in dcs:
             r.name = '%s%s' % (r.document_class_id.doc_code_prefix, r.sii_document_number)
         super(AccountMove, (self - dcs))._compute_name()
@@ -793,7 +794,8 @@ class AccountMove(models.Model):
                 l.sequence = i
         return super(AccountMove, self)._onchange_invoice_line_ids()
 
-    @api.depends("state", "journal_id", "invoice_date", "document_class_id")
+    @api.depends("state", "journal_id", "invoice_date",
+                 "document_class_id", "use_documents")
     def _get_sequence_prefix(self):
         for invoice in self:
             invoice.sequence_number_next_prefix = ''
@@ -807,13 +809,12 @@ class AccountMove(models.Model):
             if invoice.journal_document_class_id:
                 invoice.sequence_number_next_prefix = invoice.document_class_id.doc_code_prefix or ""
 
-    @api.depends("state", "journal_id", "document_class_id")
+    @api.depends("state", "journal_id", "document_class_id", "use_documents")
     def _get_sequence_number_next(self):
         for invoice in self:
             invoice.sequence_number_next = 0
             if invoice.journal_document_class_id:
                 invoice.sequence_number_next = invoice.journal_document_class_id.sequence_id.number_next_actual
-
 
     def _reverse_move_vals(self, default_values, cancel=True):
         ''' Reverse values passed as parameter being the copied values of the original journal entry.
@@ -1102,28 +1103,6 @@ class AccountMove(models.Model):
                 raise UserError(_("You can not delete a valid document on SII"))
             to_unlink += r
         return super(AccountMove, to_unlink).unlink()
-
-    @api.constrains("ref", "partner_id", "company_id", "move_type", "journal_document_class_id")
-    def _check_reference_in_invoice(self):
-        moves = self.filtered(lambda move: move.is_purchase_document() and move.ref)
-        for r in moves:
-            if r.move_type in ["in_invoice", "in_refund"] and r.sii_document_number:
-                domain = [
-                    ("move_type", "=", r.move_type),
-                    ("sii_document_number", "=", r.sii_document_number),
-                    ("partner_id", "=", r.partner_id.id),
-                    ("journal_document_class_id.sii_document_class_id", "=", r.document_class_id.id),
-                    ("company_id", "=", r.company_id.id),
-                    ("id", "!=", r.id),
-                    ("state", "!=", "cancel"),
-                ]
-                move_ids = r.search(domain)
-                if move_ids:
-                    raise UserError(
-                        u"El numero de factura debe ser unico por Proveedor.\n"
-                        u"Ya existe otro documento con el numero: %s para el proveedor: %s"
-                        % (r.sii_document_number, r.partner_id.display_name)
-                    )
 
     @api.onchange("journal_document_class_id")
     def set_document_class_id(self):
@@ -2197,7 +2176,6 @@ class AccountMove(models.Model):
         if respuesta.get(key,
                          {'codResp': 9})["codResp"] in [0, 7]:
             self.claim = claim
-
 
     def get_dte_claim(self):
         tipo_dte = self.document_class_id.sii_code
