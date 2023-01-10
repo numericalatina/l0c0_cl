@@ -1509,7 +1509,7 @@ class AccountMove(models.Model):
             GiroRecep = self.acteco_id.name or commercial_partner_id.activity_description.name
             if not GiroRecep:
                 raise UserError(_("Seleccione giro del partner"))
-            Receptor["GiroRecep"] = self._acortar_str(GiroRecep, 40)
+            Receptor["GiroRecep"] = GiroRecep
         if self.partner_id.phone or commercial_partner_id.phone:
             Receptor["Contacto"] = self._acortar_str(
                 self.partner_id.phone or commercial_partner_id.phone or self.partner_id.email, 80
