@@ -237,11 +237,11 @@ class ConsumoFolios(models.Model):
         for r, value in resumenes.items():
             if value.get("T%s" % str(r)):
                 Rangos = value["T" + str(r)]
-                if "itemUtilizados" in Rangos:
-                    for rango in Rangos["itemUtilizados"]:
+                if "itemsUtilizados" in Rangos:
+                    for rango in Rangos["itemsUtilizados"]:
                         pushItem("RangoUtilizados", rango, r)
-                if "itemAnulados" in Rangos:
-                    for rango in Rangos["itemAnulados"]:
+                if "itemsAnulados" in Rangos:
+                    for rango in Rangos["itemsAnulados"]:
                         pushItem("RangoAnulados", rango, r)
         docs = {}
         for r, value in resumenes.items():
