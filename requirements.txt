@@ -1,4 +1,4 @@
-facturacion_electronica>=0.17.2
+facturacion_electronica>=0.17.16
 num2words
 xlsxwriter
 pillow
