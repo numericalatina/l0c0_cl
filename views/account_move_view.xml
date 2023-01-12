@@ -179,6 +179,7 @@
                     <field name="is_gd_line" invisible="1"/>
                     <field name="is_gr_line" invisible="1"/>
                     <field name="is_retention" invisible="1"/>
+                    <field name="ind_exe" optional="show"/>
                 </xpath>
                 <page id="other_tab" position="after">
                   <page id="referencias" string="Referencias" attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))]}">
