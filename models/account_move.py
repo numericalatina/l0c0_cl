@@ -2054,7 +2054,6 @@ class AccountMove(models.Model):
             )
         return datos
 
-
     def do_dte_send(self, n_atencion=None):
         datos = self._crear_envio(n_atencion)
         envio_id = self[0].sii_xml_request
@@ -2107,7 +2106,6 @@ class AccountMove(models.Model):
             r.sii_result = resultado[id]["status"]
             if resultado[id].get("xml_resp"):
                 r.sii_message = resultado[id].get("xml_resp")
-
 
     def ask_for_dte_status(self):
         for r in self:
