@@ -50,7 +50,7 @@ class SaleAdvancePaymentInv(models.TransientModel):
         "account.journal.sii_document_class",
         string="Documents Type",
         default=lambda self: self._default_journal_document_class_id(),
-        domain="[('sii_document_class_id', '=', document_class_ids)]",
+        domain="[('sii_document_class_id', 'in', document_class_ids)]",
     )
     use_documents = fields.Boolean(
         string="Use Documents?",
