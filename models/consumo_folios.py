@@ -213,7 +213,12 @@ class ConsumoFolios(models.Model):
 
     def _get_resumenes(self):
         datos = self._get_datos()
-        resumenes = CF(datos)._get_resumenes()
+        try:
+            resumenes = CF(datos)._get_resumenes()
+        except Exeption as e:
+            msg = "Problema al obtener resumen CF: %s" % str(e)
+            _logger.warning(msg, exc_info=True)
+            raise UserError(msg)
         return resumenes
 
     @api.onchange("move_ids", "anulaciones")
@@ -353,6 +358,9 @@ class ConsumoFolios(models.Model):
         datos["ConsumoFolios"] = [self._get_datos()]
         datos["test"] = True
         result = fe.consumo_folios(datos)[0]
+        if result.get('errores'):
+            _logger.warning(result['errores'])
+            raise UserError(result['errores'])
         envio_dte = result["sii_xml_request"]
         doc_id = "{}_{}".format(self.fecha_inicio, self.sec_envio)
         self.sii_xml_request = (
