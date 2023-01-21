@@ -84,6 +84,16 @@ class AccountInvoiceLine(models.Model):
         if currency:
             res = {k: currency.round(v) for k, v in res.items()}
         return res
+    
+    @api.depends('debit', 'credit', 'amount_currency', 'account_id', 'currency_id', 'move_id.state', 'company_id',
+                 'matched_debit_ids', 'matched_credit_ids')
+    def _compute_amount_residual(self):
+        super(AccountInvoiceLine, self)._compute_amount_residual()
+        for line in self:
+            if line.tax_repartition_line_id.sii_type in ['R', 'A']:
+                line.amount_residual = 0
+                if line.currency_id:
+                    line.amount_residual_currency = 0
 
     def get_tax_detail(self):
         boleta = self.move_id.document_class_id.es_boleta()
