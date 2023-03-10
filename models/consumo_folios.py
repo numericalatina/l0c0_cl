@@ -215,7 +215,7 @@ class ConsumoFolios(models.Model):
         datos = self._get_datos()
         try:
             resumenes = CF(datos)._get_resumenes()
-        except Exeption as e:
+        except Exception as e:
             msg = "Problema al obtener resumen CF: %s" % str(e)
             _logger.warning(msg, exc_info=True)
             raise UserError(msg)
