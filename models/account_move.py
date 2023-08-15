@@ -322,7 +322,8 @@ class AccountMove(models.Model):
                     res.setdefault(line.tax_ids[0], {'base': 0.0, 'amount': 0.0, 'name': line.tax_ids[0].name})
                     res[line.tax_ids[0]]['amount'] += line.price_subtotal
                     amount_exe += line.price_subtotal
-            if move.es_boleta():
+            iva = False
+            if move.document_class_id.es_boleta_afecta():
                 for i in imps:
                     if i.tax_line_id.sii_code in [14, 15]:
                         iva = i.tax_line_id
@@ -339,7 +340,10 @@ class AccountMove(models.Model):
                         partner=move.partner_id,
                         is_refund=move.move_type in ('out_refund', 'in_refund'))
                     res[iva] = {'base': 0.0, 'amount': taxes_res['taxes'][0]['amount'], 'name': iva.description}
-
+                else:
+                    raise UserError("Boleta afecta debe llevar 1 item con IVA como mínimo. Agregar una línea afecta o revsar los parámetros del impuesto que correspondan al código de IVA SII están correctamente configurados")
+            if move.document_class_id.es_boleta_exenta() and iva:
+                raise UserError("No puede ir monto afecto en una boleta exenta")
             move.amount_by_group = [(
                 amounts['name'],
                 amounts['amount'],
