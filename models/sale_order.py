@@ -73,6 +73,14 @@ class SO(models.Model):
                             'motivo': r[2]['motivo'],
                             'so_id': self.id,
                         })
+        vals['referencias'] = []
+        for r in self.referencia_ids:
+            vals['referencias'].append(Command.create({
+                'folio': r.origen,
+                'fecha_documento': r.fecha_documento,
+                'sii_referencia_TpoDocRef': r.sii_referencia_TpoDocRef,
+                'motivo': r.motivo,
+            }))
         return vals
 
     @api.depends("order_line.price_total")

@@ -66,22 +66,6 @@ class Referencias(models.Model):
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    def check_invoice_type(self, move_type):
-        return move_type in self.get_invoice_types()
-
-    def _default_journal_document_class_id(self):
-        if not self.env["ir.model"].search([("model", "=", "sii.document_class")]) or self.document_class_id:
-            return False
-        journal = self.env["account.move"].default_get(["journal_id"])["journal_id"]
-        default_type = self._context.get("default_move_type", "")
-        if not self.check_invoice_type(default_type) or default_type in ["in_invoice", "in_refund"]:
-            return self.env["account.journal.sii_document_class"]
-        dc_type = ["invoice"] if default_type in ["in_invoice", "out_invoice"] else ["credit_note", "debit_note"]
-        jdc = self.env["account.journal.sii_document_class"].search(
-            [("journal_id", "=", journal), ("sii_document_class_id.document_type", "in", dc_type),], limit=1
-        )
-        return jdc
-
     def get_barcode_img(self, columns=13, ratio=3, xml=False):
         barcodefile = BytesIO()
         if not xml:
@@ -98,18 +82,19 @@ class AccountMove(models.Model):
                 sii_barcode_img = r.get_barcode_img()
             r.sii_barcode_img = sii_barcode_img
 
-    @api.onchange("journal_id", "use_documents", "move_type")
+    @api.onchange("journal_id", "move_type")
     def get_dc_ids(self):
         for r in self:
             r.document_class_ids = self.env['sii.document_class']
-            if not r.check_invoice_type(r.move_type):
+            if not self.is_invoice():
+                r.use_documents = False
                 continue
-
-            dc_type = ["invoice", "invoice_in"]
-            if r.use_documents and r.move_type == "in_invoice":
-                dc_type = ["invoice_in"]
-            elif r.move_type in ['in_refund', 'out_refund']:
-                dc_type = ["credit_note", "debit_note"]
+            dc_type = ["invoice"] if r.move_type in ["in_invoice", "out_invoice"] else ["credit_note", "debit_note"]
+            if not r.document_class_id:
+                r.journal_document_class_id = self.env["account.journal.sii_document_class"].search(
+                    [("journal_id", "=", r.journal_id.id), ("sii_document_class_id.document_type", "in", dc_type),], limit=1
+                )
+                r.use_documents = bool(r.journal_document_class_id)
             if not r.use_documents and r.move_type in ["in_invoice", "in_refund"]:
                 for dc in r.journal_id.document_class_ids:
                     if dc.document_type in dc_type:
@@ -122,30 +107,18 @@ class AccountMove(models.Model):
                 for dc in jdc_ids:
                     r.document_class_ids += dc.sii_document_class_id
 
-    def _default_use_documents(self):
-        if self._default_journal_document_class_id():
-            return True
-        return False
-
-    def _default_document_class_id(self):
-        if not self.env["ir.model"].search([("model", "=", "sii.document_class")]):
-            return False
-        jdc = self._default_journal_document_class_id()
-        return jdc.sii_document_class_id.id
-
     document_class_ids = fields.Many2many(
         "sii.document_class", compute="get_dc_ids", string="Available Document Classes",
     )
     journal_document_class_id = fields.Many2one(
         "account.journal.sii_document_class",
         string="Documents Type",
-        default=lambda self: self._default_journal_document_class_id(),
         readonly=True,
         states={"draft": [("readonly", False)]},
+        check_company=True,
     )
     document_class_id = fields.Many2one(
         "sii.document_class", string="Document Type", readonly=True, states={"draft": [("readonly", False)]},
-        default=lambda self: self._default_document_class_id(),
     )
     sii_code = fields.Integer(
         related="document_class_id.sii_code", string="Document Code", copy=False, readonly=True, store=True,
@@ -201,7 +174,7 @@ class AccountMove(models.Model):
         readonly=True,
         states={"draft": [("readonly", False)]},
     )  # @TODO select 1 automático si es emisor 2Categoría
-    use_documents = fields.Boolean(string="Use Documents?", default=lambda self: self._default_use_documents(),
+    use_documents = fields.Boolean(string="Use Documents?",
                                    readonly=True,
                                    states={"draft": [("readonly", False)]},)
     referencias = fields.One2many(
@@ -294,7 +267,7 @@ class AccountMove(models.Model):
     sequence_number_next = fields.Integer(
         compute='_get_sequence_number_next'
     )
-    sequence_number_next_prefix = fields.Integer(
+    sequence_number_next_prefix = fields.Char(
         compute='_get_sequence_prefix'
     )
 
@@ -710,13 +683,21 @@ class AccountMove(models.Model):
 
     def _get_last_sequence_domain(self, relaxed=False):
         where_string, param = super(AccountMove, self)._get_last_sequence_domain(relaxed=relaxed)
-        where_string += " AND use_documents = %(use_documents)s"
-        param['use_documents'] = self.use_documents
+        if self.use_documents:
+            where_string += " AND use_documents "
+        else:
+            where_string += " AND NOT use_documents "
+        if self.document_class_id:
+            where_string += " AND document_class_id = %(document_class_id)s "
+            param['document_class_id'] = self.document_class_id.id
+        else:
+            where_string += " AND document_class_id is NULL "
         return where_string, param
 
     def _set_next_sequence(self):
         self.ensure_one()
         if self.use_documents:
+            self.sii_document_number = self.journal_document_class_id.sequence_id.number_next_actual
             self[self._sequence_field] = '%s%s' % (self.document_class_id.doc_code_prefix, self.sii_document_number)
         else:
             super(AccountMove, self)._set_next_sequence()
@@ -727,33 +708,13 @@ class AccountMove(models.Model):
         super(AccountMove, dcs)._compute_name()
         super(AccountMove, (self - dcs))._compute_name()
 
-    def _get_invoice_computed_reference(self):
-        self.ensure_one()
-        if self.document_class_id:
-            return '%s%s' % (self.document_class_id.doc_code_prefix, self.sii_document_number)
-        return super(AccountMove, self)._get_invoice_computed_reference()
-
     def _post(self, soft=True):
-        if soft:
-            future_moves = self.filtered(lambda move: move.date > fields.Date.context_today(self))
-            future_moves.auto_post = True
-            for move in future_moves:
-                msg = _('This move will be posted at the accounting date: %(date)s', date=format_date(self.env, move.date))
-                move.message_post(body=msg)
-            to_post = self - future_moves
-        else:
-            to_post = self
-        for inv in to_post:
-            if not inv.is_invoice() or not inv.journal_document_class_id  or not inv.use_documents or inv.sii_document_number:
-                continue
-            sii_document_number = inv.journal_document_class_id.sequence_id.next_by_id()
-            inv.sii_document_number = int(sii_document_number)
-        super(AccountMove, self)._post(soft=soft)
+        to_post = super(AccountMove, self)._post(soft=soft)
         for inv in to_post:
             if inv.purchase_to_done:
                 for ptd in inv.purchase_to_done:
                     ptd.write({"state": "done"})
-            if not inv.journal_document_class_id or not inv.use_documents:
+            if not inv.is_invoice() or not inv.journal_document_class_id or not inv.use_documents:
                 continue
             inv.sii_result = "NoEnviado"
             if inv.journal_id.restore_mode or self._context.get("restore_mode", False):
@@ -761,22 +722,29 @@ class AccountMove(models.Model):
             else:
                 inv._validaciones_uso_dte()
                 inv._timbrar()
-                tiempo_pasivo = datetime.now() + timedelta(
-                    hours=int(self.env["ir.config_parameter"].sudo().get_param("account.auto_send_dte", default=1))
-                )
+                ISCP = self.env["ir.config_parameter"].sudo()
+                metodo = ISCP.get_param("account.send_dte_method", default='diferido')
+                if metodo == 'manual':
+                    continue
+                tiempo_pasivo = datetime.now()
+                if metodo == 'diferido':
+                    tipo_trabajo = 'pasivo'
+                    tiempo_pasivo += timedelta(
+                        hours=int(ISCP.get_param("account.auto_send_dte", default=1))
+                    )
+                elif metodo == 'inmediato':
+                    tipo_trabajo = 'envio'
                 self.env["sii.cola_envio"].create(
                     {
                         "company_id": inv.company_id.id,
                         "doc_ids": [inv.id],
                         "model": "account.move",
                         "user_id": self.env.uid,
-                        "tipo_trabajo": "pasivo",
+                        "tipo_trabajo": tipo_trabajo,
                         "date_time": tiempo_pasivo,
                         "send_email": False
                         if inv.company_id.dte_service_provider == "SIICERT"
-                        or not self.env["ir.config_parameter"]
-                        .sudo()
-                        .get_param("account.auto_send_email", default=True)
+                        or not ISCP.get_param("account.auto_send_email", default=True)
                         else True,
                     }
                 )

@@ -100,7 +100,7 @@
                                   attrs="{'invisible': [('sii_document_number','&gt;', 0)]}"
                               />
                       </div>
-                      <div attrs="{'invisible': [('use_documents', '=', True), ('sii_document_number', '=', 0)]}">
+                      <div attrs="{'invisible': [('use_documents', '=', True), ('state', 'in', [False, 'draft'])]}">
                         Número:
                         <field
                               name="sii_document_number"

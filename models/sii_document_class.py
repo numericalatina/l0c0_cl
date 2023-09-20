@@ -41,6 +41,9 @@ class SIIDocumentClass(models.Model):
     def es_boleta(self):
         return self.es_boleta_afecta() or self.es_boleta_exenta()
 
+    def es_boleta_exenta(self):
+        return self.sii_code in [38, 41]
+
     def es_nc_exportacion(self):
         return self.sii_code in [111, 112]
 
@@ -61,3 +64,6 @@ class SIIDocumentClass(models.Model):
 
     def es_guia(self):
         return self.sii_code in [50, 52]
+
+    def es_nc(self):
+        return self.sii_code in [60, 61] or self.es_nc_exportacion()
