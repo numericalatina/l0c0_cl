@@ -14,3 +14,5 @@ class SaleAdvancePaymentInv(models.TransientModel):
         'sale.order.referencias',
         string="Referencias DTE",
     )
+    sale_order_ids = fields.Many2many(
+        'sale.order', default=lambda self: self.env.context.get('active_ids'))
