@@ -180,7 +180,8 @@ class AccountMove(models.Model):
     )  # @TODO select 1 automático si es emisor 2Categoría
     use_documents = fields.Boolean(string="Use Documents?",
                                    readonly=True,
-                                   states={"draft": [("readonly", False)]},)
+                                   states={"draft": [("readonly", False)]},
+                                   default=False)
     referencias = fields.One2many(
         "account.move.referencias", "move_id", readonly=True, states={"draft": [("readonly", False)]},
     )
@@ -687,21 +688,23 @@ class AccountMove(models.Model):
 
     def _get_last_sequence_domain(self, relaxed=False):
         where_string, param = super(AccountMove, self)._get_last_sequence_domain(relaxed=relaxed)
+        return where_string, param
         if self.use_documents:
             where_string += " AND use_documents "
         else:
-            where_string += " AND NOT use_documents "
+            where_string += " AND (use_documents is FALSE OR use_documents is NULL)"
         if self.document_class_id:
             where_string += " AND document_class_id = %(document_class_id)s "
             param['document_class_id'] = self.document_class_id.id
         else:
             where_string += " AND document_class_id is NULL "
+
         return where_string, param
 
     def _set_next_sequence(self):
         self.ensure_one()
         if self.use_documents:
-            self.sii_document_number = self.journal_document_class_id.sequence_id.number_next_actual
+            self.sii_document_number = self.journal_document_class_id.sequence_id.next_by_id()
             self[self._sequence_field] = '%s%s' % (self.document_class_id.doc_code_prefix, self.sii_document_number)
         else:
             super(AccountMove, self)._set_next_sequence()
