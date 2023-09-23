@@ -73,17 +73,25 @@ FROM ({union}) AS combined'''.format(
         self.env.cr.execute(query, param)
         folio = int((self.env.cr.fetchone() or [None])[0] or 0)
         if self.start_nm <= folio < self.final_nm:
-            folio += 1
             folios_anulados = ast.literal_eval(self.folios_anulados or '[]')
-            if folio in folios_anulados:
-                return self._get_folio_actual()
+            def check_anulado(folio_check):
+                folio_check += 1
+                if folio_check in folios_anulados:
+                    return check_anulado(folio_check)
+                if folio_check > self.final_nm:
+                    return self.final_nm
+                return folio_check
+            folio = check_anulado(folio)
+            if folio > self.final_nm:
+                self.state = 'spent'
+                return self.final_nm
             if self.document_class_id.es_factura_afecta() or self.document_class_id.es_nc() or self.document_class_id.es_nd():
                 folios_vencidos = ast.literal_eval(self.folios_vencidos or '[]')
                 tz = pytz.timezone("America/Santiago")
                 if folio in folios_vencidos or fields.Date.context_today(self.with_context(tz=tz)) >= self.expiration_date:
                     self.state = 'spent'
                     return self.final_nm
-                return folio
+            return folio
         if folio > 0:
             self.state = 'spent'
             return self.final_nm
