@@ -43,7 +43,7 @@ TYPE2JOURNAL = {
     "out_refund": "sale",
     "in_refund": "purchase",
 }
-
+tz_stgo = pytz.timezone("America/Santiago")
 
 class Referencias(models.Model):
     _name = "account.move.referencias"
@@ -1282,8 +1282,7 @@ class AccountMove(models.Model):
         super(AccountMove, self)._recompute_dynamic_lines(recompute_all_taxes, recompute_tax_base_amount)
 
     def time_stamp(self, formato="%Y-%m-%dT%H:%M:%S"):
-        tz = pytz.timezone("America/Santiago")
-        return datetime.now(tz).strftime(formato)
+        return datetime.now(tz_stgo).strftime(formato)
 
     def crear_intercambio(self):
         rut = self.partner_id.commercial_partner_id.rut()
@@ -1743,15 +1742,14 @@ class AccountMove(models.Model):
         return Encabezado
 
     def _validaciones_caf(self, caf):
-        if caf.state == 'spent':
+        fecha_timbre = fields.Date.context_today(self.with_context(tz=tz_stgo))
+        if (self.document_class_id.es_factura_afecta() or \
+            self.document_class_id.es_nc() or self.document_class_id.es_nd()) \
+             and fecha_timbre >= caf.expiration_date:
             raise UserError(
-                """No hay más folios disponibles para el documento %s. \
-Por favor solicite y suba un CAF en el portal del SII o Utilice la opción \
-obtener folios en la secuencia (usando apicaf.cl)."""
-                % (caf.document_class_id.name)
+                """CAF para %s a utilizar ya vencido, por favor anular este folio  %s  y anular en el SII, luego retimbrar con un nuevo folio no vencido."""
+                % (caf.document_class_id.name, self.sii_document_number)
             )
-        invoice_date = self.invoice_date
-        fecha_timbre = fields.Date.context_today(self)
         if fecha_timbre < caf.issued_date:
             raise UserError("La fecha del timbraje no puede ser menor a la fecha de emisión del CAF")
 
