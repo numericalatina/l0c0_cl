@@ -1420,12 +1420,12 @@ class AccountMove(models.Model):
     def es_nc(self):
         if not self.referencias or self.move_type not in ["out_refund", "in_refund"]:
             return False
-        return self.document_class_id.sii_code in [60, 61, 112]
+        return self.document_class_id.es_nc()
 
     def es_nd(self):
         if not self.referencias or self.move_type not in ["out_invoice", "in_invoice"]:
             return False
-        return self.document_class_id.sii_code in [55, 56, 111]
+        return self.document_class_id.es_nd()
 
     def es_boleta(self):
         return self.document_class_id.es_boleta()

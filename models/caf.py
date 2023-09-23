@@ -1,5 +1,6 @@
 import logging
 from datetime import date
+import pytz
 import ast
 from dateutil.relativedelta import relativedelta
 from lxml import etree
@@ -76,11 +77,13 @@ FROM ({union}) AS combined'''.format(
             folios_anulados = ast.literal_eval(self.folios_anulados or '[]')
             if folio in folios_anulados:
                 return self._get_folio_actual()
-            folios_vencidos = ast.literal_eval(self.folios_vencidos or '[]')
-            if folio in folios_vencidos or fields.Date.now() >= self.expiration_date:
-                self.state = 'spent'
-                return self.final_nm
-            return folio
+            if self.document_class_id.es_factura_afecta() or self.document_class_id.es_nc() or self.document_class_id.es_nd():
+                folios_vencidos = ast.literal_eval(self.folios_vencidos or '[]')
+                tz = pytz.timezone("America/Santiago")
+                if folio in folios_vencidos or fields.Date.context_today(self.with_context(tz=tz)) >= self.expiration_date:
+                    self.state = 'spent'
+                    return self.final_nm
+                return folio
         if folio > 0:
             self.state = 'spent'
             return self.final_nm
