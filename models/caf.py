@@ -72,7 +72,15 @@ FROM ({union}) AS combined'''.format(
         self.env.cr.execute(query, param)
         folio = int((self.env.cr.fetchone() or [None])[0] or 0)
         if self.start_nm <= folio < self.final_nm:
-            return (folio + 1)
+            folio += 1
+            folios_anulados = ast.literal_eval(self.folios_anulados or '[]')
+            if folio in folios_anulados:
+                return self._get_folio_actual()
+            folios_vencidos = ast.literal_eval(self.folios_vencidos or '[]')
+            if folio in folios_vencidos or fields.Date.now() >= self.expiration_date:
+                self.state = 'spent'
+                return self.final_nm
+            return folio
         if folio > 0:
             self.state = 'spent'
             return self.final_nm
