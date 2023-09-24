@@ -123,12 +123,14 @@ class AccountMove(models.Model):
     )
     document_class_id = fields.Many2one(
         "sii.document_class", string="Document Type", readonly=True, states={"draft": [("readonly", False)]},
+        index=True,
     )
     sii_code = fields.Integer(
         related="document_class_id.sii_code", string="Document Code", copy=False, readonly=True, store=True,
     )
     sii_document_number = BigInt(
         string="Document Number", copy=False, readonly=True, states={"draft": [("readonly", False)]},
+        index=True,
     )
     sii_batch_number = fields.Integer(
         copy=False, string="Batch Number", readonly=True, help="Batch number for processing multiple invoices together",
