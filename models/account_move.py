@@ -690,32 +690,20 @@ class AccountMove(models.Model):
 
     def _get_last_sequence_domain(self, relaxed=False):
         where_string, param = super(AccountMove, self)._get_last_sequence_domain(relaxed=relaxed)
-        return where_string, param
-        if self.use_documents:
-            where_string += " AND use_documents "
-        else:
-            where_string += " AND (use_documents is FALSE OR use_documents is NULL)"
-        if self.document_class_id:
-            where_string += " AND document_class_id = %(document_class_id)s "
+        if self.use_documents and self.document_class_id:
+            where_string += " AND use_documents AND document_class_id = %(document_class_id)s "
             param['document_class_id'] = self.document_class_id.id
         else:
-            where_string += " AND document_class_id is NULL "
-
+            where_string += " AND (use_documents is FALSE OR use_documents is NULL)"
         return where_string, param
 
     def _set_next_sequence(self):
         self.ensure_one()
-        if self.use_documents:
+        if self.use_documents and self.document_class_id:
             self.sii_document_number = self.journal_document_class_id.sequence_id.next_by_id()
             self[self._sequence_field] = '%s%s' % (self.document_class_id.doc_code_prefix, self.sii_document_number)
         else:
             super(AccountMove, self)._set_next_sequence()
-
-    @api.depends('posted_before', 'state', 'journal_id', 'date', 'document_class_id', 'sii_document_number')
-    def _compute_name(self):
-        dcs = self.filtered("use_documents")
-        super(AccountMove, dcs)._compute_name()
-        super(AccountMove, (self - dcs))._compute_name()
 
     def _post(self, soft=True):
         to_post = super(AccountMove, self)._post(soft=soft)
