@@ -392,7 +392,8 @@ class ResPartner(models.Model):
                     message = str(resp.data)
             else:
                 data = json.loads(resp.data.decode("ISO-8859-1"))
-                message = data.get('message')
+                if data is not None:
+                    message = data.get('message')
             if message:
                 self.env["bus.bus"].sendone(
                     (self._cr.dbname, "res.partner", self.env.user.partner_id.id),
