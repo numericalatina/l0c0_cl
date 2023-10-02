@@ -69,10 +69,10 @@ class SIIDocumentClass(models.Model):
         return self.sii_code in [50, 52]
 
     def es_nc(self):
-        return self.sii_code in [60, 61]
+        return self.sii_code in [60, 61] or self.es_nc_exportacion()
 
     def es_nd(self):
-        return self.sii_code in [55, 56]
+        return self.sii_code in [55, 56] or self.es_nd_exportacion()
 
     def es_exportacion(self):
         return self.es_factura_exportacion() or self.es_nc_exportacion() or self.es_nd_exportacion()
