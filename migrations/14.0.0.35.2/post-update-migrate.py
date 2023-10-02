@@ -10,4 +10,4 @@ def migrate(cr, installed_version):
 
     env = api.Environment(cr, SUPERUSER_ID, {})
     for r in env['dte.caf'].search([]):
-        r.compute_folio_actual()
+        r.load_caf()
