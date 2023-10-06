@@ -135,7 +135,7 @@ has been exhausted.""",
     use_level = fields.Float(string="Use Level", compute="_used_level",)
     folio_actual = fields.Integer(
         string="Folio Actual",
-        default=_get_folio_actual
+        default=_get_folio_actual,
         )
     cantidad_folios = fields.Integer(
         string="Cantidad de Folios",
