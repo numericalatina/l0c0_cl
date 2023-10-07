@@ -140,10 +140,10 @@ class IRSequence(models.Model):
         for caf in self.dte_caf_ids:
             caf.inspeccionar_folios_sin_usar()
 
-    def get_folio(self):
+    def get_folio(self, number_next=False):
         caf = self.env['dte.caf'].search([
             ('sequence_id', '=', self.id),
-            ('folio_actual', '>=', self.number_next),
+            ('folio_actual', '>=', number_next or self.number_next),
         ],
         order='folio_actual ASC',
         limit=1)
@@ -160,7 +160,7 @@ class IRSequence(models.Model):
         if caf.qty_available == 0:
             if caf == self.dte_caf_ids[0]:
                 return 0
-            return self.get_folio()
+            return self.get_folio(folio_actual+1)
         return folio_actual
 
     def time_stamp(self, formato="%Y-%m-%dT%H:%M:%S"):
