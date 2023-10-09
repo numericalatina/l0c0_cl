@@ -20,7 +20,7 @@ class UploadXMLWizard(models.TransientModel):
         string="Acción",
         default="create",
     )
-    xml_file = fields.Binary(string="XML File", filters="*.xml", store=True, help="Upload the XML File in this holder",)
+    xml_file = fields.Binary(string="XML File", store=True, help="Upload the XML File in this holder",)
     filename = fields.Char(string="File Name",)
     pre_process = fields.Boolean(default=True,)
     dte_id = fields.Many2one("mail.message.dte", string="DTE",)

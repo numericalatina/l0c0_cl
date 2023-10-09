@@ -22,6 +22,7 @@
                                 name="caf_file"
                                 filename="filename"
                                 attrs="{'invisible':[('state', '!=', 'draft')]}"
+                                options="{'accepted_file_extensions': '.xml,.txt'}"
                             />
                             <field name="filename" invisible="1" />
                             <field name="caf_string" invisible="1" />
@@ -63,6 +64,17 @@
                                 <field name="cantidad_folios_sin_usar" readonly="1"/>
                               </group>
                               <field name="folios_sin_usar" readonly="1"/>
+                            </sheet>
+                          </page>
+                          <page string="Folios Anulados">
+                            <header>
+                              <button name="obtener_folios_anulados" type="object" string="Obtener Folios anulados desde el SII" attrs="{'invisible': [('state', '=', 'draft')]}"/>
+                            </header>
+                            <sheet>
+                              <group>
+                                <field name="cantidad_folios_anulados" readonly="1"/>
+                              </group>
+                              <field name="folios_anulados" readonly="1"/>
                             </sheet>
                           </page>
                         </notebook>

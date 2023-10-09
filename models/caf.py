@@ -115,7 +115,7 @@ FROM ({union}) AS combined'''.format(
 
     name = fields.Char(string="File Name", readonly=True, related="filename",)
     filename = fields.Char(string="File Name", required=True,)
-    caf_file = fields.Binary(string="CAF XML File", filters="*.xml", help="Upload the CAF XML File in this holder",)
+    caf_file = fields.Binary(string="CAF XML File", help="Upload the CAF XML File in this holder",)
     caf_string = fields.Text(string="Archivo CAF")
     issued_date = fields.Date(string="Issued Date", compute='_load_data', store=True)
     expiration_date = fields.Date(string="Expiration Date", compute='_load_data', store=True)
