@@ -35,6 +35,7 @@
                           </group>
                           <group>
                             <field name="issued_date" readonly="1"/>
+                            <field name="issued_date" />
                             <field name="expiration_date" readonly="1"/>
                             <field name="company_id" />
                             <field name="rut_n" readonly="1"/>
@@ -53,7 +54,7 @@
                             </group>
                         </group>
                         <notebook attrs="{'invisible':[('state', '=', 'draft')]}">
-                          <page string="Mantención">
+                          <page string="Folios Sin Usar">
                             <header>
                               <button name="inspeccionar_folios_sin_usar" type="object" string="Inspeccionar folios sin usar" attrs="{'invisible': [('state', '=', 'draft')]}"/>
                             </header>
