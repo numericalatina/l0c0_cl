@@ -22,7 +22,7 @@
                         </button>
                     </div>
                     <group attrs="{'invisible': [('state', '!=', 'unverified')]}">
-                        <field name="file_content" filename="name" options="{'accepted_file_extensions': '.pfx,.p12'}"/>
+                        <field name="file_content" filename="name" options="{'accepted_file_extensions': '.pfx,.p12,.pem'}"/>
                         <field name="name" attrs="{'invisible': [('name', '=', False)]}" />
                         <field name="password" password="True" attrs="{'invisible':[('state', '!=', 'unverified')]}" />
                     </group>
