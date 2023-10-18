@@ -301,6 +301,24 @@ WHERE NOT EXISTS (
             'cantidad_folios_vencidos_sin_anular': len(folios_vencidos)
             })
 
+    def obtener_folios_anulados(self):
+        if not self.folios_anulados:
+            return []
+        return ast.literal_eval(self.folios_anulados)
+
+    def ingresar_folio_anulado(self, folio):
+        folios = self.obtener_folios_anulados()
+        if folio not in folios:
+            folios.append(folio)
+        self.folios_anulados = str(sorted(folios))
+        self.cantidad_folios_anulados += 1
+
+    def eliminar_folio_anulado(self, folio):
+        folios = self.obtener_folios_anulados()
+        if folio in folios:
+            folios.remove(folio)
+        self.folios_anulados = str(sorted(folios))
+
     def anular_folio(self, desde, hasta=False):
         if not hasta:
             hasta = desde
@@ -327,7 +345,7 @@ WHERE NOT EXISTS (
     def after_anular_folios(self, inicio, final):
         folios_vencidos = ast.literal_eval(self.folios_vencidos or '[]')
         folios_sin_usar = self.obtener_folios_sin_usar()
-        for r in range(inicio, final):
+        for r in range(inicio, final+1):
             if r in folios_vencidos:
                 folios_vencidos.remove(r)
             if r in folios_sin_usar:
