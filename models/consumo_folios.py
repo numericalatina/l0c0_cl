@@ -38,7 +38,6 @@ class ConsumoFolios(models.Model):
         index=True,
         readonly=True,
         default="draft",
-        track_visibility="onchange",
         copy=False,
         help=" * The 'Draft' status is used when a user is encoding a new and unconfirmed Invoice.\n"
         " * The 'Pro-forma' status is used the invoice does not have an invoice number.\n"
@@ -109,7 +108,6 @@ class ConsumoFolios(models.Model):
         string="Moneda",
         default=lambda self: self.env.user.company_id.currency_id,
         required=True,
-        track_visibility="always",
         readonly=True,
         states={"draft": [("readonly", False)]},
     )

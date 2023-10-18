@@ -137,7 +137,6 @@ class Libro(models.Model):
         string="Moneda",
         default=lambda self: self.env.user.company_id.currency_id,
         required=True,
-        track_visibility="always",
     )
     total_afecto = fields.Monetary(string="Total Afecto", readonly=True, compute="set_resumen", store=True,)
     total_exento = fields.Monetary(string="Total Exento", readonly=True, compute="set_resumen", store=True,)
