@@ -368,10 +368,10 @@
                                             <strong>Descuento o Recargo Global</strong>
                                         </td>
                                         <td class="text-right">
-                                            <span
-                                                t-esc="gdr.valor if gdr.gdr_type=='amount' else gdr.amount_untaxed_global_dr"
-                                                t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"
-                                            />
+                                          <span
+                                              t-esc="gdr.valor if gdr.gdr_type=='amount' else gdr.amount_untaxed"
+                                              t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"
+                                          />
                                         </td>
                                     </tr>
                                 </t>
@@ -991,7 +991,7 @@
                         </left>
                         <right>$ <value value-decimals='0'>
                                 <t
-                                    t-esc="gdr.valor if gdr.gdr_move_type=='amount' else gdr.amount_untaxed_global_dr"
+                                    t-esc="gdr.valor if gdr.gdr_type=='amount' else gdr.amount_untaxed"
                                     t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"
                                 />
                             </value></right>
