@@ -871,7 +871,8 @@ class UploadXMLWizard(models.TransientModel):
                     if Totales.find("TasaIVA") is not None and line.tax_line_id.amount == float(Totales.find("TasaIVA").text):
                         diff_amount_currency = diff_balance = float(Totales.find("IVA").text) - (line.balance if line.balance >0 else -line.balance)
                         rounding_line_vals = {
-                            'price_unit': diff_amount_currency,
+                            'debit': diff_balance > 0.0 and diff_balance or 0.0,
+                            'credit': diff_balance < 0.0 and -diff_balance or 0.0,
                             'quantity': 1.0,
                             'amount_currency': diff_amount_currency,
                             'partner_id': inv.partner_id.id,
@@ -885,6 +886,11 @@ class UploadXMLWizard(models.TransientModel):
                             'exclude_from_invoice_tab': False,
                         }
                         rounding_line = self.env['account.move.line'].with_context(check_move_validity=False).create(rounding_line_vals)
+                if total_line.credit >0:
+                    total_line.with_context(check_move_validity=False).credit += diff_balance
+                else:
+                    total_line.with_context(check_move_validity=False).debit += diff_balance
+
                 inv.with_context(restore_mode=True)._post()
                 if inv.amount_total == monto_xml:
                     continue
