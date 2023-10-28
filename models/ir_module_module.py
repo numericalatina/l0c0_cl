@@ -7,14 +7,14 @@ class IRModule(models.Model):
 
     def modules_to_remove(self):
         modules_to_remove = self.mapped("name")
-        if "l10n_cl_fe" in modules_to_remove:
-            if self.env["sii.xml.envio"].search([("state", "=", "Aceptado")], limit=1):
-                raise UserError("NO puede desinstalar el módulo ya que tiene DTEs válidos emitidos")
+#        if "l10n_cl_fe" in modules_to_remove:
+#            if self.env["sii.xml.envio"].search([("state", "=", "Aceptado")], limit=1):
+#                raise UserError("NO puede desinstalar el módulo ya que tiene DTEs válidos emitidos")
         return super(IRModule, self).modules_to_remove()
 
     def button_uninstall(self):
         modules_to_remove = self.mapped("name")
-        if "l10n_cl_fe" in modules_to_remove:
-            if self.env["sii.xml.envio"].search([("state", "=", "Aceptado")], limit=1):
-                raise UserError("NO puede desinstalar el módulo ya que tiene DTEs válidos emitidos")
+#        if "l10n_cl_fe" in modules_to_remove:
+#            if self.env["sii.xml.envio"].search([("state", "=", "Aceptado")], limit=1):
+#                raise UserError("NO puede desinstalar el módulo ya que tiene DTEs válidos emitidos")
         return super(IRModule, self).button_uninstall()
